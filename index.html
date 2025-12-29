@@ -635,9 +635,9 @@
             }
 
             .tab {
-                min-width: 80px;
-                padding: 12px 15px;
-                font-size: 0.85em;
+                min-width: 70px;
+                padding: 10px 12px;
+                font-size: 0.8em;
                 white-space: nowrap;
                 flex-shrink: 0;
             }
@@ -692,9 +692,23 @@
             }
 
             input, select, textarea {
-                padding: 14px 12px;
+                padding: 12px 10px;
                 font-size: 16px; /* Évite le zoom automatique sur iOS */
                 border-radius: 8px;
+                max-width: 100%;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Fix spécifique pour le champ date qui déborde */
+            input[type="date"] {
+                max-width: 100%;
+                width: 100%;
+                min-width: 0; /* Important pour éviter le débordement */
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                padding: 12px 8px;
             }
 
             /* Fix pour les selects qui débordent */
@@ -703,24 +717,27 @@
                 width: 100%;
                 overflow: hidden;
                 text-overflow: ellipsis;
-            }
-
-            /* Fix pour le champ date */
-            input[type="date"] {
-                max-width: 100%;
-                width: 100%;
+                padding-right: 30px; /* Espace pour la flèche */
             }
 
             /* Améliorer les boutons sur mobile */
             .btn {
-                padding: 14px 20px;
-                font-size: 1em;
+                padding: 12px 16px;
+                font-size: 0.95em;
                 width: 100%;
                 margin-bottom: 10px;
+                white-space: normal; /* Permet le retour à la ligne */
+                word-wrap: break-word;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
             }
 
             .btn-group {
                 flex-direction: column;
+                gap: 10px;
             }
 
             .btn-group .btn {
@@ -728,10 +745,23 @@
                 min-width: auto;
             }
 
+            /* Boutons dans les dépenses */
+            .expense-item .btn {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+
+            /* Boutons dans les settings */
+            .settings-section .btn {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+
             /* Optimiser le champ de fichier */
             input[type="file"] {
-                padding: 12px 8px;
-                font-size: 0.9em;
+                padding: 10px 8px;
+                font-size: 0.85em;
+                word-wrap: break-word;
             }
 
             #preview-container img {
@@ -749,6 +779,7 @@
             .filter-bar input {
                 width: 100%;
                 min-width: auto;
+                max-width: 100%;
             }
 
             /* Optimiser les items de dépense */
@@ -805,6 +836,17 @@
                 width: 100%;
                 display: flex;
                 justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            /* Boutons dans les listes de types/catégories */
+            #types-list .btn,
+            #categories-list .btn {
+                padding: 8px 12px;
+                font-size: 0.85em;
+                min-width: auto;
+                width: auto;
             }
 
             /* Notifications sur mobile */
@@ -814,6 +856,7 @@
                 top: 10px;
                 max-width: none;
                 padding: 15px 20px;
+                font-size: 0.95em;
             }
 
             /* Récurrentes sur mobile */
@@ -828,15 +871,43 @@
                 justify-content: space-between;
             }
 
+            .recurrent-actions .btn {
+                width: auto;
+                min-width: auto;
+            }
+
             /* Copy button plus petit sur mobile */
             .copy-btn {
-                padding: 6px 12px;
-                font-size: 0.85em;
+                padding: 6px 10px;
+                font-size: 0.8em;
+                white-space: nowrap;
             }
 
             /* Améliorer l'accessibilité tactile */
-            button, .tab, select, input[type="file"] {
+            button, .tab, select {
                 min-height: 44px; /* Taille minimale recommandée pour iOS */
+            }
+
+            /* Conteneur de formulaire ne doit pas déborder */
+            form {
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+
+            /* Assurer que tous les éléments respectent la largeur */
+            * {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Fix pour les inputs qui peuvent avoir du padding interne */
+            input[type="text"],
+            input[type="number"],
+            input[type="date"],
+            input[type="month"] {
+                -webkit-box-sizing: border-box;
+                -moz-box-sizing: border-box;
+                box-sizing: border-box;
             }
         }
 
