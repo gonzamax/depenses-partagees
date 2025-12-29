@@ -1376,7 +1376,12 @@
         
         // Charger les types et catégories depuis Supabase
         async function loadTypesFromSupabase() {
-            if (!supabase || !currentRoomId) return;
+            if (!supabase || !currentRoomId) {
+                console.log('⚠️ loadTypesFromSupabase: pas de supabase ou currentRoomId');
+                return;
+            }
+            
+            console.log('📥 Chargement des types depuis Supabase...');
             
             try {
                 const { data, error } = await supabase
@@ -1384,7 +1389,12 @@
                     .select('*')
                     .eq('room_id', currentRoomId);
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Erreur SQL:', error);
+                    throw error;
+                }
+                
+                console.log('Données reçues de Supabase:', data);
                 
                 if (data && data.length > 0) {
                     // Reconstruire CATEGORIES depuis la base
@@ -1392,14 +1402,16 @@
                     data.forEach(row => {
                         CATEGORIES[row.type_name] = row.categories || [];
                     });
-                    console.log('✅ Types et catégories chargés depuis Supabase');
+                    console.log('✅ Types et catégories chargés depuis Supabase:', CATEGORIES);
                 } else {
+                    console.log('ℹ️ Aucun type en base, initialisation avec valeurs par défaut');
                     // Initialiser avec les valeurs par défaut
                     await saveTypesToSupabase();
-                    console.log('✅ Types par défaut initialisés');
+                    console.log('✅ Types par défaut initialisés:', CATEGORIES);
                 }
             } catch (error) {
-                console.error('Erreur chargement types:', error);
+                console.error('❌ Erreur chargement types:', error);
+                console.log('Utilisation des valeurs par défaut de CATEGORIES');
             }
         }
         
@@ -2085,13 +2097,13 @@
         }
 
         function loadSettings() {
+            console.log('⚙️ loadSettings appelée');
+            
             document.getElementById('parent1-name').value = settings.parent1_name;
             document.getElementById('parent2-name').value = settings.parent2_name;
             document.getElementById('currency').value = settings.currency_symbol;
             
-            // Afficher les types et catégories dans l'interface
-            displayTypesList();
-            updateTypeSelectForCategories();
+            console.log('✅ Settings chargés');
         }
 
         // ==========================================
@@ -2099,8 +2111,22 @@
         // ==========================================
 
         function displayTypesList() {
+            console.log('📋 displayTypesList appelée');
+            console.log('CATEGORIES:', CATEGORIES);
+            
             const container = document.getElementById('types-list');
+            if (!container) {
+                console.error('❌ Element types-list introuvable');
+                return;
+            }
+            
             const types = Object.keys(CATEGORIES);
+            console.log('Types trouvés:', types);
+            
+            if (types.length === 0) {
+                container.innerHTML = '<p style="color: #999; font-style: italic;">Aucun type de dépense configuré</p>';
+                return;
+            }
             
             container.innerHTML = types.map(type => `
                 <div style="display: flex; justify-content: space-between; align-items: center; 
@@ -2118,6 +2144,8 @@
                     </div>
                 </div>
             `).join('');
+            
+            console.log('✅ Types affichés');
         }
 
         function addType() {
@@ -2178,18 +2206,32 @@
         // ==========================================
 
         function updateTypeSelectForCategories() {
+            console.log('🔄 updateTypeSelectForCategories appelée');
+            
             const select = document.getElementById('select-type-for-categories');
+            if (!select) {
+                console.error('❌ Element select-type-for-categories introuvable');
+                return;
+            }
+            
             const currentValue = select.value;
+            const types = Object.keys(CATEGORIES);
+            
+            console.log('Types pour le select:', types);
             
             select.innerHTML = '<option value="">Sélectionner un type</option>' +
-                Object.keys(CATEGORIES).map(type => 
+                types.map(type => 
                     `<option value="${type}">${type}</option>`
                 ).join('');
             
             if (currentValue && CATEGORIES[currentValue]) {
                 select.value = currentValue;
                 displayCategoriesList(currentValue);
+            } else {
+                displayCategoriesList('');
             }
+            
+            console.log('✅ Select mis à jour');
         }
 
         function displayCategoriesList(type) {
@@ -2311,18 +2353,27 @@
         // ==========================================
 
         function showMainApp() {
+            console.log('🎯 showMainApp appelée');
+            
             document.getElementById('welcome-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             document.getElementById('room-id-display').textContent = currentRoomId;
             document.getElementById('room-code-display').value = currentRoomId;
             
+            console.log('CATEGORIES au démarrage:', CATEGORIES);
+            
             loadSettings();
             updatePayeurSelects();
             updateAllTypeSelects();  // Mettre à jour tous les selects de types
+            displayTypesList();  // Afficher la liste des types dans les paramètres
+            updateTypeSelectForCategories();  // Préparer le select pour les catégories
+            
             document.getElementById('date').valueAsDate = new Date();
             displayExpenses();
             displayStatistics();
             displayRecurrentExpenses();
+            
+            console.log('✅ showMainApp terminée');
         }
 
         function copyRoomId() {
@@ -2402,6 +2453,11 @@
                 displayStatistics();
             } else if (tabName === 'recurrentes') {
                 displayRecurrentExpenses();
+            } else if (tabName === 'parametres') {
+                // Recharger l'affichage des types et catégories
+                displayTypesList();
+                updateTypeSelectForCategories();
+                loadSettings();
             }
         }
 
