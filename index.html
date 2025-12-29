@@ -2434,6 +2434,55 @@
             });
         }
 
+        // Voir le justificatif d'une dépense récurrente
+        function viewRecurrentAttachment(recurrentId) {
+            const recurrent = recurrentExpenses.find(r => r.id === recurrentId);
+            
+            if (!recurrent || !recurrent.attachment_data) {
+                showNotification('Justificatif non disponible', 'error');
+                return;
+            }
+            
+            // Créer une modal pour afficher le fichier
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '3000';
+            
+            let content = '';
+            
+            if (recurrent.attachment_type.startsWith('image/')) {
+                content = `
+                    <img src="${recurrent.attachment_data}" 
+                         style="max-width: 100%; max-height: 70vh; border-radius: 8px;">
+                `;
+            } else if (recurrent.attachment_type === 'application/pdf') {
+                content = `
+                    <iframe src="${recurrent.attachment_data}" 
+                            style="width: 100%; height: 70vh; border: none; border-radius: 8px;">
+                    </iframe>
+                `;
+            }
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow: auto;">
+                    <h2 style="color: #667eea; margin-bottom: 20px;">📎 ${recurrent.attachment_name}</h2>
+                    ${content}
+                    <button onclick="this.closest('.modal').remove()" class="btn" style="margin-top: 20px; width: 100%;">
+                        Fermer
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Fermer en cliquant en dehors
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
         // Télécharger le justificatif
         function downloadAttachment(expenseId, filename) {
             const expense = expenses.find(e => e.id === expenseId);
@@ -2783,7 +2832,7 @@
                                 <label>📎 Justificatif actuel</label>
                                 <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
                                     <span style="flex: 1;">${rec.attachment_name}</span>
-                                    <button type="button" onclick="viewAttachment(${rec.id})" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
+                                    <button type="button" onclick="viewRecurrentAttachment(${rec.id})" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
                                         👁️ Voir
                                     </button>
                                 </div>
@@ -3741,8 +3790,12 @@
                             🏷️ ${rec.categorie}
                         </div>
                         ${rec.attachment_name ? `
-                            <div style="font-size: 0.85em; color: #667eea; margin-top: 5px;">
-                                📎 Justificatif: ${rec.attachment_name}
+                            <div style="font-size: 0.85em; color: #667eea; margin-top: 5px; display: flex; align-items: center; gap: 10px;">
+                                <span>📎 Justificatif: ${rec.attachment_name}</span>
+                                <button onclick="viewRecurrentAttachment(${rec.id})" class="btn btn-secondary" 
+                                        style="padding: 5px 10px; font-size: 0.8em;">
+                                    👁️ Voir
+                                </button>
                             </div>
                         ` : ''}
                         ${rec.active ? `
