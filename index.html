@@ -338,7 +338,6 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             z-index: 1000;
             animation: slideIn 0.3s;
-            max-width: 400px;
         }
 
         @keyframes slideIn {
@@ -636,6 +635,26 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .config-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #856404;
+        }
+
+        .config-warning h3 {
+            margin-bottom: 10px;
+        }
+
+        .config-warning code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -645,12 +664,12 @@
         <p>Gérez vos dépenses partagées en temps réel.<br>Choisissez comment commencer :</p>
         
         <div class="welcome-options">
-            <div class="welcome-option" id="btn-create-room">
+            <div class="welcome-option" onclick="createNewRoom()">
                 <h3>🆕</h3>
                 <h3>Créer un espace</h3>
                 <p>Commencez un nouvel espace partagé</p>
             </div>
-            <div class="welcome-option" id="btn-join-room">
+            <div class="welcome-option" onclick="showJoinModal()">
                 <h3>🔗</h3>
                 <h3>Rejoindre</h3>
                 <p>Entrez un code pour rejoindre un espace existant</p>
@@ -667,8 +686,8 @@
                 <input type="text" id="room-code-input" placeholder="Exemple: abc-def-ghi" style="text-transform: lowercase;">
             </div>
             <div style="display: flex; gap: 10px;">
-                <button class="btn" id="btn-join-confirm">Rejoindre</button>
-                <button class="btn btn-secondary" id="btn-join-cancel">Annuler</button>
+                <button class="btn" onclick="joinRoom()">Rejoindre</button>
+                <button class="btn btn-secondary" onclick="closeJoinModal()">Annuler</button>
             </div>
         </div>
     </div>
@@ -895,13 +914,21 @@
         let currentRoomId = null;
         let subscriptions = [];
 
-        // Initialiser Supabase
+        // Initialiser Supabase avec gestion d'erreur améliorée
+        console.log('🔧 Initialisation Supabase...');
+        console.log('URL:', SUPABASE_URL);
+        console.log('Key présente:', SUPABASE_ANON_KEY ? 'Oui' : 'Non');
+        
         try {
+            if (typeof window.supabase === 'undefined') {
+                throw new Error('Bibliothèque Supabase non chargée');
+            }
+            
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Supabase initialisé avec succès');
         } catch (error) {
             console.error('❌ Erreur initialisation Supabase:', error);
-            showNotification('Erreur de connexion à la base de données', 'error');
+            alert('Erreur de connexion à la base de données. Vérifiez la console (F12) pour plus de détails.');
         }
 
         // ==========================================
@@ -965,11 +992,12 @@
         }
 
         async function createNewRoom() {
-            console.log('🔵 Début création room...');
+            console.log('🔵 === DÉBUT CRÉATION ROOM ===');
+            console.log('Supabase défini?', supabase !== null);
             
             if (!supabase) {
                 console.error('❌ Supabase non initialisé');
-                showNotification('⚠️ Erreur de connexion. Vérifiez la console (F12)', 'error');
+                showNotification('⚠️ Erreur: Base de données non connectée. Rechargez la page.', 'error');
                 return;
             }
 
@@ -978,7 +1006,7 @@
             console.log('🆔 Room ID généré:', currentRoomId);
             
             try {
-                console.log('📤 Insertion room dans Supabase...');
+                console.log('📤 Tentative d\'insertion dans la table rooms...');
                 
                 // Créer la room dans Supabase
                 const { data, error } = await supabase
@@ -990,31 +1018,45 @@
                     .select();
 
                 if (error) {
-                    console.error('❌ Erreur Supabase:', error);
+                    console.error('❌ Erreur Supabase détaillée:', {
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint,
+                        code: error.code
+                    });
                     throw error;
                 }
 
-                console.log('✅ Room créée:', data);
+                console.log('✅ Room créée avec succès:', data);
 
                 // Initialiser les settings
-                console.log('💾 Sauvegarde settings...');
+                console.log('💾 Sauvegarde des settings...');
                 await saveSettingsToSupabase();
 
                 localStorage.setItem('currentRoomId', currentRoomId);
-                console.log('💾 Room ID sauvegardé en localStorage');
+                console.log('💾 Room ID sauvegardé');
                 
                 await setupRealtimeSubscriptions();
-                console.log('🔔 Subscriptions temps réel configurées');
+                console.log('🔔 Subscriptions configurées');
                 
                 showMainApp();
                 updateSyncStatus('online');
-                showNotification('✅ Espace créé ! Partagez le code pour inviter l\'autre parent.', 'success');
-                console.log('🎉 Création room terminée avec succès');
+                showNotification('✅ Espace créé ! Partagez le code avec l\'autre parent.', 'success');
+                console.log('🎉 === FIN CRÉATION ROOM ===');
             } catch (error) {
-                console.error('❌ Erreur création room:', error);
-                console.error('Détails:', error.message);
+                console.error('❌ === ERREUR CRÉATION ROOM ===');
+                console.error('Message:', error.message);
+                console.error('Stack:', error.stack);
                 updateSyncStatus('offline');
-                showNotification('❌ Erreur: ' + error.message, 'error');
+                
+                let errorMsg = 'Erreur: ' + error.message;
+                if (error.message.includes('does not exist')) {
+                    errorMsg = 'Les tables ne sont pas créées dans Supabase. Consultez le guide d\'installation.';
+                } else if (error.message.includes('permission')) {
+                    errorMsg = 'Problème de permissions. Vérifiez les politiques RLS dans Supabase.';
+                }
+                
+                showNotification('❌ ' + errorMsg, 'error');
             }
         }
 
@@ -1757,36 +1799,9 @@
         // ==========================================
 
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Application démarrée');
-            
-            // Attacher les événements aux boutons de bienvenue
-            const btnCreateRoom = document.getElementById('btn-create-room');
-            const btnJoinRoom = document.getElementById('btn-join-room');
-            const btnJoinConfirm = document.getElementById('btn-join-confirm');
-            const btnJoinCancel = document.getElementById('btn-join-cancel');
-            
-            if (btnCreateRoom) {
-                btnCreateRoom.addEventListener('click', createNewRoom);
-                console.log('✅ Bouton créer attaché');
-            }
-            
-            if (btnJoinRoom) {
-                btnJoinRoom.addEventListener('click', showJoinModal);
-                console.log('✅ Bouton rejoindre attaché');
-            }
-            
-            if (btnJoinConfirm) {
-                btnJoinConfirm.addEventListener('click', joinRoom);
-            }
-            
-            if (btnJoinCancel) {
-                btnJoinCancel.addEventListener('click', closeJoinModal);
-            }
-            
             const savedRoomId = localStorage.getItem('currentRoomId');
             
             if (savedRoomId && supabase) {
-                console.log('🔄 Reconnexion à la room:', savedRoomId);
                 currentRoomId = savedRoomId;
                 
                 try {
@@ -1798,21 +1813,18 @@
                         .single();
 
                     if (data) {
-                        console.log('✅ Room trouvée, chargement des données...');
                         await loadFromSupabase();
                         await setupRealtimeSubscriptions();
                         showMainApp();
                         updateSyncStatus('online');
                     } else {
-                        console.log('⚠️ Room n\'existe plus');
+                        // Room n'existe plus
                         localStorage.removeItem('currentRoomId');
                     }
                 } catch (error) {
-                    console.error('❌ Erreur reconnexion:', error);
+                    console.error('Erreur reconnexion:', error);
                     localStorage.removeItem('currentRoomId');
                 }
-            } else {
-                console.log('ℹ️ Aucune room sauvegardée, affichage écran bienvenue');
             }
         });
     </script>
