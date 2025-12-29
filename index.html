@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>💰 Gestion des Dépenses Partagées</title>
     
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Client - Version spécifique stable -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
     
     <style>
         * {
@@ -914,21 +914,31 @@
         let currentRoomId = null;
         let subscriptions = [];
 
-        // Initialiser Supabase avec gestion d'erreur améliorée
-        console.log('🔧 Initialisation Supabase...');
-        console.log('URL:', SUPABASE_URL);
-        console.log('Key présente:', SUPABASE_ANON_KEY ? 'Oui' : 'Non');
-        
-        try {
+        // Attendre que le DOM et Supabase soient chargés
+        function initSupabase() {
+            console.log('🔧 Initialisation Supabase...');
+            console.log('URL:', SUPABASE_URL);
+            console.log('Key présente:', SUPABASE_ANON_KEY ? 'Oui (longueur: ' + SUPABASE_ANON_KEY.length + ')' : 'Non');
+            
+            // Vérifier que la bibliothèque est chargée
             if (typeof window.supabase === 'undefined') {
+                console.error('❌ window.supabase n\'existe pas');
+                console.log('Objets disponibles:', Object.keys(window).filter(k => k.toLowerCase().includes('supa')));
                 throw new Error('Bibliothèque Supabase non chargée');
             }
             
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Supabase initialisé avec succès');
-        } catch (error) {
-            console.error('❌ Erreur initialisation Supabase:', error);
-            alert('Erreur de connexion à la base de données. Vérifiez la console (F12) pour plus de détails.');
+            console.log('✅ Bibliothèque Supabase détectée');
+            console.log('Type:', typeof window.supabase);
+            
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Client Supabase créé avec succès');
+                console.log('Client:', supabase);
+                return true;
+            } catch (error) {
+                console.error('❌ Erreur création client:', error);
+                throw error;
+            }
         }
 
         // ==========================================
@@ -1799,6 +1809,17 @@
         // ==========================================
 
         document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 === APPLICATION DÉMARRÉE ===');
+            
+            // Initialiser Supabase
+            try {
+                initSupabase();
+            } catch (error) {
+                console.error('❌ Impossible d\'initialiser Supabase:', error);
+                alert('❌ Erreur de chargement de la base de données.\n\nLa bibliothèque Supabase ne s\'est pas chargée correctement.\nVérifiez la console (F12).');
+                return;
+            }
+            
             const savedRoomId = localStorage.getItem('currentRoomId');
             
             if (savedRoomId && supabase) {
