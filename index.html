@@ -2214,6 +2214,136 @@
             }
         }
 
+        async function editExpense(id) {
+            const expense = expenses.find(e => e.id === id);
+            if (!expense) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '3000';
+            
+            // Construire les options de catégories pour le type sélectionné
+            const getCategoriesForType = (type) => {
+                return CATEGORIES[type] || [];
+            };
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+                    <h2 style="color: #667eea; margin-bottom: 20px;">✏️ Modifier la dépense</h2>
+                    <form id="edit-expense-form">
+                        <div class="form-group">
+                            <label for="edit-date">Date</label>
+                            <input type="date" id="edit-date" value="${expense.date}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-description">Description</label>
+                            <textarea id="edit-description" required>${expense.description}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-amount">Montant (${settings.currency_symbol})</label>
+                            <input type="number" id="edit-amount" step="0.01" value="${expense.amount}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-type">Type de dépense</label>
+                            <select id="edit-type" required>
+                                ${Object.keys(CATEGORIES).map(t => 
+                                    `<option value="${t}" ${t === expense.type ? 'selected' : ''}>${t}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-category">Catégorie</label>
+                            <select id="edit-category" required>
+                                ${getCategoriesForType(expense.type).map(c => 
+                                    `<option value="${c}" ${c === expense.category ? 'selected' : ''}>${c}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-payer">Qui a payé ?</label>
+                            <select id="edit-payer" required>
+                                <option value="${settings.parent1_name}" ${expense.payer === settings.parent1_name ? 'selected' : ''}>${settings.parent1_name}</option>
+                                <option value="${settings.parent2_name}" ${expense.payer === settings.parent2_name ? 'selected' : ''}>${settings.parent2_name}</option>
+                                <option value="Commun" ${expense.payer === 'Commun' ? 'selected' : ''}>Commun</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-payment-method">Moyen de paiement</label>
+                            <select id="edit-payment-method" required>
+                                <option value="CB" ${expense.payment_method === 'CB' ? 'selected' : ''}>Carte bancaire</option>
+                                <option value="Espèces" ${expense.payment_method === 'Espèces' ? 'selected' : ''}>Espèces</option>
+                                <option value="Chèque" ${expense.payment_method === 'Chèque' ? 'selected' : ''}>Chèque</option>
+                                <option value="Virement" ${expense.payment_method === 'Virement' ? 'selected' : ''}>Virement</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" onclick="this.closest('.modal').remove()" class="btn btn-secondary" style="flex: 1;">
+                                Annuler
+                            </button>
+                            <button type="submit" class="btn" style="flex: 1;">
+                                💾 Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Gérer le changement de type pour mettre à jour les catégories
+            const typeSelect = modal.querySelector('#edit-type');
+            const categorySelect = modal.querySelector('#edit-category');
+            
+            typeSelect.addEventListener('change', () => {
+                const selectedType = typeSelect.value;
+                const categories = getCategoriesForType(selectedType);
+                categorySelect.innerHTML = categories.map(c => 
+                    `<option value="${c}">${c}</option>`
+                ).join('');
+            });
+            
+            // Gérer la soumission du formulaire
+            const form = modal.querySelector('#edit-expense-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const updatedExpense = {
+                    date: modal.querySelector('#edit-date').value,
+                    description: modal.querySelector('#edit-description').value,
+                    amount: parseFloat(modal.querySelector('#edit-amount').value),
+                    type: modal.querySelector('#edit-type').value,
+                    category: modal.querySelector('#edit-category').value,
+                    payer: modal.querySelector('#edit-payer').value,
+                    payment_method: modal.querySelector('#edit-payment-method').value
+                };
+                
+                try {
+                    const { error } = await supabase
+                        .from('expenses')
+                        .update(updatedExpense)
+                        .eq('id', id);
+                    
+                    if (error) throw error;
+                    
+                    showNotification('Dépense modifiée avec succès !', 'success');
+                    modal.remove();
+                    await loadFromSupabase();
+                    displayExpenses();
+                    displayStatistics();
+                } catch (error) {
+                    console.error('Erreur modification:', error);
+                    showNotification('Erreur lors de la modification', 'error');
+                }
+            });
+            
+            // Fermer en cliquant en dehors
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
         async function deleteExpense(id) {
             const confirmed = await showConfirm(
                 'Supprimer la dépense',
@@ -2563,6 +2693,195 @@
             }
         }
 
+        async function editRecurrent(id) {
+            const rec = recurrentExpenses.find(r => r.id === id);
+            if (!rec) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '3000';
+            
+            // Construire les options de catégories pour le type sélectionné
+            const getCategoriesForType = (type) => {
+                return CATEGORIES[type] || [];
+            };
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+                    <h2 style="color: #667eea; margin-bottom: 20px;">✏️ Modifier la dépense récurrente</h2>
+                    <form id="edit-recurrent-form">
+                        <div class="form-group">
+                            <label for="edit-rec-description">Description</label>
+                            <textarea id="edit-rec-description" required>${rec.description}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-rec-amount">Montant (${settings.currency_symbol})</label>
+                            <input type="number" id="edit-rec-amount" step="0.01" value="${rec.amount}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-rec-type">Type de dépense</label>
+                            <select id="edit-rec-type" required>
+                                ${Object.keys(CATEGORIES).map(t => 
+                                    `<option value="${t}" ${t === rec.type ? 'selected' : ''}>${t}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-rec-category">Catégorie</label>
+                            <select id="edit-rec-category" required>
+                                ${getCategoriesForType(rec.type).map(c => 
+                                    `<option value="${c}" ${c === rec.category ? 'selected' : ''}>${c}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-rec-payer">Qui paie ?</label>
+                            <select id="edit-rec-payer" required>
+                                <option value="${settings.parent1_name}" ${rec.payer === settings.parent1_name ? 'selected' : ''}>${settings.parent1_name}</option>
+                                <option value="${settings.parent2_name}" ${rec.payer === settings.parent2_name ? 'selected' : ''}>${settings.parent2_name}</option>
+                                <option value="Commun" ${rec.payer === 'Commun' ? 'selected' : ''}>Commun</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-rec-frequency">Fréquence</label>
+                            <select id="edit-rec-frequency" required onchange="updateEditRecurrenceFields()">
+                                <option value="Quotidien" ${rec.frequency === 'Quotidien' ? 'selected' : ''}>Quotidien</option>
+                                <option value="Hebdomadaire" ${rec.frequency === 'Hebdomadaire' ? 'selected' : ''}>Hebdomadaire</option>
+                                <option value="Mensuel" ${rec.frequency === 'Mensuel' ? 'selected' : ''}>Mensuel</option>
+                                <option value="Annuel" ${rec.frequency === 'Annuel' ? 'selected' : ''}>Annuel</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="edit-rec-day-group" style="display: ${rec.frequency === 'Hebdomadaire' ? 'none' : 'block'};">
+                            <label for="edit-rec-day">Jour d'exécution</label>
+                            <input type="number" id="edit-rec-day" min="1" max="31" value="${rec.day_of_month || 1}">
+                            <small>Pour Mensuel: jour du mois (1-31). Pour Annuel: jour du mois.</small>
+                        </div>
+                        <div class="form-group" id="edit-rec-weekday-group" style="display: ${rec.frequency === 'Hebdomadaire' ? 'block' : 'none'};">
+                            <label for="edit-rec-weekday">Jour de la semaine</label>
+                            <select id="edit-rec-weekday">
+                                <option value="1" ${rec.day_of_week == 1 ? 'selected' : ''}>Lundi</option>
+                                <option value="2" ${rec.day_of_week == 2 ? 'selected' : ''}>Mardi</option>
+                                <option value="3" ${rec.day_of_week == 3 ? 'selected' : ''}>Mercredi</option>
+                                <option value="4" ${rec.day_of_week == 4 ? 'selected' : ''}>Jeudi</option>
+                                <option value="5" ${rec.day_of_week == 5 ? 'selected' : ''}>Vendredi</option>
+                                <option value="6" ${rec.day_of_week == 6 ? 'selected' : ''}>Samedi</option>
+                                <option value="0" ${rec.day_of_week == 0 ? 'selected' : ''}>Dimanche</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-rec-start-date">Date de début</label>
+                            <input type="date" id="edit-rec-start-date" value="${rec.start_date}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="edit-rec-has-end-date" ${rec.end_date ? 'checked' : ''} onchange="toggleEditEndDate()">
+                                Définir une date de fin
+                            </label>
+                        </div>
+                        <div class="form-group" id="edit-rec-end-date-group" style="display: ${rec.end_date ? 'block' : 'none'};">
+                            <label for="edit-rec-end-date">Date de fin</label>
+                            <input type="date" id="edit-rec-end-date" value="${rec.end_date || ''}">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" onclick="this.closest('.modal').remove()" class="btn btn-secondary" style="flex: 1;">
+                                Annuler
+                            </button>
+                            <button type="submit" class="btn" style="flex: 1;">
+                                💾 Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Fonctions pour gérer l'affichage des champs selon la fréquence
+            window.updateEditRecurrenceFields = function() {
+                const frequency = modal.querySelector('#edit-rec-frequency').value;
+                const dayGroup = modal.querySelector('#edit-rec-day-group');
+                const weekdayGroup = modal.querySelector('#edit-rec-weekday-group');
+                
+                if (frequency === 'Hebdomadaire') {
+                    dayGroup.style.display = 'none';
+                    weekdayGroup.style.display = 'block';
+                } else {
+                    dayGroup.style.display = 'block';
+                    weekdayGroup.style.display = 'none';
+                }
+            };
+            
+            window.toggleEditEndDate = function() {
+                const hasEndDate = modal.querySelector('#edit-rec-has-end-date').checked;
+                modal.querySelector('#edit-rec-end-date-group').style.display = hasEndDate ? 'block' : 'none';
+            };
+            
+            // Gérer le changement de type pour mettre à jour les catégories
+            const typeSelect = modal.querySelector('#edit-rec-type');
+            const categorySelect = modal.querySelector('#edit-rec-category');
+            
+            typeSelect.addEventListener('change', () => {
+                const selectedType = typeSelect.value;
+                const categories = getCategoriesForType(selectedType);
+                categorySelect.innerHTML = categories.map(c => 
+                    `<option value="${c}">${c}</option>`
+                ).join('');
+            });
+            
+            // Gérer la soumission du formulaire
+            const form = modal.querySelector('#edit-recurrent-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const frequency = modal.querySelector('#edit-rec-frequency').value;
+                const hasEndDate = modal.querySelector('#edit-rec-has-end-date').checked;
+                
+                const updatedRecurrent = {
+                    description: modal.querySelector('#edit-rec-description').value,
+                    amount: parseFloat(modal.querySelector('#edit-rec-amount').value),
+                    type: modal.querySelector('#edit-rec-type').value,
+                    category: modal.querySelector('#edit-rec-category').value,
+                    payer: modal.querySelector('#edit-rec-payer').value,
+                    frequency: frequency,
+                    start_date: modal.querySelector('#edit-rec-start-date').value,
+                    end_date: hasEndDate ? modal.querySelector('#edit-rec-end-date').value : null
+                };
+                
+                // Ajouter le jour selon la fréquence
+                if (frequency === 'Hebdomadaire') {
+                    updatedRecurrent.day_of_week = parseInt(modal.querySelector('#edit-rec-weekday').value);
+                    updatedRecurrent.day_of_month = null;
+                } else {
+                    updatedRecurrent.day_of_month = parseInt(modal.querySelector('#edit-rec-day').value);
+                    updatedRecurrent.day_of_week = null;
+                }
+                
+                try {
+                    const { error } = await supabase
+                        .from('recurrent_expenses')
+                        .update(updatedRecurrent)
+                        .eq('id', id);
+                    
+                    if (error) throw error;
+                    
+                    showNotification('Dépense récurrente modifiée avec succès !', 'success');
+                    modal.remove();
+                    await loadFromSupabase();
+                    displayRecurrentExpenses();
+                } catch (error) {
+                    console.error('Erreur modification:', error);
+                    showNotification('Erreur lors de la modification', 'error');
+                }
+            });
+            
+            // Fermer en cliquant en dehors
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
         async function deleteRecurrent(id) {
             const confirmed = await showConfirm(
                 'Supprimer la dépense récurrente',
@@ -2651,6 +2970,8 @@
                         <span style="font-size: 0.85em; color: #666; padding: 5px 10px; background: #f0f0f0; border-radius: 6px;">
                             ${CATEGORIES[type].length} catégorie(s)
                         </span>
+                        <button onclick="editType('${type}')" class="btn btn-warning" 
+                                style="padding: 5px 12px; font-size: 0.85em;">✏️</button>
                         ${types.length > 1 ? `
                             <button onclick="deleteType('${type}')" class="btn btn-danger" 
                                     style="padding: 5px 12px; font-size: 0.85em;">🗑️</button>
@@ -2688,6 +3009,106 @@
             }).catch(error => {
                 console.error('Erreur sauvegarde type:', error);
                 showNotification('Erreur lors de la sauvegarde', 'error');
+            });
+        }
+
+        function editType(oldType) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '3000';
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <h2 style="color: #667eea; margin-bottom: 20px;">✏️ Modifier le type</h2>
+                    <form id="edit-type-form">
+                        <div class="form-group">
+                            <label for="edit-type-name">Nom du type</label>
+                            <input type="text" id="edit-type-name" value="${oldType}" required>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" onclick="this.closest('.modal').remove()" class="btn btn-secondary" style="flex: 1;">
+                                Annuler
+                            </button>
+                            <button type="submit" class="btn" style="flex: 1;">
+                                💾 Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const form = modal.querySelector('#edit-type-form');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const newType = modal.querySelector('#edit-type-name').value.trim();
+                
+                if (!newType) {
+                    showNotification('Veuillez entrer un nom de type', 'error');
+                    return;
+                }
+                
+                if (newType === oldType) {
+                    modal.remove();
+                    return;
+                }
+                
+                if (CATEGORIES[newType]) {
+                    showNotification('Ce type existe déjà', 'error');
+                    return;
+                }
+                
+                // Renommer le type
+                CATEGORIES[newType] = CATEGORIES[oldType];
+                delete CATEGORIES[oldType];
+                
+                // Mettre à jour toutes les dépenses et dépenses récurrentes avec l'ancien type
+                saveTypesToSupabase().then(() => {
+                    // Mettre à jour les dépenses
+                    const expensesToUpdate = expenses.filter(e => e.type === oldType);
+                    const recurrentsToUpdate = recurrentExpenses.filter(r => r.type === oldType);
+                    
+                    const updates = [];
+                    
+                    expensesToUpdate.forEach(expense => {
+                        updates.push(
+                            supabase
+                                .from('expenses')
+                                .update({ type: newType })
+                                .eq('id', expense.id)
+                        );
+                    });
+                    
+                    recurrentsToUpdate.forEach(rec => {
+                        updates.push(
+                            supabase
+                                .from('recurrent_expenses')
+                                .update({ type: newType })
+                                .eq('id', rec.id)
+                        );
+                    });
+                    
+                    Promise.all(updates).then(() => {
+                        loadFromSupabase().then(() => {
+                            displayTypesList();
+                            updateTypeSelectForCategories();
+                            updateAllTypeSelects();
+                            showNotification(`Type modifié de "${oldType}" à "${newType}"`, 'success');
+                            modal.remove();
+                        });
+                    });
+                }).catch(error => {
+                    console.error('Erreur modification type:', error);
+                    showNotification('Erreur lors de la modification', 'error');
+                });
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
             });
         }
 
@@ -2776,8 +3197,12 @@
                             padding: 10px; background: white; border-radius: 8px; margin-bottom: 8px;
                             border: 2px solid #e0e0e0;">
                     <span style="color: #333;">🏷️ ${cat}</span>
-                    <button onclick="deleteCategory('${type}', ${index})" class="btn btn-danger" 
-                            style="padding: 5px 12px; font-size: 0.85em;">🗑️</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="editCategory('${type}', ${index}, '${cat}')" class="btn btn-warning" 
+                                style="padding: 5px 12px; font-size: 0.85em;">✏️</button>
+                        <button onclick="deleteCategory('${type}', ${index})" class="btn btn-danger" 
+                                style="padding: 5px 12px; font-size: 0.85em;">🗑️</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -2813,6 +3238,103 @@
             }).catch(error => {
                 console.error('Erreur sauvegarde catégorie:', error);
                 showNotification('Erreur lors de la sauvegarde', 'error');
+            });
+        }
+
+        function editCategory(type, index, oldCategory) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '3000';
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <h2 style="color: #667eea; margin-bottom: 20px;">✏️ Modifier la catégorie</h2>
+                    <form id="edit-category-form">
+                        <div class="form-group">
+                            <label for="edit-category-name">Nom de la catégorie</label>
+                            <input type="text" id="edit-category-name" value="${oldCategory}" required>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" onclick="this.closest('.modal').remove()" class="btn btn-secondary" style="flex: 1;">
+                                Annuler
+                            </button>
+                            <button type="submit" class="btn" style="flex: 1;">
+                                💾 Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const form = modal.querySelector('#edit-category-form');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const newCategory = modal.querySelector('#edit-category-name').value.trim();
+                
+                if (!newCategory) {
+                    showNotification('Veuillez entrer un nom de catégorie', 'error');
+                    return;
+                }
+                
+                if (newCategory === oldCategory) {
+                    modal.remove();
+                    return;
+                }
+                
+                if (CATEGORIES[type].includes(newCategory)) {
+                    showNotification('Cette catégorie existe déjà', 'error');
+                    return;
+                }
+                
+                // Modifier la catégorie
+                CATEGORIES[type][index] = newCategory;
+                
+                // Mettre à jour toutes les dépenses et dépenses récurrentes avec l'ancienne catégorie
+                saveTypesToSupabase().then(() => {
+                    const expensesToUpdate = expenses.filter(e => e.type === type && e.category === oldCategory);
+                    const recurrentsToUpdate = recurrentExpenses.filter(r => r.type === type && r.category === oldCategory);
+                    
+                    const updates = [];
+                    
+                    expensesToUpdate.forEach(expense => {
+                        updates.push(
+                            supabase
+                                .from('expenses')
+                                .update({ category: newCategory })
+                                .eq('id', expense.id)
+                        );
+                    });
+                    
+                    recurrentsToUpdate.forEach(rec => {
+                        updates.push(
+                            supabase
+                                .from('recurrent_expenses')
+                                .update({ category: newCategory })
+                                .eq('id', rec.id)
+                        );
+                    });
+                    
+                    Promise.all(updates).then(() => {
+                        loadFromSupabase().then(() => {
+                            displayCategoriesList(type);
+                            updateAllTypeSelects();
+                            showNotification(`Catégorie modifiée de "${oldCategory}" à "${newCategory}"`, 'success');
+                            modal.remove();
+                        });
+                    });
+                }).catch(error => {
+                    console.error('Erreur modification catégorie:', error);
+                    showNotification('Erreur lors de la modification', 'error');
+                });
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
             });
         }
 
@@ -3062,8 +3584,12 @@
                             </button>
                         </div>
                     ` : ''}
-                    <button onclick="deleteExpense(${expense.id})" class="btn btn-danger" 
-                            style="margin-top: 15px; padding: 10px 20px; font-size: 0.9em;">🗑️ Supprimer</button>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button onclick="editExpense(${expense.id})" class="btn btn-warning" 
+                                style="flex: 1; padding: 10px 20px; font-size: 0.9em;">✏️ Modifier</button>
+                        <button onclick="deleteExpense(${expense.id})" class="btn btn-danger" 
+                                style="flex: 1; padding: 10px 20px; font-size: 0.9em;">🗑️ Supprimer</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -3217,6 +3743,7 @@
                              onclick="toggleRecurrent(${rec.id})" 
                              title="${rec.active ? 'Désactiver' : 'Activer'}">
                         </div>
+                        <button onclick="editRecurrent(${rec.id})" class="btn btn-warning" style="padding: 10px 20px;">✏️</button>
                         <button onclick="deleteRecurrent(${rec.id})" class="btn btn-danger" style="padding: 10px 20px;">🗑️</button>
                     </div>
                 </div>
