@@ -658,6 +658,21 @@
                 gap: 8px;
                 margin-bottom: 20px;
             }
+            
+            /* Réduire les boutons Voir des justificatifs sur mobile */
+            .btn-view-attachment {
+                padding: 4px 8px !important;
+                font-size: 0.75em !important;
+                min-width: auto !important;
+            }
+            
+            .btn-view-attachment-text {
+                display: none;
+            }
+            
+            .btn-view-attachment::after {
+                content: "👁️";
+            }
 
             .tab {
                 min-width: auto;
@@ -2276,8 +2291,8 @@
                                 <label>📎 Justificatif actuel</label>
                                 <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
                                     <span style="flex: 1;">${expense.attachment_name}</span>
-                                    <button type="button" onclick="viewAttachment(${expense.id})" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
-                                        👁️ Voir
+                                    <button type="button" onclick="viewAttachment(${expense.id})" class="btn btn-secondary btn-view-attachment" style="padding: 8px 15px; font-size: 0.9em;">
+                                        <span class="btn-view-attachment-text">👁️ Voir</span>
                                     </button>
                                 </div>
                                 <small style="color: #666; display: block; margin-top: 10px;">
@@ -2832,8 +2847,8 @@
                                 <label>📎 Justificatif actuel</label>
                                 <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
                                     <span style="flex: 1;">${rec.attachment_name}</span>
-                                    <button type="button" onclick="viewRecurrentAttachment(${rec.id})" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
-                                        👁️ Voir
+                                    <button type="button" onclick="viewRecurrentAttachment(${rec.id})" class="btn btn-secondary btn-view-attachment" style="padding: 8px 15px; font-size: 0.9em;">
+                                        <span class="btn-view-attachment-text">👁️ Voir</span>
                                     </button>
                                 </div>
                                 <small style="color: #666; display: block; margin-top: 10px;">
@@ -3639,9 +3654,9 @@
                     ${expense.attachment_name ? `
                         <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                             <strong>📎 Justificatif:</strong> ${expense.attachment_name}
-                            <button onclick="viewAttachment(${expense.id})" class="btn btn-secondary" 
+                            <button onclick="viewAttachment(${expense.id})" class="btn btn-secondary btn-view-attachment" 
                                     style="margin-left: 10px; padding: 8px 15px; font-size: 0.9em;">
-                                👁️ Voir
+                                <span class="btn-view-attachment-text">👁️ Voir</span>
                             </button>
                             <button onclick="downloadAttachment(${expense.id}, '${expense.attachment_name}')" 
                                     class="btn btn-secondary" 
@@ -3792,9 +3807,9 @@
                         ${rec.attachment_name ? `
                             <div style="font-size: 0.85em; color: #667eea; margin-top: 5px; display: flex; align-items: center; gap: 10px;">
                                 <span>📎 Justificatif: ${rec.attachment_name}</span>
-                                <button onclick="viewRecurrentAttachment(${rec.id})" class="btn btn-secondary" 
+                                <button onclick="viewRecurrentAttachment(${rec.id})" class="btn btn-secondary btn-view-attachment" 
                                         style="padding: 5px 10px; font-size: 0.8em;">
-                                    👁️ Voir
+                                    <span class="btn-view-attachment-text">👁️ Voir</span>
                                 </button>
                             </div>
                         ` : ''}
