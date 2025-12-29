@@ -2754,16 +2754,13 @@
                         <div class="form-group">
                             <label for="edit-rec-frequency">Fréquence</label>
                             <select id="edit-rec-frequency" required onchange="updateEditRecurrenceFields()">
-                                <option value="Quotidien" ${rec.frequency === 'Quotidien' ? 'selected' : ''}>Quotidien</option>
                                 <option value="Hebdomadaire" ${rec.frequency === 'Hebdomadaire' ? 'selected' : ''}>Hebdomadaire</option>
                                 <option value="Mensuel" ${rec.frequency === 'Mensuel' ? 'selected' : ''}>Mensuel</option>
-                                <option value="Annuel" ${rec.frequency === 'Annuel' ? 'selected' : ''}>Annuel</option>
                             </select>
                         </div>
                         <div class="form-group" id="edit-rec-day-group" style="display: ${rec.frequency === 'Hebdomadaire' ? 'none' : 'block'};">
-                            <label for="edit-rec-day">Jour d'exécution</label>
+                            <label for="edit-rec-day">Jour du mois</label>
                             <input type="number" id="edit-rec-day" min="1" max="31" value="${rec.day_of_month || 1}">
-                            <small>Pour Mensuel: jour du mois (1-31). Pour Annuel: jour du mois.</small>
                         </div>
                         <div class="form-group" id="edit-rec-weekday-group" style="display: ${rec.frequency === 'Hebdomadaire' ? 'block' : 'none'};">
                             <label for="edit-rec-weekday">Jour de la semaine</label>
@@ -2778,18 +2775,31 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="edit-rec-start-date">Date de début</label>
-                            <input type="date" id="edit-rec-start-date" value="${rec.start_date}" required>
+                            <label for="edit-rec-notes">Notes (optionnel)</label>
+                            <textarea id="edit-rec-notes">${rec.notes || ''}</textarea>
                         </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="edit-rec-has-end-date" ${rec.end_date ? 'checked' : ''} onchange="toggleEditEndDate()">
-                                Définir une date de fin
-                            </label>
-                        </div>
-                        <div class="form-group" id="edit-rec-end-date-group" style="display: ${rec.end_date ? 'block' : 'none'};">
-                            <label for="edit-rec-end-date">Date de fin</label>
-                            <input type="date" id="edit-rec-end-date" value="${rec.end_date || ''}">
+                        ${rec.attachment_name ? `
+                            <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                <label>📎 Justificatif actuel</label>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                                    <span style="flex: 1;">${rec.attachment_name}</span>
+                                    <button type="button" onclick="viewAttachment(${rec.id})" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
+                                        👁️ Voir
+                                    </button>
+                                </div>
+                                <small style="color: #666; display: block; margin-top: 10px;">
+                                    Note: La modification du justificatif n'est pas encore disponible.
+                                </small>
+                            </div>
+                        ` : ''}
+                        <div class="form-group" style="background: #e8f5e9; padding: 15px; border-radius: 8px;">
+                            <label style="color: #2e7d32; margin-bottom: 5px;">ℹ️ Information</label>
+                            <p style="margin: 0; color: #1b5e20; font-size: 0.9em;">
+                                ${rec.next_execution ? 
+                                    `Prochaine exécution prévue : ${new Date(rec.next_execution).toLocaleDateString('fr-FR')}` : 
+                                    'Prochaine exécution sera calculée automatiquement'
+                                }
+                            </p>
                         </div>
                         <div style="display: flex; gap: 10px; margin-top: 20px;">
                             <button type="button" onclick="this.closest('.modal').remove()" class="btn btn-secondary" style="flex: 1;">
@@ -2820,11 +2830,6 @@
                 }
             };
             
-            window.toggleEditEndDate = function() {
-                const hasEndDate = modal.querySelector('#edit-rec-has-end-date').checked;
-                modal.querySelector('#edit-rec-end-date-group').style.display = hasEndDate ? 'block' : 'none';
-            };
-            
             // Gérer le changement de type pour mettre à jour les catégories
             const typeSelect = modal.querySelector('#edit-rec-type');
             const categorySelect = modal.querySelector('#edit-rec-categorie');
@@ -2843,7 +2848,17 @@
                 e.preventDefault();
                 
                 const frequency = modal.querySelector('#edit-rec-frequency').value;
-                const hasEndDate = modal.querySelector('#edit-rec-has-end-date').checked;
+                let dayOfMonth = null;
+                let dayOfWeek = null;
+                let nextExecution = null;
+
+                if (frequency === 'Hebdomadaire') {
+                    dayOfWeek = parseInt(modal.querySelector('#edit-rec-weekday').value);
+                    nextExecution = calculateNextWeeklyExecution(dayOfWeek);
+                } else {
+                    dayOfMonth = parseInt(modal.querySelector('#edit-rec-day').value);
+                    nextExecution = calculateNextExecution(dayOfMonth);
+                }
                 
                 const updatedRecurrent = {
                     description: modal.querySelector('#edit-rec-description').value,
@@ -2852,18 +2867,11 @@
                     categorie: modal.querySelector('#edit-rec-categorie').value,
                     payeur: modal.querySelector('#edit-rec-payeur').value,
                     frequency: frequency,
-                    start_date: modal.querySelector('#edit-rec-start-date').value,
-                    end_date: hasEndDate ? modal.querySelector('#edit-rec-end-date').value : null
+                    day_of_month: dayOfMonth,
+                    day_of_week: dayOfWeek,
+                    notes: modal.querySelector('#edit-rec-notes').value,
+                    next_execution: nextExecution
                 };
-                
-                // Ajouter le jour selon la fréquence
-                if (frequency === 'Hebdomadaire') {
-                    updatedRecurrent.day_of_week = parseInt(modal.querySelector('#edit-rec-weekday').value);
-                    updatedRecurrent.day_of_month = null;
-                } else {
-                    updatedRecurrent.day_of_month = parseInt(modal.querySelector('#edit-rec-day').value);
-                    updatedRecurrent.day_of_week = null;
-                }
                 
                 try {
                     const { error } = await supabase
