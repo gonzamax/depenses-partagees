@@ -593,57 +593,61 @@
             }
 
             .header {
-                padding: 20px 15px;
+                padding: 15px 12px;
             }
 
             .header h1 {
-                font-size: 1.5em;
+                font-size: 1.3em;
+                margin-bottom: 5px;
             }
 
             .header p {
-                font-size: 0.95em;
+                font-size: 0.85em;
+                display: none; /* Cacher le sous-titre sur mobile */
             }
 
             .share-info {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 10px;
+                gap: 8px;
+                margin-top: 10px;
+                padding: 10px;
             }
 
             .share-info > div {
                 width: 100%;
                 text-align: center;
+                font-size: 0.85em;
             }
 
             .room-id {
-                font-size: 1em !important;
+                font-size: 0.9em !important;
                 word-break: break-all;
             }
 
             .tabs {
-                flex-direction: row;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-                -ms-overflow-style: none;
-                gap: 5px;
-                padding-bottom: 5px;
-            }
-
-            .tabs::-webkit-scrollbar {
-                display: none;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 20px;
             }
 
             .tab {
-                min-width: 70px;
-                padding: 10px 12px;
-                font-size: 0.8em;
-                white-space: nowrap;
-                flex-shrink: 0;
+                min-width: auto;
+                width: 100%;
+                padding: 10px 8px;
+                font-size: 0.75em;
+                white-space: normal;
+                line-height: 1.2;
+                text-align: center;
+                min-height: 50px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .tab-content {
-                padding: 20px 15px;
+                padding: 15px 12px;
             }
 
             .stats-grid {
@@ -884,7 +888,7 @@
             }
 
             /* Améliorer l'accessibilité tactile */
-            button, .tab, select {
+            button, select {
                 min-height: 44px; /* Taille minimale recommandée pour iOS */
             }
 
@@ -908,6 +912,15 @@
                 -webkit-box-sizing: border-box;
                 -moz-box-sizing: border-box;
                 box-sizing: border-box;
+            }
+
+            /* Ajuster le bouton FAB pour qu'il ne gêne pas */
+            .fab-button {
+                bottom: 15px;
+                right: 15px;
+                width: 56px;
+                height: 56px;
+                font-size: 1.8em;
             }
         }
 
