@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>💰 Gestion des Dépenses Partagées</title>
     
-    <!-- Supabase Client - Version spécifique stable -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    <!-- Le script Supabase sera chargé dynamiquement -->
     
     <style>
         * {
@@ -765,6 +764,16 @@
                     <textarea id="notes" placeholder="Ajouter des informations complémentaires..."></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="attachment">📎 Justificatif (optionnel)</label>
+                    <input type="file" id="attachment" accept="image/*,.pdf" capture="environment" style="padding: 10px;">
+                    <p style="font-size: 0.85em; color: #666; margin-top: 8px;">
+                        📷 Sur mobile : prenez une photo ou importez un fichier<br>
+                        💻 Sur ordinateur : importez une image ou un PDF
+                    </p>
+                    <div id="preview-container" style="margin-top: 10px;"></div>
+                </div>
+
                 <button type="submit" class="btn" id="submit-btn">💾 Enregistrer la dépense</button>
             </form>
         </div>
@@ -885,6 +894,36 @@
             </div>
 
             <div class="settings-section">
+                <h3>📂 Types de dépenses</h3>
+                <p style="margin-bottom: 10px; font-size: 0.9em; color: #666;">
+                    Gérez les types de dépenses disponibles dans l'application
+                </p>
+                <div id="types-list" style="margin-bottom: 15px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-type" placeholder="Nouveau type (ex: Santé)" style="flex: 1;">
+                    <button class="btn btn-success" style="padding: 12px 20px;" id="btn-add-type">➕ Ajouter</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>🏷️ Catégories</h3>
+                <p style="margin-bottom: 10px; font-size: 0.9em; color: #666;">
+                    Sélectionnez d'abord un type pour gérer ses catégories
+                </p>
+                <div class="form-group">
+                    <label for="select-type-for-categories">Type</label>
+                    <select id="select-type-for-categories">
+                        <option value="">Sélectionner un type</option>
+                    </select>
+                </div>
+                <div id="categories-list" style="margin-bottom: 15px;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-category" placeholder="Nouvelle catégorie" style="flex: 1;">
+                    <button class="btn btn-success" style="padding: 12px 20px;" id="btn-add-category">➕ Ajouter</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3>🔗 Partage</h3>
                 <p style="margin-bottom: 10px;">Code de votre espace partagé :</p>
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -898,7 +937,8 @@
 
             <div class="btn-group">
                 <button class="btn btn-success" onclick="saveSettings()">💾 Enregistrer</button>
-                <button class="btn btn-secondary" onclick="exportData()">📥 Exporter</button>
+                <button class="btn btn-secondary" onclick="exportData()">📥 Exporter JSON</button>
+                <button class="btn btn-secondary" onclick="exportToCSV()">📊 Exporter CSV</button>
             </div>
         </div>
     </div>
@@ -914,16 +954,54 @@
         let currentRoomId = null;
         let subscriptions = [];
 
+        // Charger la bibliothèque Supabase dynamiquement
+        function loadSupabaseScript() {
+            return new Promise((resolve, reject) => {
+                console.log('📦 Chargement de la bibliothèque Supabase...');
+                
+                // Vérifier si déjà chargée
+                if (typeof window.supabase !== 'undefined') {
+                    console.log('✅ Supabase déjà chargée');
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js';
+                script.onload = () => {
+                    console.log('✅ Script Supabase chargé');
+                    setTimeout(() => {
+                        if (typeof window.supabase !== 'undefined') {
+                            console.log('✅ window.supabase disponible');
+                            resolve();
+                        } else {
+                            console.error('❌ window.supabase toujours undefined après chargement');
+                            reject(new Error('Supabase non disponible après chargement du script'));
+                        }
+                    }, 100);
+                };
+                script.onerror = () => {
+                    console.error('❌ Erreur chargement script Supabase');
+                    reject(new Error('Impossible de charger le script Supabase'));
+                };
+                document.head.appendChild(script);
+                console.log('📤 Script ajouté au DOM');
+            });
+        }
+
         // Attendre que le DOM et Supabase soient chargés
-        function initSupabase() {
+        async function initSupabase() {
             console.log('🔧 Initialisation Supabase...');
             console.log('URL:', SUPABASE_URL);
             console.log('Key présente:', SUPABASE_ANON_KEY ? 'Oui (longueur: ' + SUPABASE_ANON_KEY.length + ')' : 'Non');
             
+            // Charger le script d'abord
+            await loadSupabaseScript();
+            
             // Vérifier que la bibliothèque est chargée
             if (typeof window.supabase === 'undefined') {
-                console.error('❌ window.supabase n\'existe pas');
-                console.log('Objets disponibles:', Object.keys(window).filter(k => k.toLowerCase().includes('supa')));
+                console.error('❌ window.supabase n\'existe pas après chargement');
+                console.log('Objets window contenant "supa":', Object.keys(window).filter(k => k.toLowerCase().includes('supa')));
                 throw new Error('Bibliothèque Supabase non chargée');
             }
             
@@ -933,7 +1011,6 @@
             try {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 console.log('✅ Client Supabase créé avec succès');
-                console.log('Client:', supabase);
                 return true;
             } catch (error) {
                 console.error('❌ Erreur création client:', error);
@@ -942,9 +1019,9 @@
         }
 
         // ==========================================
-        // CATÉGORIES
+        // CATÉGORIES - Structure dynamique
         // ==========================================
-        const CATEGORIES = {
+        let CATEGORIES = {
             'Enfants': [
                 'Enfants - Éducation',
                 'Enfants - Santé',
@@ -981,7 +1058,8 @@
         let settings = {
             parent1_name: 'Parent 1',
             parent2_name: 'Parent 2',
-            currency_symbol: '€'
+            currency_symbol: '€',
+            categories: null  // Sera chargé depuis Supabase ou utilisera CATEGORIES par défaut
         };
 
         // ==========================================
@@ -1135,6 +1213,11 @@
 
                 if (settingsData) {
                     settings = settingsData.data;
+                    
+                    // Charger les catégories personnalisées si elles existent
+                    if (settings.categories) {
+                        CATEGORIES = settings.categories;
+                    }
                 }
 
                 // Charger les expenses
@@ -1209,6 +1292,7 @@
                         await loadFromSupabase();
                         loadSettings();
                         updatePayeurSelects();
+                        updateTypeSelects();  // Mettre à jour les types après sync
                         displayExpenses();
                         displayStatistics();
                     }
@@ -1264,6 +1348,69 @@
         // GESTION DES DÉPENSES
         // ==========================================
 
+        // Gestion de la prévisualisation du fichier
+        document.getElementById('attachment')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const previewContainer = document.getElementById('preview-container');
+            
+            if (!file) {
+                previewContainer.innerHTML = '';
+                return;
+            }
+            
+            // Vérifier la taille (max 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                showNotification('Le fichier est trop volumineux (max 5MB)', 'error');
+                e.target.value = '';
+                previewContainer.innerHTML = '';
+                return;
+            }
+            
+            // Afficher la prévisualisation
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `
+                        <div style="position: relative; display: inline-block;">
+                            <img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #667eea;">
+                            <button onclick="clearAttachment()" type="button" class="btn btn-danger" 
+                                    style="position: absolute; top: -10px; right: -10px; padding: 5px 10px; font-size: 0.8em; border-radius: 50%;">
+                                ✕
+                            </button>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'application/pdf') {
+                previewContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f0f0f0; border-radius: 8px;">
+                        <span style="font-size: 2em;">📄</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${file.name}</div>
+                            <div style="font-size: 0.85em; color: #666;">${(file.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                        <button onclick="clearAttachment()" type="button" class="btn btn-danger" style="padding: 5px 10px; font-size: 0.8em;">✕</button>
+                    </div>
+                `;
+            }
+        });
+
+        function clearAttachment() {
+            document.getElementById('attachment').value = '';
+            document.getElementById('preview-container').innerHTML = '';
+        }
+
+        // Convertir le fichier en base64
+        async function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function addExpense(event) {
             event.preventDefault();
 
@@ -1276,19 +1423,41 @@
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span> Enregistrement...';
 
-            const expense = {
-                room_id: currentRoomId,
-                date: document.getElementById('date').value,
-                description: document.getElementById('description').value,
-                montant: parseFloat(document.getElementById('montant').value),
-                type: document.getElementById('type').value,
-                categorie: document.getElementById('categorie').value,
-                payeur: document.getElementById('payeur').value,
-                notes: document.getElementById('notes').value,
-                created_at: new Date().toISOString()
-            };
-
             try {
+                // Récupérer le fichier s'il existe
+                const fileInput = document.getElementById('attachment');
+                const file = fileInput?.files[0];
+                
+                let attachmentData = null;
+                let attachmentName = null;
+                let attachmentType = null;
+                
+                if (file) {
+                    console.log('📎 Traitement du fichier:', file.name);
+                    btn.innerHTML = '<span class="loading"></span> Upload du fichier...';
+                    
+                    attachmentName = file.name;
+                    attachmentType = file.type;
+                    attachmentData = await fileToBase64(file);
+                    
+                    console.log('✅ Fichier converti en base64');
+                }
+
+                const expense = {
+                    room_id: currentRoomId,
+                    date: document.getElementById('date').value,
+                    description: document.getElementById('description').value,
+                    montant: parseFloat(document.getElementById('montant').value),
+                    type: document.getElementById('type').value,
+                    categorie: document.getElementById('categorie').value,
+                    payeur: document.getElementById('payeur').value,
+                    notes: document.getElementById('notes').value,
+                    attachment_name: attachmentName,
+                    attachment_data: attachmentData,
+                    attachment_type: attachmentType,
+                    created_at: new Date().toISOString()
+                };
+
                 const { error } = await supabase
                     .from('expenses')
                     .insert([expense]);
@@ -1298,13 +1467,14 @@
                 showNotification('Dépense ajoutée avec succès !', 'success');
                 document.getElementById('expense-form').reset();
                 document.getElementById('date').valueAsDate = new Date();
+                clearAttachment();
                 
                 await loadFromSupabase();
                 displayExpenses();
                 displayStatistics();
             } catch (error) {
                 console.error('Erreur ajout dépense:', error);
-                showNotification('Erreur lors de l\'ajout', 'error');
+                showNotification('Erreur lors de l\'ajout: ' + error.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '💾 Enregistrer la dépense';
@@ -1335,6 +1505,72 @@
                 console.error('Erreur suppression:', error);
                 showNotification('Erreur lors de la suppression', 'error');
             }
+        }
+
+        // Voir le justificatif
+        function viewAttachment(expenseId) {
+            const expense = expenses.find(e => e.id === expenseId);
+            
+            if (!expense || !expense.attachment_data) {
+                showNotification('Justificatif non disponible', 'error');
+                return;
+            }
+            
+            // Créer une modal pour afficher le fichier
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.style.zIndex = '3000';
+            
+            let content = '';
+            
+            if (expense.attachment_type.startsWith('image/')) {
+                content = `
+                    <img src="${expense.attachment_data}" 
+                         style="max-width: 100%; max-height: 70vh; border-radius: 8px;">
+                `;
+            } else if (expense.attachment_type === 'application/pdf') {
+                content = `
+                    <iframe src="${expense.attachment_data}" 
+                            style="width: 100%; height: 70vh; border: none; border-radius: 8px;">
+                    </iframe>
+                `;
+            }
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow: auto;">
+                    <h2 style="color: #667eea; margin-bottom: 20px;">📎 ${expense.attachment_name}</h2>
+                    ${content}
+                    <button onclick="this.closest('.modal').remove()" class="btn" style="margin-top: 20px; width: 100%;">
+                        Fermer
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Fermer en cliquant en dehors
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // Télécharger le justificatif
+        function downloadAttachment(expenseId, filename) {
+            const expense = expenses.find(e => e.id === expenseId);
+            
+            if (!expense || !expense.attachment_data) {
+                showNotification('Justificatif non disponible', 'error');
+                return;
+            }
+            
+            const a = document.createElement('a');
+            a.href = expense.attachment_data;
+            a.download = filename;
+            a.click();
+            
+            showNotification('Téléchargement lancé', 'success');
         }
 
         // ==========================================
@@ -1447,12 +1683,189 @@
             settings.parent1_name = document.getElementById('parent1-name').value || 'Parent 1';
             settings.parent2_name = document.getElementById('parent2-name').value || 'Parent 2';
             settings.currency_symbol = document.getElementById('currency').value || '€';
+            settings.categories = CATEGORIES;  // Sauvegarder les catégories personnalisées
             
             await saveSettingsToSupabase();
             updatePayeurSelects();
             displayExpenses();
             displayStatistics();
             showNotification('Paramètres sauvegardés !', 'success');
+        }
+
+        function loadSettings() {
+            document.getElementById('parent1-name').value = settings.parent1_name;
+            document.getElementById('parent2-name').value = settings.parent2_name;
+            document.getElementById('currency').value = settings.currency_symbol;
+            
+            // Charger les catégories personnalisées
+            if (settings.categories) {
+                CATEGORIES = settings.categories;
+            }
+            
+            // Afficher les types et catégories dans l'interface
+            displayTypesList();
+            updateTypeSelectForCategories();
+        }
+
+        // ==========================================
+        // GESTION DES TYPES DE DÉPENSES
+        // ==========================================
+
+        function displayTypesList() {
+            const container = document.getElementById('types-list');
+            const types = Object.keys(CATEGORIES);
+            
+            container.innerHTML = types.map(type => `
+                <div style="display: flex; justify-content: space-between; align-items: center; 
+                            padding: 10px; background: white; border-radius: 8px; margin-bottom: 8px;
+                            border: 2px solid #e0e0e0;">
+                    <span style="font-weight: 600; color: #333;">📂 ${type}</span>
+                    <div style="display: flex; gap: 8px;">
+                        <span style="font-size: 0.85em; color: #666; padding: 5px 10px; background: #f0f0f0; border-radius: 6px;">
+                            ${CATEGORIES[type].length} catégorie(s)
+                        </span>
+                        ${types.length > 1 ? `
+                            <button onclick="deleteType('${type}')" class="btn btn-danger" 
+                                    style="padding: 5px 12px; font-size: 0.85em;">🗑️</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addType() {
+            const input = document.getElementById('new-type');
+            const newType = input.value.trim();
+            
+            if (!newType) {
+                showNotification('Veuillez entrer un nom de type', 'error');
+                return;
+            }
+            
+            if (CATEGORIES[newType]) {
+                showNotification('Ce type existe déjà', 'error');
+                return;
+            }
+            
+            CATEGORIES[newType] = [];
+            input.value = '';
+            
+            displayTypesList();
+            updateTypeSelectForCategories();
+            updateCategories();
+            updateRecurrentCategories();
+            
+            showNotification(`Type "${newType}" ajouté !`, 'success');
+        }
+
+        function deleteType(type) {
+            if (Object.keys(CATEGORIES).length <= 1) {
+                showNotification('Vous devez garder au moins un type', 'error');
+                return;
+            }
+            
+            if (!confirm(`Supprimer le type "${type}" et toutes ses catégories ?`)) {
+                return;
+            }
+            
+            delete CATEGORIES[type];
+            
+            displayTypesList();
+            updateTypeSelectForCategories();
+            updateCategories();
+            updateRecurrentCategories();
+            
+            showNotification(`Type "${type}" supprimé`, 'success');
+        }
+
+        // ==========================================
+        // GESTION DES CATÉGORIES
+        // ==========================================
+
+        function updateTypeSelectForCategories() {
+            const select = document.getElementById('select-type-for-categories');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Sélectionner un type</option>' +
+                Object.keys(CATEGORIES).map(type => 
+                    `<option value="${type}">${type}</option>`
+                ).join('');
+            
+            if (currentValue && CATEGORIES[currentValue]) {
+                select.value = currentValue;
+                displayCategoriesList(currentValue);
+            }
+        }
+
+        function displayCategoriesList(type) {
+            const container = document.getElementById('categories-list');
+            
+            if (!type) {
+                container.innerHTML = '<p style="color: #999; font-style: italic;">Sélectionnez un type ci-dessus</p>';
+                return;
+            }
+            
+            const categories = CATEGORIES[type] || [];
+            
+            if (categories.length === 0) {
+                container.innerHTML = '<p style="color: #999; font-style: italic;">Aucune catégorie. Ajoutez-en une ci-dessous.</p>';
+                return;
+            }
+            
+            container.innerHTML = categories.map((cat, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; 
+                            padding: 10px; background: white; border-radius: 8px; margin-bottom: 8px;
+                            border: 2px solid #e0e0e0;">
+                    <span style="color: #333;">🏷️ ${cat}</span>
+                    <button onclick="deleteCategory('${type}', ${index})" class="btn btn-danger" 
+                            style="padding: 5px 12px; font-size: 0.85em;">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function addCategory() {
+            const type = document.getElementById('select-type-for-categories').value;
+            const input = document.getElementById('new-category');
+            const newCategory = input.value.trim();
+            
+            if (!type) {
+                showNotification('Veuillez d\'abord sélectionner un type', 'error');
+                return;
+            }
+            
+            if (!newCategory) {
+                showNotification('Veuillez entrer un nom de catégorie', 'error');
+                return;
+            }
+            
+            if (CATEGORIES[type].includes(newCategory)) {
+                showNotification('Cette catégorie existe déjà', 'error');
+                return;
+            }
+            
+            CATEGORIES[type].push(newCategory);
+            input.value = '';
+            
+            displayCategoriesList(type);
+            updateCategories();
+            updateRecurrentCategories();
+            
+            showNotification(`Catégorie "${newCategory}" ajoutée !`, 'success');
+        }
+
+        function deleteCategory(type, index) {
+            if (!confirm(`Supprimer cette catégorie ?`)) {
+                return;
+            }
+            
+            const deletedCat = CATEGORIES[type][index];
+            CATEGORIES[type].splice(index, 1);
+            
+            displayCategoriesList(type);
+            updateCategories();
+            updateRecurrentCategories();
+            
+            showNotification(`Catégorie "${deletedCat}" supprimée`, 'success');
         }
 
         async function saveSettingsToSupabase() {
@@ -1502,6 +1915,7 @@
             
             loadSettings();
             updatePayeurSelects();
+            updateTypeSelects();  // Mettre à jour les selects de types
             document.getElementById('date').valueAsDate = new Date();
             displayExpenses();
             displayStatistics();
@@ -1579,6 +1993,31 @@
             }
         }
 
+        // Mettre à jour les selects de types
+        function updateTypeSelects() {
+            const typeSelect = document.getElementById('type');
+            const recTypeSelect = document.getElementById('rec-type');
+            
+            const types = Object.keys(CATEGORIES);
+            const typeOptions = types.map(type => `<option value="${type}">${type}</option>`).join('');
+            
+            if (typeSelect) {
+                const currentValue = typeSelect.value;
+                typeSelect.innerHTML = '<option value="">Sélectionner un type</option>' + typeOptions;
+                if (currentValue && CATEGORIES[currentValue]) {
+                    typeSelect.value = currentValue;
+                }
+            }
+            
+            if (recTypeSelect) {
+                const currentValue = recTypeSelect.value;
+                recTypeSelect.innerHTML = '<option value="">Sélectionner un type</option>' + typeOptions;
+                if (currentValue && CATEGORIES[currentValue]) {
+                    recTypeSelect.value = currentValue;
+                }
+            }
+        }
+
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -1638,6 +2077,7 @@
                         <div>
                             <div class="expense-description">${expense.description}</div>
                             <span class="category-badge badge-${expense.type.toLowerCase()}">${expense.type}</span>
+                            ${expense.attachment_name ? '<span style="margin-left: 5px;">📎</span>' : ''}
                         </div>
                         <div class="expense-amount">${expense.montant.toFixed(2)} ${settings.currency_symbol}</div>
                     </div>
@@ -1653,7 +2093,22 @@
                         </div>
                         ${expense.notes ? `<div class="expense-detail" style="grid-column: 1 / -1;"><strong>📌 Notes:</strong> ${expense.notes}</div>` : ''}
                     </div>
-                    <button onclick="deleteExpense(${expense.id})" class="btn btn-danger" style="margin-top: 15px; padding: 10px 20px; font-size: 0.9em;">🗑️ Supprimer</button>
+                    ${expense.attachment_name ? `
+                        <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <strong>📎 Justificatif:</strong> ${expense.attachment_name}
+                            <button onclick="viewAttachment(${expense.id})" class="btn btn-secondary" 
+                                    style="margin-left: 10px; padding: 8px 15px; font-size: 0.9em;">
+                                👁️ Voir
+                            </button>
+                            <button onclick="downloadAttachment(${expense.id}, '${expense.attachment_name}')" 
+                                    class="btn btn-secondary" 
+                                    style="margin-left: 5px; padding: 8px 15px; font-size: 0.9em;">
+                                📥 Télécharger
+                            </button>
+                        </div>
+                    ` : ''}
+                    <button onclick="deleteExpense(${expense.id})" class="btn btn-danger" 
+                            style="margin-top: 15px; padding: 10px 20px; font-size: 0.9em;">🗑️ Supprimer</button>
                 </div>
             `).join('');
         }
@@ -1716,10 +2171,6 @@
 
             balanceCard.innerHTML = `
                 <h2>💰 Équilibre des comptes</h2>
-                <div class="balance-amount">${(difference / 2).toFixed(2)} ${settings.currency_symbol}</div>
-                <p style="font-size: 1.2em; color: #666;">
-                    <strong>${debtor}</strong> doit rembourser cette somme
-                </p>
                 <div class="balance-details">
                     <div class="balance-item">
                         <h4>${settings.parent1_name} a payé</h4>
@@ -1786,7 +2237,60 @@
             a.click();
             URL.revokeObjectURL(url);
             
-            showNotification('Données exportées !', 'success');
+            showNotification('Données exportées en JSON !', 'success');
+        }
+
+        function exportToCSV() {
+            if (expenses.length === 0) {
+                showNotification('Aucune dépense à exporter', 'error');
+                return;
+            }
+
+            // En-têtes du CSV
+            const headers = [
+                'ID',
+                'Date',
+                'Description',
+                'Montant',
+                'Type',
+                'Catégorie',
+                'Payé par',
+                'Notes',
+                'Date de création'
+            ];
+
+            // Créer les lignes CSV
+            const rows = expenses.map(expense => {
+                return [
+                    expense.id || '',
+                    expense.date || '',
+                    `"${(expense.description || '').replace(/"/g, '""')}"`, // Échapper les guillemets
+                    expense.montant || 0,
+                    expense.type || '',
+                    `"${(expense.categorie || '').replace(/"/g, '""')}"`,
+                    expense.payeur || '',
+                    `"${(expense.notes || '').replace(/"/g, '""')}"`,
+                    expense.created_at || ''
+                ].join(',');
+            });
+
+            // Combiner en-têtes et lignes
+            const csvContent = [
+                headers.join(','),
+                ...rows
+            ].join('\n');
+
+            // Ajouter le BOM pour Excel (support des caractères spéciaux)
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `depenses-${currentRoomId}-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification(`${expenses.length} dépense(s) exportée(s) en CSV !`, 'success');
         }
 
         function showNotification(message, type = 'success') {
@@ -1811,13 +2315,55 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 === APPLICATION DÉMARRÉE ===');
             
-            // Initialiser Supabase
+            // Initialiser Supabase (avec chargement dynamique)
             try {
-                initSupabase();
+                await initSupabase();
+                console.log('✅ Supabase prêt');
             } catch (error) {
                 console.error('❌ Impossible d\'initialiser Supabase:', error);
-                alert('❌ Erreur de chargement de la base de données.\n\nLa bibliothèque Supabase ne s\'est pas chargée correctement.\nVérifiez la console (F12).');
+                alert('❌ Erreur de chargement de la base de données.\n\nLa bibliothèque Supabase ne s\'est pas chargée correctement.\n\nErreur: ' + error.message + '\n\nVérifiez la console (F12).');
                 return;
+            }
+            
+            // Attacher les événements pour les paramètres
+            const btnAddType = document.getElementById('btn-add-type');
+            const btnAddCategory = document.getElementById('btn-add-category');
+            const selectTypeForCat = document.getElementById('select-type-for-categories');
+            
+            if (btnAddType) {
+                btnAddType.addEventListener('click', addType);
+            }
+            
+            if (btnAddCategory) {
+                btnAddCategory.addEventListener('click', addCategory);
+            }
+            
+            if (selectTypeForCat) {
+                selectTypeForCat.addEventListener('change', (e) => {
+                    displayCategoriesList(e.target.value);
+                });
+            }
+            
+            // Permettre d'ajouter avec Enter
+            const newTypeInput = document.getElementById('new-type');
+            const newCategoryInput = document.getElementById('new-category');
+            
+            if (newTypeInput) {
+                newTypeInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addType();
+                    }
+                });
+            }
+            
+            if (newCategoryInput) {
+                newCategoryInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCategory();
+                    }
+                });
             }
             
             const savedRoomId = localStorage.getItem('currentRoomId');
