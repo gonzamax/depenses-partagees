@@ -1194,14 +1194,28 @@
 
                 <div class="form-group">
                     <label for="rec-frequency">⏰ Fréquence</label>
-                    <select id="rec-frequency" required>
-                        <option value="Mensuel">📅 Mensuel</option>
+                    <select id="rec-frequency" required onchange="updateRecurrenceFields()">
+                        <option value="Hebdomadaire">📅 Hebdomadaire</option>
+                        <option value="Mensuel" selected>📅 Mensuel</option>
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="rec-day-group">
                     <label for="rec-day">📆 Jour du mois</label>
                     <input type="number" id="rec-day" min="1" max="31" value="1" required>
+                </div>
+
+                <div class="form-group" id="rec-weekday-group" style="display: none;">
+                    <label for="rec-weekday">📆 Jour de la semaine</label>
+                    <select id="rec-weekday">
+                        <option value="1">Lundi</option>
+                        <option value="2">Mardi</option>
+                        <option value="3">Mercredi</option>
+                        <option value="4">Jeudi</option>
+                        <option value="5">Vendredi</option>
+                        <option value="6">Samedi</option>
+                        <option value="0">Dimanche</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -2074,6 +2088,26 @@
         // DÉPENSES RÉCURRENTES - EXÉCUTION AUTOMATIQUE
         // ==========================================
 
+        function updateRecurrenceFields() {
+            const frequency = document.getElementById('rec-frequency').value;
+            const dayGroup = document.getElementById('rec-day-group');
+            const weekdayGroup = document.getElementById('rec-weekday-group');
+            const dayInput = document.getElementById('rec-day');
+            const weekdayInput = document.getElementById('rec-weekday');
+            
+            if (frequency === 'Hebdomadaire') {
+                dayGroup.style.display = 'none';
+                weekdayGroup.style.display = 'block';
+                dayInput.required = false;
+                weekdayInput.required = true;
+            } else {
+                dayGroup.style.display = 'block';
+                weekdayGroup.style.display = 'none';
+                dayInput.required = true;
+                weekdayInput.required = false;
+            }
+        }
+
         async function checkAndExecuteRecurrentExpenses() {
             if (!supabase || !currentRoomId) return;
             
@@ -2128,7 +2162,12 @@
                     }
                     
                     // Calculer la prochaine date d'exécution
-                    const nextExecution = calculateNextExecution(recurrent.day_of_month, new Date(recurrent.next_execution));
+                    let nextExecution;
+                    if (recurrent.frequency === 'Hebdomadaire') {
+                        nextExecution = calculateNextWeeklyExecution(recurrent.day_of_week, new Date(recurrent.next_execution));
+                    } else {
+                        nextExecution = calculateNextExecution(recurrent.day_of_month, new Date(recurrent.next_execution));
+                    }
                     
                     // Mettre à jour la dépense récurrente
                     const { error: updateError } = await supabase
@@ -2179,12 +2218,44 @@
             return next.toISOString().split('T')[0];
         }
 
+        function calculateNextWeeklyExecution(dayOfWeek, fromDate = null) {
+            const baseDate = fromDate ? new Date(fromDate) : new Date();
+            const today = new Date(baseDate);
+            const currentDay = today.getDay();
+            
+            // Calculer combien de jours jusqu'au prochain jour de la semaine souhaité
+            let daysUntilNext = dayOfWeek - currentDay;
+            
+            if (daysUntilNext <= 0) {
+                // Si le jour est aujourd'hui ou dans le passé cette semaine, passer à la semaine prochaine
+                daysUntilNext += 7;
+            }
+            
+            const next = new Date(today);
+            next.setDate(today.getDate() + daysUntilNext);
+            
+            return next.toISOString().split('T')[0];
+        }
+
         async function addRecurrentExpense(event) {
             event.preventDefault();
 
             if (!supabase || !currentRoomId) {
                 showNotification('Non connecté', 'error');
                 return;
+            }
+
+            const frequency = document.getElementById('rec-frequency').value;
+            let dayOfMonth = null;
+            let dayOfWeek = null;
+            let nextExecution = null;
+
+            if (frequency === 'Hebdomadaire') {
+                dayOfWeek = parseInt(document.getElementById('rec-weekday').value);
+                nextExecution = calculateNextWeeklyExecution(dayOfWeek);
+            } else {
+                dayOfMonth = parseInt(document.getElementById('rec-day').value);
+                nextExecution = calculateNextExecution(dayOfMonth);
             }
 
             const recurrent = {
@@ -2194,12 +2265,13 @@
                 type: document.getElementById('rec-type').value,
                 categorie: document.getElementById('rec-categorie').value,
                 payeur: document.getElementById('rec-payeur').value,
-                frequency: document.getElementById('rec-frequency').value,
-                day_of_month: parseInt(document.getElementById('rec-day').value),
+                frequency: frequency,
+                day_of_month: dayOfMonth,
+                day_of_week: dayOfWeek,
                 notes: document.getElementById('rec-notes').value,
                 active: true,
                 last_execution: null,
-                next_execution: calculateNextExecution(parseInt(document.getElementById('rec-day').value)),
+                next_execution: nextExecution,
                 created_at: new Date().toISOString()
             };
 
@@ -2212,6 +2284,7 @@
 
                 showNotification('Dépense récurrente ajoutée !', 'success');
                 document.getElementById('recurrent-form').reset();
+                updateRecurrenceFields(); // Remettre le formulaire dans l'état par défaut
                 
                 await loadFromSupabase();
                 displayRecurrentExpenses();
@@ -2808,13 +2881,18 @@
 
             list.innerHTML = `
                 <h3 style="margin: 30px 0 15px 0; color: #667eea;">📋 Dépenses récurrentes actives</h3>
-                ${recurrentExpenses.map(rec => `
+                ${recurrentExpenses.map(rec => {
+                    const frequencyLabel = rec.frequency === 'Hebdomadaire' 
+                        ? `Hebdomadaire - ${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][rec.day_of_week]}`
+                        : `Mensuel - Jour ${rec.day_of_month}`;
+                    
+                    return `
                     <div class="recurrent-item">
                         <div class="recurrent-info">
                             <div style="font-size: 1.2em; font-weight: 600; margin-bottom: 5px;">${rec.description}</div>
                             <div style="color: #667eea; font-size: 1.3em; font-weight: bold; margin: 5px 0;">${rec.montant.toFixed(2)} ${settings.currency_symbol}</div>
                             <div style="font-size: 0.9em; color: #666;">
-                                📅 ${rec.frequency} - Jour ${rec.day_of_month} | 
+                                📅 ${frequencyLabel} | 
                                 👤 ${rec.payeur} | 
                                 🏷️ ${rec.categorie}
                             </div>
@@ -2830,7 +2908,7 @@
                             <button onclick="deleteRecurrent(${rec.id})" class="btn btn-danger" style="padding: 10px 20px;">🗑️</button>
                         </div>
                     </div>
-                `).join('')}
+                `}).join('')}
             `;
         }
 
