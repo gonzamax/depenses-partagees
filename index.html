@@ -2,7 +2,9 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>💰 Gestion des Dépenses Partagées</title>
     
     <!-- Le script Supabase sera chargé dynamiquement -->
@@ -446,6 +448,37 @@
             transform: translateX(30px);
         }
 
+        /* Bouton d'action flottant (FAB) pour mobile */
+        .fab-button {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 2em;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6);
+            cursor: pointer;
+            z-index: 999;
+            transition: all 0.3s;
+        }
+
+        .fab-button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            .fab-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
         .welcome-screen {
             background: white;
             border-radius: 16px;
@@ -555,20 +588,75 @@
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
             .header h1 {
-                font-size: 1.8em;
+                font-size: 1.5em;
+            }
+
+            .header p {
+                font-size: 0.95em;
+            }
+
+            .share-info {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .share-info > div {
+                width: 100%;
+                text-align: center;
+            }
+
+            .room-id {
+                font-size: 1em !important;
+                word-break: break-all;
             }
 
             .tabs {
-                flex-direction: column;
+                flex-direction: row;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                gap: 5px;
+                padding-bottom: 5px;
+            }
+
+            .tabs::-webkit-scrollbar {
+                display: none;
             }
 
             .tab {
-                width: 100%;
+                min-width: 80px;
+                padding: 12px 15px;
+                font-size: 0.85em;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .tab-content {
+                padding: 20px 15px;
             }
 
             .stats-grid {
                 grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .stat-card {
+                padding: 20px;
+            }
+
+            .stat-card .value {
+                font-size: 2em;
             }
 
             .expense-header {
@@ -576,8 +664,179 @@
                 align-items: flex-start;
             }
 
+            .expense-amount {
+                font-size: 1.3em;
+            }
+
+            .expense-details {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
             .balance-details {
                 flex-direction: column;
+            }
+
+            .balance-amount {
+                font-size: 2em;
+            }
+
+            /* Optimisation des formulaires mobile */
+            .form-group {
+                margin-bottom: 18px;
+            }
+
+            label {
+                font-size: 0.95em;
+                margin-bottom: 6px;
+            }
+
+            input, select, textarea {
+                padding: 14px 12px;
+                font-size: 16px; /* Évite le zoom automatique sur iOS */
+                border-radius: 8px;
+            }
+
+            /* Fix pour les selects qui débordent */
+            select {
+                max-width: 100%;
+                width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Fix pour le champ date */
+            input[type="date"] {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            /* Améliorer les boutons sur mobile */
+            .btn {
+                padding: 14px 20px;
+                font-size: 1em;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn-group .btn {
+                width: 100%;
+                min-width: auto;
+            }
+
+            /* Optimiser le champ de fichier */
+            input[type="file"] {
+                padding: 12px 8px;
+                font-size: 0.9em;
+            }
+
+            #preview-container img {
+                max-width: 100% !important;
+                max-height: 150px !important;
+            }
+
+            /* Filtres en colonne sur mobile */
+            .filter-bar {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .filter-bar select, 
+            .filter-bar input {
+                width: 100%;
+                min-width: auto;
+            }
+
+            /* Optimiser les items de dépense */
+            .expense-item {
+                padding: 15px;
+            }
+
+            /* Welcome screen mobile */
+            .welcome-screen {
+                padding: 25px 15px;
+                margin: 20px auto;
+            }
+
+            .welcome-screen h2 {
+                font-size: 1.5em;
+            }
+
+            .welcome-options {
+                flex-direction: column;
+            }
+
+            .welcome-option {
+                min-width: auto;
+                width: 100%;
+            }
+
+            /* Modal sur mobile */
+            .modal-content {
+                width: 95%;
+                padding: 25px 15px;
+                max-height: 85vh;
+            }
+
+            /* Settings sections sur mobile */
+            .settings-section {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .settings-section h3 {
+                font-size: 1.1em;
+            }
+
+            /* Liste des types et catégories sur mobile */
+            #types-list > div,
+            #categories-list > div {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            #types-list > div > div:last-child,
+            #categories-list > div > div:last-child {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            /* Notifications sur mobile */
+            .notification {
+                right: 10px;
+                left: 10px;
+                top: 10px;
+                max-width: none;
+                padding: 15px 20px;
+            }
+
+            /* Récurrentes sur mobile */
+            .recurrent-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+
+            .recurrent-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            /* Copy button plus petit sur mobile */
+            .copy-btn {
+                padding: 6px 12px;
+                font-size: 0.85em;
+            }
+
+            /* Améliorer l'accessibilité tactile */
+            button, .tab, select, input[type="file"] {
+                min-height: 44px; /* Taille minimale recommandée pour iOS */
             }
         }
 
@@ -693,6 +952,9 @@
 
     <!-- Application principale -->
     <div id="main-app" class="container" style="display: none;">
+        <!-- Bouton flottant pour accès rapide au formulaire (mobile) -->
+        <button class="fab-button" id="fab-add-expense" title="Ajouter une dépense">➕</button>
+        
         <div class="header">
             <h1>💰 Gestion des Dépenses Partagées</h1>
             <p>Synchronisation en temps réel avec Supabase</p>
@@ -709,11 +971,11 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('ajouter')">➕ Ajouter</button>
-            <button class="tab" onclick="switchTab('liste')">📋 Liste</button>
-            <button class="tab" onclick="switchTab('statistiques')">📊 Stats</button>
-            <button class="tab" onclick="switchTab('recurrentes')">🔄 Récurrentes</button>
-            <button class="tab" onclick="switchTab('parametres')">⚙️ Paramètres</button>
+            <button class="tab active" data-tab="ajouter">➕ Ajouter</button>
+            <button class="tab" data-tab="liste">📋 Liste</button>
+            <button class="tab" data-tab="statistiques">📊 Stats</button>
+            <button class="tab" data-tab="recurrentes">🔄 Récurrentes</button>
+            <button class="tab" data-tab="parametres">⚙️ Paramètres</button>
         </div>
 
         <!-- Onglet Ajouter -->
@@ -1058,9 +1320,119 @@
         let settings = {
             parent1_name: 'Parent 1',
             parent2_name: 'Parent 2',
-            currency_symbol: '€',
-            categories: null  // Sera chargé depuis Supabase ou utilisera CATEGORIES par défaut
+            currency_symbol: '€'
         };
+
+        // ==========================================
+        // GESTION DES TYPES ET CATÉGORIES
+        // ==========================================
+        
+        // Fonction centralisée pour mettre à jour TOUS les selects de types
+        function updateAllTypeSelects() {
+            const types = Object.keys(CATEGORIES);
+            const typeOptions = types.map(type => `<option value="${type}">${type}</option>`).join('');
+            
+            // Tous les selects de types dans l'application
+            const typeSelects = [
+                { id: 'type', withEmpty: true },
+                { id: 'rec-type', withEmpty: true },
+                { id: 'select-type-for-categories', withEmpty: true },
+                { id: 'filter-type', withEmpty: true, emptyText: 'Tous les types' }
+            ];
+            
+            typeSelects.forEach(selectInfo => {
+                const select = document.getElementById(selectInfo.id);
+                if (select) {
+                    const currentValue = select.value;
+                    const emptyOption = selectInfo.withEmpty ? 
+                        `<option value="">${selectInfo.emptyText || 'Sélectionner un type'}</option>` : '';
+                    select.innerHTML = emptyOption + typeOptions;
+                    if (currentValue && CATEGORIES[currentValue]) {
+                        select.value = currentValue;
+                    }
+                }
+            });
+        }
+        
+        // Fonction centralisée pour mettre à jour les catégories d'un select
+        function updateCategoriesForSelect(typeSelectId, categorySelectId) {
+            const typeSelect = document.getElementById(typeSelectId);
+            const categorySelect = document.getElementById(categorySelectId);
+            
+            if (!typeSelect || !categorySelect) return;
+            
+            const type = typeSelect.value;
+            categorySelect.innerHTML = '<option value="">Sélectionner une catégorie</option>';
+            
+            if (type && CATEGORIES[type]) {
+                CATEGORIES[type].forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    categorySelect.appendChild(option);
+                });
+            }
+        }
+        
+        // Charger les types et catégories depuis Supabase
+        async function loadTypesFromSupabase() {
+            if (!supabase || !currentRoomId) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('expense_types')
+                    .select('*')
+                    .eq('room_id', currentRoomId);
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    // Reconstruire CATEGORIES depuis la base
+                    CATEGORIES = {};
+                    data.forEach(row => {
+                        CATEGORIES[row.type_name] = row.categories || [];
+                    });
+                    console.log('✅ Types et catégories chargés depuis Supabase');
+                } else {
+                    // Initialiser avec les valeurs par défaut
+                    await saveTypesToSupabase();
+                    console.log('✅ Types par défaut initialisés');
+                }
+            } catch (error) {
+                console.error('Erreur chargement types:', error);
+            }
+        }
+        
+        // Sauvegarder les types et catégories dans Supabase
+        async function saveTypesToSupabase() {
+            if (!supabase || !currentRoomId) return;
+            
+            try {
+                // Supprimer les anciennes entrées
+                await supabase
+                    .from('expense_types')
+                    .delete()
+                    .eq('room_id', currentRoomId);
+                
+                // Insérer les nouvelles
+                const rows = Object.keys(CATEGORIES).map(typeName => ({
+                    room_id: currentRoomId,
+                    type_name: typeName,
+                    categories: CATEGORIES[typeName]
+                }));
+                
+                const { error } = await supabase
+                    .from('expense_types')
+                    .insert(rows);
+                
+                if (error) throw error;
+                
+                console.log('✅ Types sauvegardés dans Supabase');
+            } catch (error) {
+                console.error('Erreur sauvegarde types:', error);
+                throw error;
+            }
+        }
 
         // ==========================================
         // FONCTIONS SUPABASE
@@ -1204,6 +1576,9 @@
             if (!supabase || !currentRoomId) return;
 
             try {
+                // Charger les types et catégories
+                await loadTypesFromSupabase();
+                
                 // Charger les settings
                 const { data: settingsData } = await supabase
                     .from('settings')
@@ -1213,11 +1588,6 @@
 
                 if (settingsData) {
                     settings = settingsData.data;
-                    
-                    // Charger les catégories personnalisées si elles existent
-                    if (settings.categories) {
-                        CATEGORIES = settings.categories;
-                    }
                 }
 
                 // Charger les expenses
@@ -1292,7 +1662,7 @@
                         await loadFromSupabase();
                         loadSettings();
                         updatePayeurSelects();
-                        updateTypeSelects();  // Mettre à jour les types après sync
+                        updateAllTypeSelects();  // Mettre à jour tous les selects
                         displayExpenses();
                         displayStatistics();
                     }
@@ -1320,6 +1690,29 @@
                 .subscribe();
 
             subscriptions.push(recurrentChannel);
+
+            // S'abonner aux changements des types et catégories
+            const typesChannel = supabase
+                .channel('types_changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'expense_types',
+                        filter: `room_id=eq.${currentRoomId}`
+                    },
+                    async (payload) => {
+                        console.log('🔄 Types/catégories modifiés');
+                        await loadTypesFromSupabase();
+                        updateAllTypeSelects();
+                        displayTypesList();
+                        updateTypeSelectForCategories();
+                    }
+                )
+                .subscribe();
+
+            subscriptions.push(typesChannel);
         }
 
         function updateSyncStatus(status) {
@@ -1683,7 +2076,6 @@
             settings.parent1_name = document.getElementById('parent1-name').value || 'Parent 1';
             settings.parent2_name = document.getElementById('parent2-name').value || 'Parent 2';
             settings.currency_symbol = document.getElementById('currency').value || '€';
-            settings.categories = CATEGORIES;  // Sauvegarder les catégories personnalisées
             
             await saveSettingsToSupabase();
             updatePayeurSelects();
@@ -1696,11 +2088,6 @@
             document.getElementById('parent1-name').value = settings.parent1_name;
             document.getElementById('parent2-name').value = settings.parent2_name;
             document.getElementById('currency').value = settings.currency_symbol;
-            
-            // Charger les catégories personnalisées
-            if (settings.categories) {
-                CATEGORIES = settings.categories;
-            }
             
             // Afficher les types et catégories dans l'interface
             displayTypesList();
@@ -1750,12 +2137,16 @@
             CATEGORIES[newType] = [];
             input.value = '';
             
-            displayTypesList();
-            updateTypeSelectForCategories();
-            updateCategories();
-            updateRecurrentCategories();
-            
-            showNotification(`Type "${newType}" ajouté !`, 'success');
+            // Sauvegarder dans Supabase
+            saveTypesToSupabase().then(() => {
+                displayTypesList();
+                updateTypeSelectForCategories();
+                updateAllTypeSelects();  // Mettre à jour TOUS les selects
+                showNotification(`Type "${newType}" ajouté !`, 'success');
+            }).catch(error => {
+                console.error('Erreur sauvegarde type:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            });
         }
 
         function deleteType(type) {
@@ -1770,12 +2161,16 @@
             
             delete CATEGORIES[type];
             
-            displayTypesList();
-            updateTypeSelectForCategories();
-            updateCategories();
-            updateRecurrentCategories();
-            
-            showNotification(`Type "${type}" supprimé`, 'success');
+            // Sauvegarder dans Supabase
+            saveTypesToSupabase().then(() => {
+                displayTypesList();
+                updateTypeSelectForCategories();
+                updateAllTypeSelects();  // Mettre à jour TOUS les selects
+                showNotification(`Type "${type}" supprimé`, 'success');
+            }).catch(error => {
+                console.error('Erreur suppression type:', error);
+                showNotification('Erreur lors de la suppression', 'error');
+            });
         }
 
         // ==========================================
@@ -1846,11 +2241,15 @@
             CATEGORIES[type].push(newCategory);
             input.value = '';
             
-            displayCategoriesList(type);
-            updateCategories();
-            updateRecurrentCategories();
-            
-            showNotification(`Catégorie "${newCategory}" ajoutée !`, 'success');
+            // Sauvegarder dans Supabase
+            saveTypesToSupabase().then(() => {
+                displayCategoriesList(type);
+                updateAllTypeSelects();  // Rafraîchir tous les selects
+                showNotification(`Catégorie "${newCategory}" ajoutée !`, 'success');
+            }).catch(error => {
+                console.error('Erreur sauvegarde catégorie:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            });
         }
 
         function deleteCategory(type, index) {
@@ -1861,11 +2260,15 @@
             const deletedCat = CATEGORIES[type][index];
             CATEGORIES[type].splice(index, 1);
             
-            displayCategoriesList(type);
-            updateCategories();
-            updateRecurrentCategories();
-            
-            showNotification(`Catégorie "${deletedCat}" supprimée`, 'success');
+            // Sauvegarder dans Supabase
+            saveTypesToSupabase().then(() => {
+                displayCategoriesList(type);
+                updateAllTypeSelects();  // Rafraîchir tous les selects
+                showNotification(`Catégorie "${deletedCat}" supprimée`, 'success');
+            }).catch(error => {
+                console.error('Erreur suppression catégorie:', error);
+                showNotification('Erreur lors de la suppression', 'error');
+            });
         }
 
         async function saveSettingsToSupabase() {
@@ -1915,7 +2318,7 @@
             
             loadSettings();
             updatePayeurSelects();
-            updateTypeSelects();  // Mettre à jour les selects de types
+            updateAllTypeSelects();  // Mettre à jour tous les selects de types
             document.getElementById('date').valueAsDate = new Date();
             displayExpenses();
             displayStatistics();
@@ -1962,68 +2365,36 @@
         }
 
         function updateCategories() {
-            const type = document.getElementById('type').value;
-            const categorieSelect = document.getElementById('categorie');
-            
-            categorieSelect.innerHTML = '<option value="">Sélectionner une catégorie</option>';
-            
-            if (type && CATEGORIES[type]) {
-                CATEGORIES[type].forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat;
-                    option.textContent = cat;
-                    categorieSelect.appendChild(option);
-                });
-            }
+            updateCategoriesForSelect('type', 'categorie');
         }
 
         function updateRecurrentCategories() {
-            const type = document.getElementById('rec-type').value;
-            const categorieSelect = document.getElementById('rec-categorie');
-            
-            categorieSelect.innerHTML = '<option value="">Sélectionner une catégorie</option>';
-            
-            if (type && CATEGORIES[type]) {
-                CATEGORIES[type].forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat;
-                    option.textContent = cat;
-                    categorieSelect.appendChild(option);
-                });
-            }
-        }
-
-        // Mettre à jour les selects de types
-        function updateTypeSelects() {
-            const typeSelect = document.getElementById('type');
-            const recTypeSelect = document.getElementById('rec-type');
-            
-            const types = Object.keys(CATEGORIES);
-            const typeOptions = types.map(type => `<option value="${type}">${type}</option>`).join('');
-            
-            if (typeSelect) {
-                const currentValue = typeSelect.value;
-                typeSelect.innerHTML = '<option value="">Sélectionner un type</option>' + typeOptions;
-                if (currentValue && CATEGORIES[currentValue]) {
-                    typeSelect.value = currentValue;
-                }
-            }
-            
-            if (recTypeSelect) {
-                const currentValue = recTypeSelect.value;
-                recTypeSelect.innerHTML = '<option value="">Sélectionner un type</option>' + typeOptions;
-                if (currentValue && CATEGORIES[currentValue]) {
-                    recTypeSelect.value = currentValue;
-                }
-            }
+            updateCategoriesForSelect('rec-type', 'rec-categorie');
         }
 
         function switchTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            // Trouver le bouton cliqué ou utiliser le bon bouton
+            const allTabs = document.querySelectorAll('.tab');
+            allTabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase().includes(tabName.substring(0, 3))) {
+                    tab.classList.add('active');
+                }
+            });
             
-            event.target.classList.add('active');
+            // Gérer les contenus
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById('tab-' + tabName).classList.add('active');
+
+            // Cacher le FAB sur l'onglet "Ajouter"
+            const fabButton = document.getElementById('fab-add-expense');
+            if (fabButton) {
+                if (tabName === 'ajouter') {
+                    fabButton.style.display = 'none';
+                } else {
+                    fabButton.style.display = 'flex';
+                }
+            }
 
             if (tabName === 'liste') {
                 displayExpenses();
@@ -2365,6 +2736,36 @@
                     }
                 });
             }
+            
+            // Gérer le bouton FAB (Floating Action Button) sur mobile
+            const fabButton = document.getElementById('fab-add-expense');
+            if (fabButton) {
+                fabButton.addEventListener('click', () => {
+                    // Basculer vers l'onglet "Ajouter"
+                    switchTab('ajouter');
+                    
+                    // Faire défiler vers le haut
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
+                    // Focus sur le premier champ
+                    setTimeout(() => {
+                        const dateInput = document.getElementById('date');
+                        if (dateInput) {
+                            dateInput.focus();
+                        }
+                    }, 300);
+                });
+            }
+            
+            // Attacher les event listeners aux onglets
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    if (tabName) {
+                        switchTab(tabName);
+                    }
+                });
+            });
             
             const savedRoomId = localStorage.getItem('currentRoomId');
             
