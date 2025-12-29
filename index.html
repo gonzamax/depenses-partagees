@@ -978,6 +978,128 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Modal de confirmation personnalisée */
+        .custom-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s;
+        }
+
+        .custom-modal-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .custom-modal-icon {
+            font-size: 3em;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .custom-modal-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .custom-modal-message {
+            font-size: 1em;
+            color: #666;
+            text-align: center;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .custom-modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .custom-modal-buttons .btn {
+            min-width: 120px;
+            padding: 12px 20px;
+        }
+
+        /* Amélioration des alerts */
+        .alert-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s;
+        }
+
+        .alert-box {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s;
+            text-align: center;
+        }
+
+        .alert-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .alert-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .alert-message {
+            font-size: 1em;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
         .config-warning {
             background: #fff3cd;
             border: 2px solid #ffc107;
@@ -1993,7 +2115,13 @@
         }
 
         async function deleteExpense(id) {
-            if (!confirm('Êtes-vous sûr de vouloir supprimer cette dépense ?')) return;
+            const confirmed = await showConfirm(
+                'Supprimer la dépense',
+                'Êtes-vous sûr de vouloir supprimer cette dépense ?',
+                '🗑️'
+            );
+            
+            if (!confirmed) return;
 
             if (!supabase) {
                 showNotification('Non connecté', 'error');
@@ -2316,7 +2444,13 @@
         }
 
         async function deleteRecurrent(id) {
-            if (!confirm('Supprimer cette dépense récurrente ?')) return;
+            const confirmed = await showConfirm(
+                'Supprimer la dépense récurrente',
+                'Êtes-vous sûr de vouloir supprimer cette dépense récurrente ? Les dépenses déjà créées ne seront pas supprimées.',
+                '🗑️'
+            );
+            
+            if (!confirmed) return;
 
             if (!supabase) {
                 showNotification('Non connecté', 'error');
@@ -2439,25 +2573,33 @@
 
         function deleteType(type) {
             if (Object.keys(CATEGORIES).length <= 1) {
-                showNotification('Vous devez garder au moins un type', 'error');
+                showAlert(
+                    'Impossible de supprimer',
+                    'Vous devez garder au moins un type de dépense.',
+                    '⚠️'
+                );
                 return;
             }
             
-            if (!confirm(`Supprimer le type "${type}" et toutes ses catégories ?`)) {
-                return;
-            }
-            
-            delete CATEGORIES[type];
-            
-            // Sauvegarder dans Supabase
-            saveTypesToSupabase().then(() => {
-                displayTypesList();
-                updateTypeSelectForCategories();
-                updateAllTypeSelects();  // Mettre à jour TOUS les selects
-                showNotification(`Type "${type}" supprimé`, 'success');
-            }).catch(error => {
-                console.error('Erreur suppression type:', error);
-                showNotification('Erreur lors de la suppression', 'error');
+            showConfirm(
+                'Supprimer le type',
+                `Êtes-vous sûr de vouloir supprimer le type "${type}" et toutes ses catégories ?`,
+                '🗑️'
+            ).then(confirmed => {
+                if (!confirmed) return;
+                
+                delete CATEGORIES[type];
+                
+                // Sauvegarder dans Supabase
+                saveTypesToSupabase().then(() => {
+                    displayTypesList();
+                    updateTypeSelectForCategories();
+                    updateAllTypeSelects();
+                    showNotification(`Type "${type}" supprimé`, 'success');
+                }).catch(error => {
+                    console.error('Erreur suppression type:', error);
+                    showNotification('Erreur lors de la suppression', 'error');
+                });
             });
         }
 
@@ -2555,21 +2697,27 @@
         }
 
         function deleteCategory(type, index) {
-            if (!confirm(`Supprimer cette catégorie ?`)) {
-                return;
-            }
+            const categoryName = CATEGORIES[type][index];
             
-            const deletedCat = CATEGORIES[type][index];
-            CATEGORIES[type].splice(index, 1);
-            
-            // Sauvegarder dans Supabase
-            saveTypesToSupabase().then(() => {
-                displayCategoriesList(type);
-                updateAllTypeSelects();  // Rafraîchir tous les selects
-                showNotification(`Catégorie "${deletedCat}" supprimée`, 'success');
-            }).catch(error => {
-                console.error('Erreur suppression catégorie:', error);
-                showNotification('Erreur lors de la suppression', 'error');
+            showConfirm(
+                'Supprimer la catégorie',
+                `Êtes-vous sûr de vouloir supprimer la catégorie "${categoryName}" ?`,
+                '🗑️'
+            ).then(confirmed => {
+                if (!confirmed) return;
+                
+                const deletedCat = CATEGORIES[type][index];
+                CATEGORIES[type].splice(index, 1);
+                
+                // Sauvegarder dans Supabase
+                saveTypesToSupabase().then(() => {
+                    displayCategoriesList(type);
+                    updateAllTypeSelects();
+                    showNotification(`Catégorie "${deletedCat}" supprimée`, 'success');
+                }).catch(error => {
+                    console.error('Erreur suppression catégorie:', error);
+                    showNotification('Erreur lors de la suppression', 'error');
+                });
             });
         }
 
@@ -3000,6 +3148,83 @@
             }, 3000);
         }
 
+        // Modal de confirmation personnalisée
+        function showConfirm(title, message, icon = '❓') {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'custom-modal-overlay active';
+                
+                overlay.innerHTML = `
+                    <div class="custom-modal-box">
+                        <div class="custom-modal-icon">${icon}</div>
+                        <div class="custom-modal-title">${title}</div>
+                        <div class="custom-modal-message">${message}</div>
+                        <div class="custom-modal-buttons">
+                            <button class="btn btn-danger" id="confirm-cancel">Annuler</button>
+                            <button class="btn btn-success" id="confirm-ok">Confirmer</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(overlay);
+                
+                const btnOk = overlay.querySelector('#confirm-ok');
+                const btnCancel = overlay.querySelector('#confirm-cancel');
+                
+                btnOk.addEventListener('click', () => {
+                    overlay.remove();
+                    resolve(true);
+                });
+                
+                btnCancel.addEventListener('click', () => {
+                    overlay.remove();
+                    resolve(false);
+                });
+                
+                // Cliquer en dehors = annuler
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        overlay.remove();
+                        resolve(false);
+                    }
+                });
+            });
+        }
+
+        // Alert personnalisée
+        function showAlert(title, message, icon = 'ℹ️') {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'alert-overlay active';
+                
+                overlay.innerHTML = `
+                    <div class="alert-box">
+                        <div class="alert-icon">${icon}</div>
+                        <div class="alert-title">${title}</div>
+                        <div class="alert-message">${message}</div>
+                        <button class="btn" id="alert-ok" style="width: 100%;">OK</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(overlay);
+                
+                const btnOk = overlay.querySelector('#alert-ok');
+                
+                btnOk.addEventListener('click', () => {
+                    overlay.remove();
+                    resolve();
+                });
+                
+                // Cliquer en dehors = fermer
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        overlay.remove();
+                        resolve();
+                    }
+                });
+            });
+        }
+
         // ==========================================
         // INITIALISATION
         // ==========================================
@@ -3013,7 +3238,11 @@
                 console.log('✅ Supabase prêt');
             } catch (error) {
                 console.error('❌ Impossible d\'initialiser Supabase:', error);
-                alert('❌ Erreur de chargement de la base de données.\n\nLa bibliothèque Supabase ne s\'est pas chargée correctement.\n\nErreur: ' + error.message + '\n\nVérifiez la console (F12).');
+                await showAlert(
+                    'Erreur de connexion',
+                    'La bibliothèque Supabase ne s\'est pas chargée correctement. Vérifiez la console du navigateur (F12) pour plus de détails.',
+                    '❌'
+                );
                 return;
             }
             
