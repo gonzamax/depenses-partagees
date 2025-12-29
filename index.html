@@ -645,12 +645,12 @@
         <p>Gérez vos dépenses partagées en temps réel.<br>Choisissez comment commencer :</p>
         
         <div class="welcome-options">
-            <div class="welcome-option" onclick="createNewRoom()">
+            <div class="welcome-option" id="btn-create-room">
                 <h3>🆕</h3>
                 <h3>Créer un espace</h3>
                 <p>Commencez un nouvel espace partagé</p>
             </div>
-            <div class="welcome-option" onclick="showJoinModal()">
+            <div class="welcome-option" id="btn-join-room">
                 <h3>🔗</h3>
                 <h3>Rejoindre</h3>
                 <p>Entrez un code pour rejoindre un espace existant</p>
@@ -667,8 +667,8 @@
                 <input type="text" id="room-code-input" placeholder="Exemple: abc-def-ghi" style="text-transform: lowercase;">
             </div>
             <div style="display: flex; gap: 10px;">
-                <button class="btn" onclick="joinRoom()">Rejoindre</button>
-                <button class="btn btn-secondary" onclick="closeJoinModal()">Annuler</button>
+                <button class="btn" id="btn-join-confirm">Rejoindre</button>
+                <button class="btn btn-secondary" id="btn-join-cancel">Annuler</button>
             </div>
         </div>
     </div>
@@ -1758,6 +1758,30 @@
 
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Application démarrée');
+            
+            // Attacher les événements aux boutons de bienvenue
+            const btnCreateRoom = document.getElementById('btn-create-room');
+            const btnJoinRoom = document.getElementById('btn-join-room');
+            const btnJoinConfirm = document.getElementById('btn-join-confirm');
+            const btnJoinCancel = document.getElementById('btn-join-cancel');
+            
+            if (btnCreateRoom) {
+                btnCreateRoom.addEventListener('click', createNewRoom);
+                console.log('✅ Bouton créer attaché');
+            }
+            
+            if (btnJoinRoom) {
+                btnJoinRoom.addEventListener('click', showJoinModal);
+                console.log('✅ Bouton rejoindre attaché');
+            }
+            
+            if (btnJoinConfirm) {
+                btnJoinConfirm.addEventListener('click', joinRoom);
+            }
+            
+            if (btnJoinCancel) {
+                btnJoinCancel.addEventListener('click', closeJoinModal);
+            }
             
             const savedRoomId = localStorage.getItem('currentRoomId');
             
