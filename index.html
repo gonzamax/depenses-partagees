@@ -1597,6 +1597,10 @@
                 
                 showMainApp();
                 updateSyncStatus('online');
+                
+                // Vérifier les dépenses récurrentes
+                await checkAndExecuteRecurrentExpenses();
+                
                 showNotification('✅ Espace créé ! Partagez le code avec l\'autre parent.', 'success');
                 console.log('🎉 === FIN CRÉATION ROOM ===');
             } catch (error) {
@@ -1660,6 +1664,10 @@
                 closeJoinModal();
                 showMainApp();
                 updateSyncStatus('online');
+                
+                // Vérifier les dépenses récurrentes
+                await checkAndExecuteRecurrentExpenses();
+                
                 showNotification('Connecté à l\'espace partagé !', 'success');
             } catch (error) {
                 console.error('Erreur rejoindre room:', error);
@@ -2063,8 +2071,113 @@
         }
 
         // ==========================================
-        // DÉPENSES RÉCURRENTES
+        // DÉPENSES RÉCURRENTES - EXÉCUTION AUTOMATIQUE
         // ==========================================
+
+        async function checkAndExecuteRecurrentExpenses() {
+            if (!supabase || !currentRoomId) return;
+            
+            console.log('🔄 Vérification des dépenses récurrentes à exécuter...');
+            
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                
+                // Récupérer toutes les dépenses récurrentes actives
+                const { data: recurrents, error } = await supabase
+                    .from('recurrent_expenses')
+                    .select('*')
+                    .eq('room_id', currentRoomId)
+                    .eq('active', true)
+                    .lte('next_execution', today); // Celles dont la date d'exécution est passée
+                
+                if (error) throw error;
+                
+                if (!recurrents || recurrents.length === 0) {
+                    console.log('✅ Aucune dépense récurrente à exécuter');
+                    return;
+                }
+                
+                console.log(`📋 ${recurrents.length} dépense(s) récurrente(s) à exécuter`);
+                
+                for (const recurrent of recurrents) {
+                    console.log(`➡️ Exécution: ${recurrent.description}`);
+                    
+                    // Créer la dépense
+                    const expense = {
+                        room_id: currentRoomId,
+                        date: recurrent.next_execution,
+                        description: recurrent.description + ' (Récurrente)',
+                        montant: recurrent.montant,
+                        type: recurrent.type,
+                        categorie: recurrent.categorie,
+                        payeur: recurrent.payeur,
+                        notes: recurrent.notes ? recurrent.notes + ' [Automatique]' : 'Dépense récurrente automatique',
+                        attachment_name: null,
+                        attachment_data: null,
+                        attachment_type: null,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    const { error: insertError } = await supabase
+                        .from('expenses')
+                        .insert([expense]);
+                    
+                    if (insertError) {
+                        console.error('❌ Erreur insertion dépense récurrente:', insertError);
+                        continue;
+                    }
+                    
+                    // Calculer la prochaine date d'exécution
+                    const nextExecution = calculateNextExecution(recurrent.day_of_month, new Date(recurrent.next_execution));
+                    
+                    // Mettre à jour la dépense récurrente
+                    const { error: updateError } = await supabase
+                        .from('recurrent_expenses')
+                        .update({
+                            last_execution: recurrent.next_execution,
+                            next_execution: nextExecution
+                        })
+                        .eq('id', recurrent.id);
+                    
+                    if (updateError) {
+                        console.error('❌ Erreur mise à jour récurrente:', updateError);
+                    } else {
+                        console.log(`✅ Dépense créée, prochaine exécution: ${nextExecution}`);
+                    }
+                }
+                
+                // Recharger les données pour afficher les nouvelles dépenses
+                await loadFromSupabase();
+                displayExpenses();
+                displayStatistics();
+                displayRecurrentExpenses();
+                
+                if (recurrents.length > 0) {
+                    showNotification(`${recurrents.length} dépense(s) récurrente(s) ajoutée(s) automatiquement`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur vérification dépenses récurrentes:', error);
+            }
+        }
+
+        function calculateNextExecution(dayOfMonth, fromDate = null) {
+            const baseDate = fromDate ? new Date(fromDate) : new Date();
+            const next = new Date(baseDate);
+            
+            // Passer au mois suivant
+            next.setMonth(next.getMonth() + 1);
+            
+            // Définir le jour
+            next.setDate(dayOfMonth);
+            
+            // Si le jour n'existe pas dans ce mois (ex: 31 février), prendre le dernier jour du mois
+            if (next.getDate() !== dayOfMonth) {
+                next.setDate(0); // Revenir au dernier jour du mois précédent
+            }
+            
+            return next.toISOString().split('T')[0];
+        }
 
         async function addRecurrentExpense(event) {
             event.preventDefault();
@@ -2085,6 +2198,7 @@
                 day_of_month: parseInt(document.getElementById('rec-day').value),
                 notes: document.getElementById('rec-notes').value,
                 active: true,
+                last_execution: null,
                 next_execution: calculateNextExecution(parseInt(document.getElementById('rec-day').value)),
                 created_at: new Date().toISOString()
             };
@@ -2151,17 +2265,6 @@
                 console.error('Erreur suppression récurrente:', error);
                 showNotification('Erreur lors de la suppression', 'error');
             }
-        }
-
-        function calculateNextExecution(dayOfMonth) {
-            const now = new Date();
-            const next = new Date(now.getFullYear(), now.getMonth(), dayOfMonth);
-            
-            if (next <= now) {
-                next.setMonth(next.getMonth() + 1);
-            }
-            
-            return next.toISOString().split('T')[0];
         }
 
         // ==========================================
@@ -2925,6 +3028,12 @@
                         await setupRealtimeSubscriptions();
                         showMainApp();
                         updateSyncStatus('online');
+                        
+                        // Vérifier et exécuter les dépenses récurrentes au démarrage
+                        await checkAndExecuteRecurrentExpenses();
+                        
+                        // Vérifier toutes les heures si des dépenses récurrentes sont à exécuter
+                        setInterval(checkAndExecuteRecurrentExpenses, 60 * 60 * 1000);
                     } else {
                         // Room n'existe plus
                         localStorage.removeItem('currentRoomId');
