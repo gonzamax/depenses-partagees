@@ -448,6 +448,33 @@
             transform: translateX(30px);
         }
 
+        /* Checkbox personnalisée pour afficher les inactives */
+        .custom-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            user-select: none;
+        }
+
+        .custom-checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .custom-checkbox-label:hover {
+            color: #667eea;
+        }
+
+        /* Style pour les items désactivés */
+        .recurrent-item.inactive {
+            opacity: 0.6;
+            border-left-color: #999;
+        }
+
         /* Bouton d'action flottant (FAB) pour mobile */
         .fab-button {
             display: none;
@@ -1345,8 +1372,27 @@
                     <textarea id="rec-notes"></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="rec-attachment">📎 Justificatif (optionnel)</label>
+                    <input type="file" id="rec-attachment" accept="image/*,.pdf" capture="environment" style="padding: 10px;">
+                    <p style="font-size: 0.85em; color: #666; margin-top: 8px;">
+                        📷 Sur mobile : prenez une photo ou importez un fichier<br>
+                        💻 Sur ordinateur : importez une image ou un PDF<br>
+                        ℹ️ Ce fichier sera attaché à chaque dépense créée automatiquement
+                    </p>
+                    <div id="rec-preview-container" style="margin-top: 10px;"></div>
+                </div>
+
                 <button type="submit" class="btn">➕ Ajouter une dépense récurrente</button>
             </form>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px 0; flex-wrap: wrap; gap: 10px;">
+                <h3 style="color: #667eea; margin: 0;">📋 Dépenses récurrentes</h3>
+                <label class="custom-checkbox-label">
+                    <input type="checkbox" id="show-inactive-recurrents" onchange="displayRecurrentExpenses()">
+                    <span>Afficher les désactivées</span>
+                </label>
+            </div>
 
             <div class="recurrent-list" id="recurrent-list"></div>
         </div>
@@ -1841,12 +1887,13 @@
                     expenses = expensesData;
                 }
 
-                // Charger les récurrentes
+                // Charger les récurrentes (toutes, pas seulement actives)
                 const { data: recurrentData } = await supabase
                     .from('recurrent_expenses')
                     .select('*')
                     .eq('room_id', currentRoomId)
-                    .eq('active', true);
+                    .order('active', { ascending: false }) // Actives en premier
+                    .order('created_at', { ascending: false });
 
                 if (recurrentData) {
                     recurrentExpenses = recurrentData;
@@ -2029,9 +2076,62 @@
             }
         });
 
+        // Gestion de la prévisualisation du fichier pour les récurrentes
+        document.getElementById('rec-attachment')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const previewContainer = document.getElementById('rec-preview-container');
+            
+            if (!file) {
+                previewContainer.innerHTML = '';
+                return;
+            }
+            
+            // Vérifier la taille (max 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                showNotification('Le fichier est trop volumineux (max 5MB)', 'error');
+                e.target.value = '';
+                previewContainer.innerHTML = '';
+                return;
+            }
+            
+            // Afficher la prévisualisation
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `
+                        <div style="position: relative; display: inline-block;">
+                            <img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #667eea;">
+                            <button onclick="clearRecurrentAttachment()" type="button" class="btn btn-danger" 
+                                    style="position: absolute; top: -10px; right: -10px; padding: 5px 10px; font-size: 0.8em; border-radius: 50%;">
+                                ✕
+                            </button>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'application/pdf') {
+                previewContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f0f0f0; border-radius: 8px;">
+                        <span style="font-size: 2em;">📄</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${file.name}</div>
+                            <div style="font-size: 0.85em; color: #666;">${(file.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                        <button onclick="clearRecurrentAttachment()" type="button" class="btn btn-danger" style="padding: 5px 10px; font-size: 0.8em;">✕</button>
+                    </div>
+                `;
+            }
+        });
+
         function clearAttachment() {
             document.getElementById('attachment').value = '';
             document.getElementById('preview-container').innerHTML = '';
+        }
+
+        function clearRecurrentAttachment() {
+            document.getElementById('rec-attachment').value = '';
+            document.getElementById('rec-preview-container').innerHTML = '';
         }
 
         // Convertir le fichier en base64
@@ -2264,7 +2364,7 @@
                 for (const recurrent of recurrents) {
                     console.log(`➡️ Exécution: ${recurrent.description}`);
                     
-                    // Créer la dépense
+                    // Créer la dépense avec le fichier attaché de la récurrente
                     const expense = {
                         room_id: currentRoomId,
                         date: recurrent.next_execution,
@@ -2274,9 +2374,9 @@
                         categorie: recurrent.categorie,
                         payeur: recurrent.payeur,
                         notes: recurrent.notes ? recurrent.notes + ' [Automatique]' : 'Dépense récurrente automatique',
-                        attachment_name: null,
-                        attachment_data: null,
-                        attachment_type: null,
+                        attachment_name: recurrent.attachment_name,
+                        attachment_data: recurrent.attachment_data,
+                        attachment_type: recurrent.attachment_type,
                         created_at: new Date().toISOString()
                     };
                     
@@ -2386,6 +2486,22 @@
                 nextExecution = calculateNextExecution(dayOfMonth);
             }
 
+            // Récupérer le fichier s'il existe
+            const fileInput = document.getElementById('rec-attachment');
+            const file = fileInput?.files[0];
+            
+            let attachmentData = null;
+            let attachmentName = null;
+            let attachmentType = null;
+            
+            if (file) {
+                console.log('📎 Traitement du fichier récurrent:', file.name);
+                attachmentName = file.name;
+                attachmentType = file.type;
+                attachmentData = await fileToBase64(file);
+                console.log('✅ Fichier converti en base64');
+            }
+
             const recurrent = {
                 room_id: currentRoomId,
                 description: document.getElementById('rec-description').value,
@@ -2397,6 +2513,9 @@
                 day_of_month: dayOfMonth,
                 day_of_week: dayOfWeek,
                 notes: document.getElementById('rec-notes').value,
+                attachment_name: attachmentName,
+                attachment_data: attachmentData,
+                attachment_type: attachmentType,
                 active: true,
                 last_execution: null,
                 next_execution: nextExecution,
@@ -2412,6 +2531,7 @@
 
                 showNotification('Dépense récurrente ajoutée !', 'success');
                 document.getElementById('recurrent-form').reset();
+                clearRecurrentAttachment();
                 updateRecurrenceFields(); // Remettre le formulaire dans l'état par défaut
                 
                 await loadFromSupabase();
@@ -3021,42 +3141,85 @@
 
         function displayRecurrentExpenses() {
             const list = document.getElementById('recurrent-list');
+            const showInactive = document.getElementById('show-inactive-recurrents')?.checked || false;
             
-            if (recurrentExpenses.length === 0) {
-                list.innerHTML = '<div class="empty-state"><h3>Aucune dépense récurrente</h3></div>';
+            // Filtrer selon l'état actif/inactif
+            const filtered = showInactive 
+                ? recurrentExpenses 
+                : recurrentExpenses.filter(r => r.active);
+            
+            if (filtered.length === 0) {
+                const message = showInactive 
+                    ? 'Aucune dépense récurrente' 
+                    : 'Aucune dépense récurrente active';
+                list.innerHTML = `<div class="empty-state"><h3>${message}</h3></div>`;
                 return;
             }
 
-            list.innerHTML = `
-                <h3 style="margin: 30px 0 15px 0; color: #667eea;">📋 Dépenses récurrentes actives</h3>
-                ${recurrentExpenses.map(rec => {
-                    const frequencyLabel = rec.frequency === 'Hebdomadaire' 
-                        ? `Hebdomadaire - ${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][rec.day_of_week]}`
-                        : `Mensuel - Jour ${rec.day_of_month}`;
-                    
-                    return `
-                    <div class="recurrent-item">
-                        <div class="recurrent-info">
-                            <div style="font-size: 1.2em; font-weight: 600; margin-bottom: 5px;">${rec.description}</div>
-                            <div style="color: #667eea; font-size: 1.3em; font-weight: bold; margin: 5px 0;">${rec.montant.toFixed(2)} ${settings.currency_symbol}</div>
-                            <div style="font-size: 0.9em; color: #666;">
-                                📅 ${frequencyLabel} | 
-                                👤 ${rec.payeur} | 
-                                🏷️ ${rec.categorie}
+            // Séparer actives et inactives
+            const actives = filtered.filter(r => r.active);
+            const inactives = filtered.filter(r => !r.active);
+
+            let html = '';
+
+            // Afficher les actives
+            if (actives.length > 0) {
+                html += '<h3 style="margin: 0 0 15px 0; color: #667eea;">✅ Actives</h3>';
+                html += actives.map(rec => generateRecurrentItemHTML(rec)).join('');
+            }
+
+            // Afficher les inactives si le toggle est activé
+            if (showInactive && inactives.length > 0) {
+                html += '<h3 style="margin: 30px 0 15px 0; color: #999;">💤 Désactivées</h3>';
+                html += inactives.map(rec => generateRecurrentItemHTML(rec, true)).join('');
+            }
+
+            list.innerHTML = html;
+        }
+
+        function generateRecurrentItemHTML(rec, isInactive = false) {
+            const frequencyLabel = rec.frequency === 'Hebdomadaire' 
+                ? `Hebdomadaire - ${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][rec.day_of_week]}`
+                : `Mensuel - Jour ${rec.day_of_month}`;
+            
+            const opacityStyle = isInactive ? 'opacity: 0.6;' : '';
+            const attachmentIcon = rec.attachment_name ? ' 📎' : '';
+            
+            return `
+                <div class="recurrent-item" style="${opacityStyle}">
+                    <div class="recurrent-info">
+                        <div style="font-size: 1.2em; font-weight: 600; margin-bottom: 5px;">
+                            ${rec.description}${attachmentIcon}
+                        </div>
+                        <div style="color: #667eea; font-size: 1.3em; font-weight: bold; margin: 5px 0;">${rec.montant.toFixed(2)} ${settings.currency_symbol}</div>
+                        <div style="font-size: 0.9em; color: #666;">
+                            📅 ${frequencyLabel} | 
+                            👤 ${rec.payeur} | 
+                            🏷️ ${rec.categorie}
+                        </div>
+                        ${rec.attachment_name ? `
+                            <div style="font-size: 0.85em; color: #667eea; margin-top: 5px;">
+                                📎 Justificatif: ${rec.attachment_name}
                             </div>
+                        ` : ''}
+                        ${rec.active ? `
                             <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
                                 Prochaine exécution: ${new Date(rec.next_execution).toLocaleDateString('fr-FR')}
                             </div>
-                        </div>
-                        <div class="recurrent-actions">
-                            <div class="toggle-switch ${rec.active ? 'active' : ''}" 
-                                 onclick="toggleRecurrent(${rec.id})" 
-                                 title="${rec.active ? 'Désactiver' : 'Activer'}">
+                        ` : `
+                            <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
+                                ⏸️ Désactivée ${rec.last_execution ? '- Dernière exécution: ' + new Date(rec.last_execution).toLocaleDateString('fr-FR') : ''}
                             </div>
-                            <button onclick="deleteRecurrent(${rec.id})" class="btn btn-danger" style="padding: 10px 20px;">🗑️</button>
-                        </div>
+                        `}
                     </div>
-                `}).join('')}
+                    <div class="recurrent-actions">
+                        <div class="toggle-switch ${rec.active ? 'active' : ''}" 
+                             onclick="toggleRecurrent(${rec.id})" 
+                             title="${rec.active ? 'Désactiver' : 'Activer'}">
+                        </div>
+                        <button onclick="deleteRecurrent(${rec.id})" class="btn btn-danger" style="padding: 10px 20px;">🗑️</button>
+                    </div>
+                </div>
             `;
         }
 
