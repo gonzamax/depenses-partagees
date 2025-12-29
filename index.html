@@ -2240,8 +2240,8 @@
                             <textarea id="edit-description" required>${expense.description}</textarea>
                         </div>
                         <div class="form-group">
-                            <label for="edit-amount">Montant (${settings.currency_symbol})</label>
-                            <input type="number" id="edit-amount" step="0.01" value="${expense.amount}" required>
+                            <label for="edit-montant">Montant (${settings.currency_symbol})</label>
+                            <input type="number" id="edit-montant" step="0.01" value="${expense.montant}" required>
                         </div>
                         <div class="form-group">
                             <label for="edit-type">Type de dépense</label>
@@ -2252,30 +2252,39 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="edit-category">Catégorie</label>
-                            <select id="edit-category" required>
+                            <label for="edit-categorie">Catégorie</label>
+                            <select id="edit-categorie" required>
                                 ${getCategoriesForType(expense.type).map(c => 
-                                    `<option value="${c}" ${c === expense.category ? 'selected' : ''}>${c}</option>`
+                                    `<option value="${c}" ${c === expense.categorie ? 'selected' : ''}>${c}</option>`
                                 ).join('')}
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="edit-payer">Qui a payé ?</label>
-                            <select id="edit-payer" required>
-                                <option value="${settings.parent1_name}" ${expense.payer === settings.parent1_name ? 'selected' : ''}>${settings.parent1_name}</option>
-                                <option value="${settings.parent2_name}" ${expense.payer === settings.parent2_name ? 'selected' : ''}>${settings.parent2_name}</option>
-                                <option value="Commun" ${expense.payer === 'Commun' ? 'selected' : ''}>Commun</option>
+                            <label for="edit-payeur">Qui a payé ?</label>
+                            <select id="edit-payeur" required>
+                                <option value="${settings.parent1_name}" ${expense.payeur === settings.parent1_name ? 'selected' : ''}>${settings.parent1_name}</option>
+                                <option value="${settings.parent2_name}" ${expense.payeur === settings.parent2_name ? 'selected' : ''}>${settings.parent2_name}</option>
+                                <option value="Commun" ${expense.payeur === 'Commun' ? 'selected' : ''}>Commun</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="edit-payment-method">Moyen de paiement</label>
-                            <select id="edit-payment-method" required>
-                                <option value="CB" ${expense.payment_method === 'CB' ? 'selected' : ''}>Carte bancaire</option>
-                                <option value="Espèces" ${expense.payment_method === 'Espèces' ? 'selected' : ''}>Espèces</option>
-                                <option value="Chèque" ${expense.payment_method === 'Chèque' ? 'selected' : ''}>Chèque</option>
-                                <option value="Virement" ${expense.payment_method === 'Virement' ? 'selected' : ''}>Virement</option>
-                            </select>
+                            <label for="edit-notes">Notes (optionnel)</label>
+                            <textarea id="edit-notes" placeholder="Ajouter des notes...">${expense.notes || ''}</textarea>
                         </div>
+                        ${expense.attachment_name ? `
+                            <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                <label>📎 Justificatif actuel</label>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                                    <span style="flex: 1;">${expense.attachment_name}</span>
+                                    <button type="button" onclick="viewAttachment(${expense.id})" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
+                                        👁️ Voir
+                                    </button>
+                                </div>
+                                <small style="color: #666; display: block; margin-top: 10px;">
+                                    Note: La modification du justificatif n'est pas encore disponible. Pour changer le justificatif, supprimez cette dépense et créez-en une nouvelle.
+                                </small>
+                            </div>
+                        ` : ''}
                         <div style="display: flex; gap: 10px; margin-top: 20px;">
                             <button type="button" onclick="this.closest('.modal').remove()" class="btn btn-secondary" style="flex: 1;">
                                 Annuler
@@ -2292,7 +2301,7 @@
             
             // Gérer le changement de type pour mettre à jour les catégories
             const typeSelect = modal.querySelector('#edit-type');
-            const categorySelect = modal.querySelector('#edit-category');
+            const categorySelect = modal.querySelector('#edit-categorie');
             
             typeSelect.addEventListener('change', () => {
                 const selectedType = typeSelect.value;
@@ -2310,11 +2319,11 @@
                 const updatedExpense = {
                     date: modal.querySelector('#edit-date').value,
                     description: modal.querySelector('#edit-description').value,
-                    amount: parseFloat(modal.querySelector('#edit-amount').value),
+                    montant: parseFloat(modal.querySelector('#edit-montant').value),
                     type: modal.querySelector('#edit-type').value,
-                    category: modal.querySelector('#edit-category').value,
-                    payer: modal.querySelector('#edit-payer').value,
-                    payment_method: modal.querySelector('#edit-payment-method').value
+                    categorie: modal.querySelector('#edit-categorie').value,
+                    payeur: modal.querySelector('#edit-payeur').value,
+                    notes: modal.querySelector('#edit-notes').value
                 };
                 
                 try {
@@ -2715,8 +2724,8 @@
                             <textarea id="edit-rec-description" required>${rec.description}</textarea>
                         </div>
                         <div class="form-group">
-                            <label for="edit-rec-amount">Montant (${settings.currency_symbol})</label>
-                            <input type="number" id="edit-rec-amount" step="0.01" value="${rec.amount}" required>
+                            <label for="edit-rec-montant">Montant (${settings.currency_symbol})</label>
+                            <input type="number" id="edit-rec-montant" step="0.01" value="${rec.montant}" required>
                         </div>
                         <div class="form-group">
                             <label for="edit-rec-type">Type de dépense</label>
@@ -2727,19 +2736,19 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="edit-rec-category">Catégorie</label>
-                            <select id="edit-rec-category" required>
+                            <label for="edit-rec-categorie">Catégorie</label>
+                            <select id="edit-rec-categorie" required>
                                 ${getCategoriesForType(rec.type).map(c => 
-                                    `<option value="${c}" ${c === rec.category ? 'selected' : ''}>${c}</option>`
+                                    `<option value="${c}" ${c === rec.categorie ? 'selected' : ''}>${c}</option>`
                                 ).join('')}
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="edit-rec-payer">Qui paie ?</label>
-                            <select id="edit-rec-payer" required>
-                                <option value="${settings.parent1_name}" ${rec.payer === settings.parent1_name ? 'selected' : ''}>${settings.parent1_name}</option>
-                                <option value="${settings.parent2_name}" ${rec.payer === settings.parent2_name ? 'selected' : ''}>${settings.parent2_name}</option>
-                                <option value="Commun" ${rec.payer === 'Commun' ? 'selected' : ''}>Commun</option>
+                            <label for="edit-rec-payeur">Qui paie ?</label>
+                            <select id="edit-rec-payeur" required>
+                                <option value="${settings.parent1_name}" ${rec.payeur === settings.parent1_name ? 'selected' : ''}>${settings.parent1_name}</option>
+                                <option value="${settings.parent2_name}" ${rec.payeur === settings.parent2_name ? 'selected' : ''}>${settings.parent2_name}</option>
+                                <option value="Commun" ${rec.payeur === 'Commun' ? 'selected' : ''}>Commun</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -2818,7 +2827,7 @@
             
             // Gérer le changement de type pour mettre à jour les catégories
             const typeSelect = modal.querySelector('#edit-rec-type');
-            const categorySelect = modal.querySelector('#edit-rec-category');
+            const categorySelect = modal.querySelector('#edit-rec-categorie');
             
             typeSelect.addEventListener('change', () => {
                 const selectedType = typeSelect.value;
@@ -2838,10 +2847,10 @@
                 
                 const updatedRecurrent = {
                     description: modal.querySelector('#edit-rec-description').value,
-                    amount: parseFloat(modal.querySelector('#edit-rec-amount').value),
+                    montant: parseFloat(modal.querySelector('#edit-rec-montant').value),
                     type: modal.querySelector('#edit-rec-type').value,
-                    category: modal.querySelector('#edit-rec-category').value,
-                    payer: modal.querySelector('#edit-rec-payer').value,
+                    categorie: modal.querySelector('#edit-rec-categorie').value,
+                    payeur: modal.querySelector('#edit-rec-payeur').value,
                     frequency: frequency,
                     start_date: modal.querySelector('#edit-rec-start-date').value,
                     end_date: hasEndDate ? modal.querySelector('#edit-rec-end-date').value : null
