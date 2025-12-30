@@ -4408,16 +4408,21 @@
             
             // Déterminer qui doit à qui
             let debtor, creditor, amountOwed;
-            if (parent1Difference > 1) {
-                // Parent1 a trop payé, Parent2 lui doit
-                debtor = settings.parent2_name;
-                creditor = settings.parent1_name;
-                amountOwed = parent1Difference;
-            } else if (parent2Difference > 1) {
-                // Parent2 a trop payé, Parent1 lui doit
-                debtor = settings.parent1_name;
-                creditor = settings.parent2_name;
-                amountOwed = parent2Difference;
+            
+            // Si parent1Difference est positif : Parent1 a trop payé, Parent2 lui doit
+            // Si parent1Difference est négatif : Parent1 n'a pas assez payé, il doit à Parent2
+            if (Math.abs(parent1Difference) > 1) {
+                if (parent1Difference > 0) {
+                    // Parent1 a trop payé
+                    debtor = settings.parent2_name;
+                    creditor = settings.parent1_name;
+                    amountOwed = parent1Difference;
+                } else {
+                    // Parent1 n'a pas assez payé
+                    debtor = settings.parent1_name;
+                    creditor = settings.parent2_name;
+                    amountOwed = Math.abs(parent1Difference);
+                }
             } else {
                 amountOwed = 0;
             }
