@@ -1306,12 +1306,26 @@
 
         <!-- Onglet Liste -->
         <div id="tab-liste" class="tab-content">
-            <h2 style="color: #667eea; margin-bottom: 20px;">📋 Liste des dépenses</h2>
-            
-            <div class="filter-bar" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.1em;">🔍 Filtres de recherche</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <h2 style="color: #667eea; margin: 0;">📋 Liste des dépenses</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div id="filter-results-compact" style="color: #666; font-size: 0.9em;"></div>
+                    <button class="btn" onclick="openFilterModal()" style="padding: 10px 20px;">
+                        🔍 Filtrer
+                    </button>
+                </div>
+            </div>
+
+            <div id="expense-list" class="expense-list"></div>
+        </div>
+
+        <!-- Modale de filtres -->
+        <div id="filter-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 800px;">
+                <span class="close" onclick="closeFilterModal()">&times;</span>
+                <h2 style="color: #667eea; margin-bottom: 20px;">🔍 Filtres de recherche</h2>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="filter-search" style="font-size: 0.9em;">Recherche (description)</label>
                         <input type="text" id="filter-search" placeholder="Rechercher..." onkeyup="displayExpenses()" style="padding: 10px;">
@@ -1366,16 +1380,17 @@
                     </div>
                 </div>
                 
+                <div id="filter-results" style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px; color: #666; font-size: 0.95em;"></div>
+                
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn btn-secondary" onclick="resetFilters()" style="flex: 1; min-width: 150px;">
-                        🔄 Réinitialiser les filtres
+                        🔄 Réinitialiser
                     </button>
-                    <div style="flex: 2; display: flex; align-items: center; justify-content: flex-end; color: #666; font-size: 0.9em;" id="filter-results">
-                    </div>
+                    <button class="btn btn-success" onclick="closeFilterModal()" style="flex: 1; min-width: 150px;">
+                        ✅ Appliquer
+                    </button>
                 </div>
             </div>
-
-            <div id="expense-list" class="expense-list"></div>
         </div>
 
         <!-- Onglet Statistiques -->
@@ -1555,40 +1570,85 @@
 
             <div class="settings-section">
                 <h3>⚖️ Répartition des dépenses</h3>
-                <p style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
-                    Définissez comment les dépenses doivent être réparties entre les parents
+                <p style="margin-bottom: 20px; font-size: 0.9em; color: #666;">
+                    Définissez comment les dépenses totales doivent être réparties entre les parents
                 </p>
-                <div class="form-group">
-                    <label for="split-mode">Mode de répartition</label>
-                    <select id="split-mode" onchange="updateSplitMode()">
-                        <option value="equal">50/50 - Répartition égale</option>
-                        <option value="custom">Répartition personnalisée</option>
-                    </select>
-                </div>
                 
-                <div id="custom-split-section" style="display: none; margin-top: 20px;">
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-                        <div class="form-group">
-                            <label for="parent1-percentage">Part de <span id="parent1-label-split">Parent 1</span> (%)</label>
-                            <input type="number" id="parent1-percentage" min="0" max="100" value="50" oninput="updateParent2Percentage()">
-                        </div>
-                        <div class="form-group">
-                            <label for="parent2-percentage">Part de <span id="parent2-label-split">Parent 2</span> (%)</label>
-                            <input type="number" id="parent2-percentage" min="0" max="100" value="50" readonly style="background: #e9ecef;">
-                        </div>
-                        <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #667eea;">
-                            <div style="font-size: 0.9em; color: #666;">
-                                <strong>💡 Exemple :</strong> Si Parent 1 assume 60% des dépenses, 
-                                il devra payer 60% de chaque dépense partagée, et Parent 2 paiera les 40% restants.
+                <div style="background: #f8f9fa; padding: 25px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-size: 0.9em; color: #667eea; font-weight: 600; margin-bottom: 5px;">
+                                <span id="parent1-label-split">Parent 1</span>
                             </div>
+                            <div style="font-size: 2em; font-weight: bold; color: #667eea;" id="parent1-percentage-display">50%</div>
+                        </div>
+                        <div style="color: #999; font-size: 1.5em; padding: 0 20px;">⚖️</div>
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-size: 0.9em; color: #764ba2; font-weight: 600; margin-bottom: 5px;">
+                                <span id="parent2-label-split">Parent 2</span>
+                            </div>
+                            <div style="font-size: 2em; font-weight: bold; color: #764ba2;" id="parent2-percentage-display">50%</div>
                         </div>
                     </div>
-                </div>
-                
-                <div style="margin-top: 15px; padding: 15px; background: #d1ecf1; border-radius: 8px; border-left: 4px solid #17a2b8;">
-                    <div style="font-size: 0.9em; color: #0c5460;">
-                        <strong>ℹ️ Information :</strong> Cette répartition s'applique uniquement aux dépenses payées par "Commun" 
-                        et affecte le calcul de l'équilibre des comptes dans les statistiques.
+                    
+                    <div style="position: relative; margin-bottom: 30px;">
+                        <input type="range" 
+                               id="split-slider" 
+                               min="0" 
+                               max="100" 
+                               value="50" 
+                               oninput="updateSplitFromSlider(this.value)"
+                               style="width: 100%; height: 8px; border-radius: 5px; background: linear-gradient(to right, #667eea 0%, #667eea 50%, #764ba2 50%, #764ba2 100%); outline: none; -webkit-appearance: none;">
+                        <style>
+                            #split-slider::-webkit-slider-thumb {
+                                -webkit-appearance: none;
+                                appearance: none;
+                                width: 24px;
+                                height: 24px;
+                                border-radius: 50%;
+                                background: white;
+                                cursor: pointer;
+                                border: 3px solid #667eea;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                            }
+                            #split-slider::-moz-range-thumb {
+                                width: 24px;
+                                height: 24px;
+                                border-radius: 50%;
+                                background: white;
+                                cursor: pointer;
+                                border: 3px solid #667eea;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                            }
+                        </style>
+                    </div>
+                    
+                    <!-- Champs cachés pour garder la compatibilité -->
+                    <input type="hidden" id="parent1-percentage" value="50">
+                    <input type="hidden" id="parent2-percentage" value="50">
+                    <input type="hidden" id="split-mode" value="custom">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <button onclick="setSplitPreset(50)" class="btn btn-secondary" style="padding: 10px;">
+                            50/50 - Égal
+                        </button>
+                        <button onclick="setSplitPreset(60)" class="btn btn-secondary" style="padding: 10px;">
+                            60/40
+                        </button>
+                        <button onclick="setSplitPreset(70)" class="btn btn-secondary" style="padding: 10px;">
+                            70/30
+                        </button>
+                        <button onclick="setSplitPreset(80)" class="btn btn-secondary" style="padding: 10px;">
+                            80/20
+                        </button>
+                    </div>
+                    
+                    <div style="padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #667eea;">
+                        <div style="font-size: 0.9em; color: #666;">
+                            <strong>💡 Comment ça marche :</strong> La répartition s'applique sur le <strong>total de toutes les dépenses</strong>. 
+                            Par exemple avec 60/40 sur 1000€ de dépenses : <span id="parent1-label-split-example">Parent 1</span> devra payer 600€ 
+                            et <span id="parent2-label-split-example">Parent 2</span> devra payer 400€, peu importe qui a payé quoi initialement.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3180,31 +3240,53 @@
             document.getElementById('parent1-name').value = settings.parent1_name;
             document.getElementById('parent2-name').value = settings.parent2_name;
             document.getElementById('currency').value = settings.currency_symbol;
-            document.getElementById('split-mode').value = settings.split_mode || 'equal';
-            document.getElementById('parent1-percentage').value = settings.parent1_percentage || 50;
-            document.getElementById('parent2-percentage').value = settings.parent2_percentage || 50;
             
-            updateSplitMode();
+            // Charger la répartition dans le curseur
+            const parent1Percentage = settings.parent1_percentage || 50;
+            document.getElementById('split-slider').value = parent1Percentage;
+            document.getElementById('parent1-percentage').value = parent1Percentage;
+            document.getElementById('parent2-percentage').value = 100 - parent1Percentage;
+            updateSplitDisplay(parent1Percentage);
             updateSplitLabels();
             
             console.log('✅ Settings chargés');
         }
 
-        function updateSplitMode() {
-            const mode = document.getElementById('split-mode').value;
-            const customSection = document.getElementById('custom-split-section');
-            customSection.style.display = mode === 'custom' ? 'block' : 'none';
+        function updateSplitFromSlider(value) {
+            const parent1Percentage = parseInt(value);
+            const parent2Percentage = 100 - parent1Percentage;
+            
+            // Mettre à jour les champs cachés
+            document.getElementById('parent1-percentage').value = parent1Percentage;
+            document.getElementById('parent2-percentage').value = parent2Percentage;
+            
+            // Mettre à jour l'affichage
+            updateSplitDisplay(parent1Percentage);
+            
+            // Mettre à jour le gradient du curseur
+            const slider = document.getElementById('split-slider');
+            slider.style.background = `linear-gradient(to right, #667eea 0%, #667eea ${value}%, #764ba2 ${value}%, #764ba2 100%)`;
         }
 
-        function updateParent2Percentage() {
-            const parent1Percentage = parseInt(document.getElementById('parent1-percentage').value) || 0;
+        function updateSplitDisplay(parent1Percentage) {
             const parent2Percentage = 100 - parent1Percentage;
-            document.getElementById('parent2-percentage').value = parent2Percentage;
+            document.getElementById('parent1-percentage-display').textContent = parent1Percentage + '%';
+            document.getElementById('parent2-percentage-display').textContent = parent2Percentage + '%';
+        }
+
+        function setSplitPreset(percentage) {
+            document.getElementById('split-slider').value = percentage;
+            updateSplitFromSlider(percentage);
         }
 
         function updateSplitLabels() {
-            document.getElementById('parent1-label-split').textContent = settings.parent1_name;
-            document.getElementById('parent2-label-split').textContent = settings.parent2_name;
+            const labels = ['parent1-label-split', 'parent2-label-split', 'parent1-label-split-example', 'parent2-label-split-example'];
+            labels.forEach((id, index) => {
+                const elem = document.getElementById(id);
+                if (elem) {
+                    elem.textContent = index % 2 === 0 ? settings.parent1_name : settings.parent2_name;
+                }
+            });
         }
 
         // ==========================================
@@ -3793,6 +3875,7 @@
                     </div>
                 `;
                 document.getElementById('filter-results').textContent = '';
+                document.getElementById('filter-results-compact').innerHTML = '';
                 return;
             }
 
@@ -3853,10 +3936,18 @@
 
             // Afficher le nombre de résultats
             const totalAmount = filtered.reduce((sum, e) => sum + e.montant, 0);
-            document.getElementById('filter-results').innerHTML = `
-                <strong>${filtered.length}</strong> dépense(s) trouvée(s) sur <strong>${expenses.length}</strong> 
-                | Total: <strong>${totalAmount.toFixed(2)} ${settings.currency_symbol}</strong>
-            `;
+            const resultsText = `<strong>${filtered.length}</strong> dépense(s) trouvée(s) sur <strong>${expenses.length}</strong> | Total: <strong>${totalAmount.toFixed(2)} ${settings.currency_symbol}</strong>`;
+            
+            // Mettre à jour les deux zones de résultats
+            document.getElementById('filter-results').innerHTML = resultsText;
+            
+            // Version compacte pour l'affichage hors modale
+            const hasFilters = searchFilter || typeFilter || categoryFilter || payeurFilter || monthFilter || minAmountFilter || maxAmountFilter || attachmentFilter;
+            if (hasFilters) {
+                document.getElementById('filter-results-compact').innerHTML = `<span style="background: #667eea; color: white; padding: 5px 10px; border-radius: 12px; font-size: 0.85em;">${filtered.length}/${expenses.length}</span>`;
+            } else {
+                document.getElementById('filter-results-compact').innerHTML = '';
+            }
 
             if (filtered.length === 0) {
                 list.innerHTML = `
@@ -3928,6 +4019,14 @@
             document.getElementById('filter-max-amount').value = '';
             document.getElementById('filter-has-attachment').value = '';
             displayExpenses();
+        }
+
+        function openFilterModal() {
+            document.getElementById('filter-modal').style.display = 'block';
+        }
+
+        function closeFilterModal() {
+            document.getElementById('filter-modal').style.display = 'none';
         }
 
         // Mettre à jour le select des catégories en fonction du type sélectionné
@@ -4246,14 +4345,13 @@
 
             const totalParent1 = filtered.filter(e => e.payeur === settings.parent1_name).reduce((sum, e) => sum + e.montant, 0);
             const totalParent2 = filtered.filter(e => e.payeur === settings.parent2_name).reduce((sum, e) => sum + e.montant, 0);
-            const totalCommun = filtered.filter(e => e.payeur === 'Commun').reduce((sum, e) => sum + e.montant, 0);
 
             const data = {
-                labels: [settings.parent1_name, settings.parent2_name, 'Commun'],
+                labels: [settings.parent1_name, settings.parent2_name],
                 datasets: [{
                     label: 'Montant payé',
-                    data: [totalParent1, totalParent2, totalCommun],
-                    backgroundColor: ['#667eea', '#764ba2', '#43e97b']
+                    data: [totalParent1, totalParent2],
+                    backgroundColor: ['#667eea', '#764ba2']
                 }]
             };
 
@@ -4295,33 +4393,16 @@
         function displayBalance(filtered, totalParent1, totalParent2, total) {
             const balanceCard = document.getElementById('balance-card');
             
-            // Séparer les dépenses par payeur
-            const parent1Expenses = filtered.filter(e => e.payeur === settings.parent1_name);
-            const parent2Expenses = filtered.filter(e => e.payeur === settings.parent2_name);
-            const communExpenses = filtered.filter(e => e.payeur === 'Commun');
-            
-            const totalParent1Direct = parent1Expenses.reduce((sum, e) => sum + e.montant, 0);
-            const totalParent2Direct = parent2Expenses.reduce((sum, e) => sum + e.montant, 0);
-            const totalCommun = communExpenses.reduce((sum, e) => sum + e.montant, 0);
-            
             // Calculer ce que chaque parent DEVRAIT payer selon la répartition configurée
             // La répartition s'applique sur le TOTAL de TOUTES les dépenses
-            let parent1ShouldPay, parent2ShouldPay;
-            if (settings.split_mode === 'custom') {
-                parent1ShouldPay = (total * settings.parent1_percentage) / 100;
-                parent2ShouldPay = (total * settings.parent2_percentage) / 100;
-            } else {
-                parent1ShouldPay = total / 2;
-                parent2ShouldPay = total / 2;
-            }
+            const parent1ShouldPay = (total * settings.parent1_percentage) / 100;
+            const parent2ShouldPay = (total * settings.parent2_percentage) / 100;
             
             // Ce que chaque parent A PAYÉ réellement
             const parent1ActualPaid = totalParent1;
             const parent2ActualPaid = totalParent2;
             
             // Calcul du déséquilibre
-            // Si parent1ActualPaid > parent1ShouldPay : il a trop payé, on lui doit
-            // Si parent1ActualPaid < parent1ShouldPay : il n'a pas assez payé, il doit
             const parent1Difference = parent1ActualPaid - parent1ShouldPay;
             const parent2Difference = parent2ActualPaid - parent2ShouldPay;
             
@@ -4341,31 +4422,19 @@
                 amountOwed = 0;
             }
 
-            // Calculer aussi la répartition des dépenses communes pour l'affichage
-            let parent1ShareCommun, parent2ShareCommun;
-            if (settings.split_mode === 'custom') {
-                parent1ShareCommun = (totalCommun * settings.parent1_percentage) / 100;
-                parent2ShareCommun = (totalCommun * settings.parent2_percentage) / 100;
-            } else {
-                parent1ShareCommun = totalCommun / 2;
-                parent2ShareCommun = totalCommun / 2;
-            }
-
             balanceCard.innerHTML = `
                 <h2 style="color: #667eea; margin-bottom: 20px;">💰 Équilibre des comptes</h2>
                 
-                ${settings.split_mode === 'custom' ? `
-                    <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <div style="font-size: 0.95em; color: #0c5460;">
-                            <strong>⚖️ Répartition configurée :</strong> 
-                            ${settings.parent1_name} : ${settings.parent1_percentage}% | 
-                            ${settings.parent2_name} : ${settings.parent2_percentage}%
-                            <div style="margin-top: 8px; font-size: 0.9em; opacity: 0.8;">
-                                Cette répartition s'applique sur le <strong>total global</strong> des dépenses
-                            </div>
+                <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="font-size: 0.95em; color: #0c5460;">
+                        <strong>⚖️ Répartition configurée :</strong> 
+                        ${settings.parent1_name} : ${settings.parent1_percentage}% | 
+                        ${settings.parent2_name} : ${settings.parent2_percentage}%
+                        <div style="margin-top: 8px; font-size: 0.9em; opacity: 0.8;">
+                            Sur ${total.toFixed(2)} ${settings.currency_symbol} de dépenses totales
                         </div>
                     </div>
-                ` : ''}
+                </div>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
                     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px;">
@@ -4374,7 +4443,7 @@
                         <div style="font-size: 2em; font-weight: bold;">${parent1ActualPaid.toFixed(2)} ${settings.currency_symbol}</div>
                         <div style="margin-top: 5px; opacity: 0.8;">${((parent1ActualPaid / total) * 100).toFixed(1)}% du total</div>
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
-                            <small>Devrait payer : ${parent1ShouldPay.toFixed(2)} ${settings.currency_symbol}</small>
+                            <small>Devrait payer : ${parent1ShouldPay.toFixed(2)} ${settings.currency_symbol} (${settings.parent1_percentage}%)</small>
                         </div>
                     </div>
                     <div style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; padding: 20px; border-radius: 12px;">
@@ -4383,30 +4452,10 @@
                         <div style="font-size: 2em; font-weight: bold;">${parent2ActualPaid.toFixed(2)} ${settings.currency_symbol}</div>
                         <div style="margin-top: 5px; opacity: 0.8;">${((parent2ActualPaid / total) * 100).toFixed(1)}% du total</div>
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
-                            <small>Devrait payer : ${parent2ShouldPay.toFixed(2)} ${settings.currency_symbol}</small>
+                            <small>Devrait payer : ${parent2ShouldPay.toFixed(2)} ${settings.currency_symbol} (${settings.parent2_percentage}%)</small>
                         </div>
                     </div>
                 </div>
-                
-                ${totalCommun > 0 ? `
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4 style="color: #667eea; margin-bottom: 10px;">💼 Dépenses communes</h4>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                            <div>
-                                <div style="font-size: 0.9em; color: #666;">Total commun</div>
-                                <div style="font-size: 1.3em; font-weight: bold; color: #333;">${totalCommun.toFixed(2)} ${settings.currency_symbol}</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.9em; color: #666;">Part ${settings.parent1_name} (${settings.parent1_percentage}%)</div>
-                                <div style="font-size: 1.3em; font-weight: bold; color: #667eea;">${parent1ShareCommun.toFixed(2)} ${settings.currency_symbol}</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.9em; color: #666;">Part ${settings.parent2_name} (${settings.parent2_percentage}%)</div>
-                                <div style="font-size: 1.3em; font-weight: bold; color: #764ba2;">${parent2ShareCommun.toFixed(2)} ${settings.currency_symbol}</div>
-                            </div>
-                        </div>
-                    </div>
-                ` : ''}
                 
                 ${amountOwed > 1 ? `
                     <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
