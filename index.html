@@ -3153,7 +3153,20 @@
                     .from('recurrent_expenses')
                     .insert([recurrent]);
 
-                if (error) throw error;
+                if (error) {
+                    // Si l'erreur concerne la colonne end_date ou start_date manquante, réessayer sans
+                    if (error.message && (error.message.includes('end_date') || error.message.includes('start_date'))) {
+                        console.warn('Colonnes end_date/start_date non disponibles, sauvegarde sans ces champs');
+                        delete recurrent.end_date;
+                        delete recurrent.start_date;
+                        const { error: retryError } = await supabase
+                            .from('recurrent_expenses')
+                            .insert([recurrent]);
+                        if (retryError) throw retryError;
+                    } else {
+                        throw error;
+                    }
+                }
 
                 showNotification('Dépense récurrente ajoutée !', 'success');
                 document.getElementById('recurrent-form').reset();
@@ -3362,10 +3375,15 @@
                     frequency: frequency,
                     day_of_month: dayOfMonth,
                     day_of_week: dayOfWeek,
-                    end_date: modal.querySelector('#edit-rec-end-date').value || null,
                     notes: modal.querySelector('#edit-rec-notes').value,
                     next_execution: nextExecution
                 };
+                
+                // Ajouter end_date seulement si une valeur est fournie
+                const endDateValue = modal.querySelector('#edit-rec-end-date').value;
+                if (endDateValue) {
+                    updatedRecurrent.end_date = endDateValue;
+                }
                 
                 try {
                     const { error } = await supabase
@@ -3373,7 +3391,20 @@
                         .update(updatedRecurrent)
                         .eq('id', id);
                     
-                    if (error) throw error;
+                    if (error) {
+                        // Si l'erreur concerne la colonne end_date manquante, réessayer sans
+                        if (error.message && error.message.includes('end_date')) {
+                            console.warn('Colonne end_date non disponible, sauvegarde sans ce champ');
+                            delete updatedRecurrent.end_date;
+                            const { error: retryError } = await supabase
+                                .from('recurrent_expenses')
+                                .update(updatedRecurrent)
+                                .eq('id', id);
+                            if (retryError) throw retryError;
+                        } else {
+                            throw error;
+                        }
+                    }
                     
                     showNotification('Dépense récurrente modifiée avec succès !', 'success');
                     modal.remove();
