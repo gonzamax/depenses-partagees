@@ -53,9 +53,9 @@
 
         .share-info {
             background: #e8f5e9;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-top: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -66,7 +66,8 @@
         .share-info .room-id {
             font-weight: bold;
             color: #667eea;
-            font-size: 1.2em;
+            font-size: 0.95em;
+            letter-spacing: 0.5px;
         }
 
         .tabs {
@@ -639,20 +640,25 @@
             .share-info {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 8px;
-                margin-top: 10px;
-                padding: 10px;
+                gap: 6px;
+                margin-top: 8px;
+                padding: 8px 10px;
             }
 
             .share-info > div {
                 width: 100%;
                 text-align: center;
-                font-size: 0.85em;
+                font-size: 0.8em;
             }
 
             .room-id {
-                font-size: 0.9em !important;
+                font-size: 0.85em !important;
                 word-break: break-all;
+            }
+            
+            .copy-btn {
+                padding: 4px 8px !important;
+                font-size: 0.9em !important;
             }
 
             .tabs {
@@ -1215,12 +1221,12 @@
         
         <div class="header">
             <h1>💰 Gestion des Dépenses Partagées</h1>
-            <p>Synchronisation en temps réel avec Supabase</p>
+            <p>Synchronisation en temps réel</p>
             <div class="share-info">
-                <div>
-                    <span>Code de partage :</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.9em; color: #666;">🔗</span>
                     <span class="room-id" id="room-id-display"></span>
-                    <button class="copy-btn" onclick="copyRoomId()">📋 Copier</button>
+                    <button class="copy-btn" onclick="copyRoomId()">📋</button>
                 </div>
                 <div>
                     <span class="sync-status sync-online" id="sync-status">🟢 Connecté</span>
@@ -1548,6 +1554,46 @@
             </div>
 
             <div class="settings-section">
+                <h3>⚖️ Répartition des dépenses</h3>
+                <p style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
+                    Définissez comment les dépenses doivent être réparties entre les parents
+                </p>
+                <div class="form-group">
+                    <label for="split-mode">Mode de répartition</label>
+                    <select id="split-mode" onchange="updateSplitMode()">
+                        <option value="equal">50/50 - Répartition égale</option>
+                        <option value="custom">Répartition personnalisée</option>
+                    </select>
+                </div>
+                
+                <div id="custom-split-section" style="display: none; margin-top: 20px;">
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <div class="form-group">
+                            <label for="parent1-percentage">Part de <span id="parent1-label-split">Parent 1</span> (%)</label>
+                            <input type="number" id="parent1-percentage" min="0" max="100" value="50" oninput="updateParent2Percentage()">
+                        </div>
+                        <div class="form-group">
+                            <label for="parent2-percentage">Part de <span id="parent2-label-split">Parent 2</span> (%)</label>
+                            <input type="number" id="parent2-percentage" min="0" max="100" value="50" readonly style="background: #e9ecef;">
+                        </div>
+                        <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #667eea;">
+                            <div style="font-size: 0.9em; color: #666;">
+                                <strong>💡 Exemple :</strong> Si Parent 1 assume 60% des dépenses, 
+                                il devra payer 60% de chaque dépense partagée, et Parent 2 paiera les 40% restants.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 15px; background: #d1ecf1; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                    <div style="font-size: 0.9em; color: #0c5460;">
+                        <strong>ℹ️ Information :</strong> Cette répartition s'applique uniquement aux dépenses payées par "Commun" 
+                        et affecte le calcul de l'équilibre des comptes dans les statistiques.
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3>📂 Types de dépenses</h3>
                 <p style="margin-bottom: 10px; font-size: 0.9em; color: #666;">
                     Gérez les types de dépenses disponibles dans l'application
@@ -1712,7 +1758,10 @@
         let settings = {
             parent1_name: 'Parent 1',
             parent2_name: 'Parent 2',
-            currency_symbol: '€'
+            currency_symbol: '€',
+            split_mode: 'equal',
+            parent1_percentage: 50,
+            parent2_percentage: 50
         };
 
         // ==========================================
@@ -3113,9 +3162,13 @@
             settings.parent1_name = document.getElementById('parent1-name').value || 'Parent 1';
             settings.parent2_name = document.getElementById('parent2-name').value || 'Parent 2';
             settings.currency_symbol = document.getElementById('currency').value || '€';
+            settings.split_mode = document.getElementById('split-mode').value || 'equal';
+            settings.parent1_percentage = parseInt(document.getElementById('parent1-percentage').value) || 50;
+            settings.parent2_percentage = parseInt(document.getElementById('parent2-percentage').value) || 50;
             
             await saveSettingsToSupabase();
             updatePayeurSelects();
+            updateSplitLabels();
             displayExpenses();
             displayStatistics();
             showNotification('Paramètres sauvegardés !', 'success');
@@ -3127,8 +3180,31 @@
             document.getElementById('parent1-name').value = settings.parent1_name;
             document.getElementById('parent2-name').value = settings.parent2_name;
             document.getElementById('currency').value = settings.currency_symbol;
+            document.getElementById('split-mode').value = settings.split_mode || 'equal';
+            document.getElementById('parent1-percentage').value = settings.parent1_percentage || 50;
+            document.getElementById('parent2-percentage').value = settings.parent2_percentage || 50;
+            
+            updateSplitMode();
+            updateSplitLabels();
             
             console.log('✅ Settings chargés');
+        }
+
+        function updateSplitMode() {
+            const mode = document.getElementById('split-mode').value;
+            const customSection = document.getElementById('custom-split-section');
+            customSection.style.display = mode === 'custom' ? 'block' : 'none';
+        }
+
+        function updateParent2Percentage() {
+            const parent1Percentage = parseInt(document.getElementById('parent1-percentage').value) || 0;
+            const parent2Percentage = 100 - parent1Percentage;
+            document.getElementById('parent2-percentage').value = parent2Percentage;
+        }
+
+        function updateSplitLabels() {
+            document.getElementById('parent1-label-split').textContent = settings.parent1_name;
+            document.getElementById('parent2-label-split').textContent = settings.parent2_name;
         }
 
         // ==========================================
@@ -4218,29 +4294,115 @@
 
         function displayBalance(filtered, totalParent1, totalParent2, total) {
             const balanceCard = document.getElementById('balance-card');
-            const difference = Math.abs(totalParent1 - totalParent2);
-            const debtor = totalParent1 > totalParent2 ? settings.parent2_name : settings.parent1_name;
-            const creditor = totalParent1 > totalParent2 ? settings.parent1_name : settings.parent2_name;
+            
+            // Calculer les dépenses communes
+            const totalCommun = filtered.filter(e => e.payeur === 'Commun').reduce((sum, e) => sum + e.montant, 0);
+            
+            // Appliquer la répartition sur les dépenses communes
+            let parent1Share, parent2Share;
+            if (settings.split_mode === 'custom') {
+                parent1Share = (totalCommun * settings.parent1_percentage) / 100;
+                parent2Share = (totalCommun * settings.parent2_percentage) / 100;
+            } else {
+                parent1Share = totalCommun / 2;
+                parent2Share = totalCommun / 2;
+            }
+            
+            // Calculer ce que chaque parent devrait payer (hors dépenses communes déjà payées)
+            const totalParent1Direct = filtered.filter(e => e.payeur === settings.parent1_name).reduce((sum, e) => sum + e.montant, 0);
+            const totalParent2Direct = filtered.filter(e => e.payeur === settings.parent2_name).reduce((sum, e) => sum + e.montant, 0);
+            
+            // Ce que chaque parent devrait payer au total
+            const parent1ShouldPay = parent1Share;
+            const parent2ShouldPay = parent2Share;
+            
+            // Ce que chaque parent a effectivement payé (incluant les dépenses personnelles et communes)
+            const parent1ActualPaid = totalParent1Direct + totalCommun; // Si Parent1 a payé les dépenses communes
+            const parent2ActualPaid = totalParent2Direct + totalCommun; // Si Parent2 a payé les dépenses communes
+            
+            // Calcul de l'équilibre basé sur la répartition
+            // Parent1 a payé totalParent1, il devrait payer (ses dépenses directes + sa part des communes)
+            const parent1Balance = totalParent1Direct - parent1ShouldPay;
+            const parent2Balance = totalParent2Direct - parent2ShouldPay;
+            
+            const netBalance = parent1Balance + parent2Balance; // Qui doit à qui
+            
+            let debtor, creditor, amountOwed;
+            if (netBalance > 0) {
+                // Parent1 a trop payé
+                debtor = settings.parent2_name;
+                creditor = settings.parent1_name;
+                amountOwed = Math.abs(netBalance);
+            } else if (netBalance < 0) {
+                // Parent2 a trop payé
+                debtor = settings.parent1_name;
+                creditor = settings.parent2_name;
+                amountOwed = Math.abs(netBalance);
+            } else {
+                amountOwed = 0;
+            }
 
             balanceCard.innerHTML = `
                 <h2 style="color: #667eea; margin-bottom: 20px;">💰 Équilibre des comptes</h2>
+                
+                ${settings.split_mode === 'custom' ? `
+                    <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="font-size: 0.95em; color: #0c5460;">
+                            <strong>⚖️ Répartition configurée :</strong> 
+                            ${settings.parent1_name} : ${settings.parent1_percentage}% | 
+                            ${settings.parent2_name} : ${settings.parent2_percentage}%
+                        </div>
+                    </div>
+                ` : ''}
+                
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
                     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px;">
                         <h4 style="margin-bottom: 10px; opacity: 0.9;">${settings.parent1_name} a payé</h4>
                         <div style="font-size: 2em; font-weight: bold;">${totalParent1.toFixed(2)} ${settings.currency_symbol}</div>
                         <div style="margin-top: 5px; opacity: 0.8;">${((totalParent1 / total) * 100).toFixed(1)}% du total</div>
+                        ${settings.split_mode === 'custom' ? `
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
+                                <small>Devrait payer : ${(totalParent1Direct + parent1ShouldPay).toFixed(2)} ${settings.currency_symbol}</small>
+                            </div>
+                        ` : ''}
                     </div>
                     <div style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; padding: 20px; border-radius: 12px;">
                         <h4 style="margin-bottom: 10px; opacity: 0.9;">${settings.parent2_name} a payé</h4>
                         <div style="font-size: 2em; font-weight: bold;">${totalParent2.toFixed(2)} ${settings.currency_symbol}</div>
                         <div style="margin-top: 5px; opacity: 0.8;">${((totalParent2 / total) * 100).toFixed(1)}% du total</div>
+                        ${settings.split_mode === 'custom' ? `
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
+                                <small>Devrait payer : ${(totalParent2Direct + parent2ShouldPay).toFixed(2)} ${settings.currency_symbol}</small>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
-                ${difference > 0 ? `
+                
+                ${totalCommun > 0 ? `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #667eea; margin-bottom: 10px;">💼 Dépenses communes</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div>
+                                <div style="font-size: 0.9em; color: #666;">Total commun</div>
+                                <div style="font-size: 1.3em; font-weight: bold; color: #333;">${totalCommun.toFixed(2)} ${settings.currency_symbol}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.9em; color: #666;">Part ${settings.parent1_name}</div>
+                                <div style="font-size: 1.3em; font-weight: bold; color: #667eea;">${parent1Share.toFixed(2)} ${settings.currency_symbol}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.9em; color: #666;">Part ${settings.parent2_name}</div>
+                                <div style="font-size: 1.3em; font-weight: bold; color: #764ba2;">${parent2Share.toFixed(2)} ${settings.currency_symbol}</div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${amountOwed > 1 ? `
                     <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
                         <div style="font-size: 1.1em; color: #856404;">
                             <strong>⚖️ Rééquilibrage :</strong> 
-                            ${debtor} doit <strong>${(difference / 2).toFixed(2)} ${settings.currency_symbol}</strong> à ${creditor}
+                            ${debtor} doit <strong>${amountOwed.toFixed(2)} ${settings.currency_symbol}</strong> à ${creditor}
                         </div>
                     </div>
                 ` : `
