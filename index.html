@@ -4295,49 +4295,52 @@
         function displayBalance(filtered, totalParent1, totalParent2, total) {
             const balanceCard = document.getElementById('balance-card');
             
-            // Calculer les dépenses communes
-            const totalCommun = filtered.filter(e => e.payeur === 'Commun').reduce((sum, e) => sum + e.montant, 0);
+            // Séparer les dépenses par payeur
+            const parent1Expenses = filtered.filter(e => e.payeur === settings.parent1_name);
+            const parent2Expenses = filtered.filter(e => e.payeur === settings.parent2_name);
+            const communExpenses = filtered.filter(e => e.payeur === 'Commun');
             
-            // Appliquer la répartition sur les dépenses communes
-            let parent1Share, parent2Share;
+            const totalParent1Direct = parent1Expenses.reduce((sum, e) => sum + e.montant, 0);
+            const totalParent2Direct = parent2Expenses.reduce((sum, e) => sum + e.montant, 0);
+            const totalCommun = communExpenses.reduce((sum, e) => sum + e.montant, 0);
+            
+            // Calculer la répartition des dépenses communes selon le ratio configuré
+            let parent1ShareCommun, parent2ShareCommun;
             if (settings.split_mode === 'custom') {
-                parent1Share = (totalCommun * settings.parent1_percentage) / 100;
-                parent2Share = (totalCommun * settings.parent2_percentage) / 100;
+                parent1ShareCommun = (totalCommun * settings.parent1_percentage) / 100;
+                parent2ShareCommun = (totalCommun * settings.parent2_percentage) / 100;
             } else {
-                parent1Share = totalCommun / 2;
-                parent2Share = totalCommun / 2;
+                parent1ShareCommun = totalCommun / 2;
+                parent2ShareCommun = totalCommun / 2;
             }
             
-            // Calculer ce que chaque parent devrait payer (hors dépenses communes déjà payées)
-            const totalParent1Direct = filtered.filter(e => e.payeur === settings.parent1_name).reduce((sum, e) => sum + e.montant, 0);
-            const totalParent2Direct = filtered.filter(e => e.payeur === settings.parent2_name).reduce((sum, e) => sum + e.montant, 0);
+            // Ce que chaque parent DEVRAIT payer au total
+            const parent1ShouldPay = totalParent1Direct + parent1ShareCommun;
+            const parent2ShouldPay = totalParent2Direct + parent2ShareCommun;
             
-            // Ce que chaque parent devrait payer au total
-            const parent1ShouldPay = parent1Share;
-            const parent2ShouldPay = parent2Share;
+            // Ce que chaque parent A PAYÉ réellement
+            // totalParent1 et totalParent2 incluent déjà toutes leurs dépenses
+            const parent1ActualPaid = totalParent1;
+            const parent2ActualPaid = totalParent2;
             
-            // Ce que chaque parent a effectivement payé (incluant les dépenses personnelles et communes)
-            const parent1ActualPaid = totalParent1Direct + totalCommun; // Si Parent1 a payé les dépenses communes
-            const parent2ActualPaid = totalParent2Direct + totalCommun; // Si Parent2 a payé les dépenses communes
+            // Calcul du déséquilibre
+            // Si parent1ActualPaid > parent1ShouldPay : il a trop payé, on lui doit
+            // Si parent1ActualPaid < parent1ShouldPay : il n'a pas assez payé, il doit
+            const parent1Difference = parent1ActualPaid - parent1ShouldPay;
+            const parent2Difference = parent2ActualPaid - parent2ShouldPay;
             
-            // Calcul de l'équilibre basé sur la répartition
-            // Parent1 a payé totalParent1, il devrait payer (ses dépenses directes + sa part des communes)
-            const parent1Balance = totalParent1Direct - parent1ShouldPay;
-            const parent2Balance = totalParent2Direct - parent2ShouldPay;
-            
-            const netBalance = parent1Balance + parent2Balance; // Qui doit à qui
-            
+            // Déterminer qui doit à qui
             let debtor, creditor, amountOwed;
-            if (netBalance > 0) {
-                // Parent1 a trop payé
+            if (parent1Difference > 1) {
+                // Parent1 a trop payé, Parent2 lui doit
                 debtor = settings.parent2_name;
                 creditor = settings.parent1_name;
-                amountOwed = Math.abs(netBalance);
-            } else if (netBalance < 0) {
-                // Parent2 a trop payé
+                amountOwed = parent1Difference;
+            } else if (parent2Difference > 1) {
+                // Parent2 a trop payé, Parent1 lui doit
                 debtor = settings.parent1_name;
                 creditor = settings.parent2_name;
-                amountOwed = Math.abs(netBalance);
+                amountOwed = parent2Difference;
             } else {
                 amountOwed = 0;
             }
@@ -4357,24 +4360,22 @@
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
                     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px;">
-                        <h4 style="margin-bottom: 10px; opacity: 0.9;">${settings.parent1_name} a payé</h4>
-                        <div style="font-size: 2em; font-weight: bold;">${totalParent1.toFixed(2)} ${settings.currency_symbol}</div>
-                        <div style="margin-top: 5px; opacity: 0.8;">${((totalParent1 / total) * 100).toFixed(1)}% du total</div>
-                        ${settings.split_mode === 'custom' ? `
-                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
-                                <small>Devrait payer : ${(totalParent1Direct + parent1ShouldPay).toFixed(2)} ${settings.currency_symbol}</small>
-                            </div>
-                        ` : ''}
+                        <h4 style="margin-bottom: 10px; opacity: 0.9;">${settings.parent1_name}</h4>
+                        <div style="font-size: 0.9em; opacity: 0.8; margin-bottom: 5px;">A payé</div>
+                        <div style="font-size: 2em; font-weight: bold;">${parent1ActualPaid.toFixed(2)} ${settings.currency_symbol}</div>
+                        <div style="margin-top: 5px; opacity: 0.8;">${((parent1ActualPaid / total) * 100).toFixed(1)}% du total</div>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
+                            <small>Devrait payer : ${parent1ShouldPay.toFixed(2)} ${settings.currency_symbol}</small>
+                        </div>
                     </div>
                     <div style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; padding: 20px; border-radius: 12px;">
-                        <h4 style="margin-bottom: 10px; opacity: 0.9;">${settings.parent2_name} a payé</h4>
-                        <div style="font-size: 2em; font-weight: bold;">${totalParent2.toFixed(2)} ${settings.currency_symbol}</div>
-                        <div style="margin-top: 5px; opacity: 0.8;">${((totalParent2 / total) * 100).toFixed(1)}% du total</div>
-                        ${settings.split_mode === 'custom' ? `
-                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
-                                <small>Devrait payer : ${(totalParent2Direct + parent2ShouldPay).toFixed(2)} ${settings.currency_symbol}</small>
-                            </div>
-                        ` : ''}
+                        <h4 style="margin-bottom: 10px; opacity: 0.9;">${settings.parent2_name}</h4>
+                        <div style="font-size: 0.9em; opacity: 0.8; margin-bottom: 5px;">A payé</div>
+                        <div style="font-size: 2em; font-weight: bold;">${parent2ActualPaid.toFixed(2)} ${settings.currency_symbol}</div>
+                        <div style="margin-top: 5px; opacity: 0.8;">${((parent2ActualPaid / total) * 100).toFixed(1)}% du total</div>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
+                            <small>Devrait payer : ${parent2ShouldPay.toFixed(2)} ${settings.currency_symbol}</small>
+                        </div>
                     </div>
                 </div>
                 
@@ -4387,17 +4388,33 @@
                                 <div style="font-size: 1.3em; font-weight: bold; color: #333;">${totalCommun.toFixed(2)} ${settings.currency_symbol}</div>
                             </div>
                             <div>
-                                <div style="font-size: 0.9em; color: #666;">Part ${settings.parent1_name}</div>
-                                <div style="font-size: 1.3em; font-weight: bold; color: #667eea;">${parent1Share.toFixed(2)} ${settings.currency_symbol}</div>
+                                <div style="font-size: 0.9em; color: #666;">Part ${settings.parent1_name} (${settings.parent1_percentage}%)</div>
+                                <div style="font-size: 1.3em; font-weight: bold; color: #667eea;">${parent1ShareCommun.toFixed(2)} ${settings.currency_symbol}</div>
                             </div>
                             <div>
-                                <div style="font-size: 0.9em; color: #666;">Part ${settings.parent2_name}</div>
-                                <div style="font-size: 1.3em; font-weight: bold; color: #764ba2;">${parent2Share.toFixed(2)} ${settings.currency_symbol}</div>
+                                <div style="font-size: 0.9em; color: #666;">Part ${settings.parent2_name} (${settings.parent2_percentage}%)</div>
+                                <div style="font-size: 1.3em; font-weight: bold; color: #764ba2;">${parent2ShareCommun.toFixed(2)} ${settings.currency_symbol}</div>
                             </div>
                         </div>
                     </div>
                 ` : ''}
                 
+                ${amountOwed > 1 ? `
+                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
+                        <div style="font-size: 1.1em; color: #856404;">
+                            <strong>⚖️ Rééquilibrage :</strong> 
+                            ${debtor} doit <strong>${amountOwed.toFixed(2)} ${settings.currency_symbol}</strong> à ${creditor}
+                        </div>
+                    </div>
+                ` : `
+                    <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
+                        <div style="font-size: 1.1em; color: #155724;">
+                            <strong>✅ Les comptes sont équilibrés !</strong>
+                        </div>
+                    </div>
+                `}
+            `;
+        }
                 ${amountOwed > 1 ? `
                     <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
                         <div style="font-size: 1.1em; color: #856404;">
