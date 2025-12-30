@@ -4092,6 +4092,8 @@
                 displayExpenses();
             } else if (tabName === 'statistiques') {
                 displayStatistics();
+            } else if (tabName === 'budget') {
+                displayBudget();
             } else if (tabName === 'recurrentes') {
                 displayRecurrentExpenses();
             } else if (tabName === 'parametres') {
@@ -4900,7 +4902,15 @@
             
             // Utiliser start_date si existe, sinon created_at comme fallback
             const startDateStr = rec.start_date || rec.created_at;
-            if (!startDateStr) return true; // Si pas de date, on considère active
+            if (!startDateStr) {
+                // Si pas de date du tout, on considère que c'est une ancienne récurrente
+                // On utilise la date du jour comme date de début par défaut
+                const today = new Date();
+                const monthStart = new Date(year, month - 1, 1);
+                const monthEnd = new Date(year, month, 0);
+                // Actif seulement si le mois en cours
+                return today >= monthStart && today <= monthEnd;
+            }
             
             const startDate = new Date(startDateStr);
             const monthStart = new Date(year, month - 1, 1);
@@ -5004,6 +5014,26 @@
             }
             
             const annualTotal = annualRecurrent + annualBudget;
+            
+            // Si aucune donnée, afficher un état vide
+            if (annualTotal === 0 && expenses.length === 0) {
+                document.getElementById('budget-summary').innerHTML = `
+                    <div style="grid-column: 1/-1; background: #f8f9fa; padding: 60px 20px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 3em; margin-bottom: 20px;">💰</div>
+                        <h3 style="color: #667eea; margin-bottom: 15px;">Aucun budget prévisionnel</h3>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            Commencez par ajouter des dépenses récurrentes ou des dépenses prévisionnelles pour voir votre budget.
+                        </p>
+                        <button class="btn" onclick="openAddBudgetItemModal()" style="padding: 12px 24px;">
+                            ➕ Ajouter une dépense prévisionnelle
+                        </button>
+                    </div>
+                `;
+                document.getElementById('budget-months-container').innerHTML = '';
+                document.getElementById('budget-items-list').innerHTML = '';
+                return;
+            }
+            
             const parent1Annual = (annualTotal * settings.parent1_percentage) / 100;
             const parent2Annual = (annualTotal * settings.parent2_percentage) / 100;
             
