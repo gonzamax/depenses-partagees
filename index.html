@@ -1697,6 +1697,14 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="rec-end-date">📅 Date de fin (optionnel)</label>
+                    <input type="date" id="rec-end-date">
+                    <p style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                        Si laissé vide, la dépense continuera indéfiniment
+                    </p>
+                </div>
+
+                <div class="form-group">
                     <label for="rec-notes">📌 Notes (optionnel)</label>
                     <textarea id="rec-notes"></textarea>
                 </div>
@@ -3128,6 +3136,8 @@
                 frequency: frequency,
                 day_of_month: dayOfMonth,
                 day_of_week: dayOfWeek,
+                start_date: new Date().toISOString().split('T')[0], // Date du jour
+                end_date: document.getElementById('rec-end-date').value || null,
                 notes: document.getElementById('rec-notes').value,
                 attachment_name: attachmentName,
                 attachment_data: attachmentData,
@@ -3251,6 +3261,13 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="edit-rec-end-date">📅 Date de fin (optionnel)</label>
+                            <input type="date" id="edit-rec-end-date" value="${rec.end_date || ''}">
+                            <small style="font-size: 0.85em; color: #666; display: block; margin-top: 5px;">
+                                Si laissé vide, la dépense continuera indéfiniment
+                            </small>
+                        </div>
+                        <div class="form-group">
                             <label for="edit-rec-notes">Notes (optionnel)</label>
                             <textarea id="edit-rec-notes">${rec.notes || ''}</textarea>
                         </div>
@@ -3345,6 +3362,7 @@
                     frequency: frequency,
                     day_of_month: dayOfMonth,
                     day_of_week: dayOfWeek,
+                    end_date: modal.querySelector('#edit-rec-end-date').value || null,
                     notes: modal.querySelector('#edit-rec-notes').value,
                     next_execution: nextExecution
                 };
@@ -4849,17 +4867,25 @@
         function isRecurrentActiveForMonth(rec, month, year) {
             if (!rec.active) return false;
             
-            const startDate = new Date(rec.start_date);
-            const monthDate = new Date(year, month - 1, 1);
+            // Utiliser start_date si existe, sinon created_at comme fallback
+            const startDateStr = rec.start_date || rec.created_at;
+            if (!startDateStr) return true; // Si pas de date, on considère active
+            
+            const startDate = new Date(startDateStr);
+            const monthStart = new Date(year, month - 1, 1);
             
             // Si la récurrente n'a pas encore commencé
-            if (startDate > monthDate) return false;
+            if (startDate > monthStart) {
+                // Vérifier si elle commence dans le mois
+                const monthEnd = new Date(year, month, 0);
+                if (startDate > monthEnd) return false; // Commence après ce mois
+            }
             
             // Si elle a une date de fin et qu'elle est dépassée
             if (rec.end_date) {
                 const endDate = new Date(rec.end_date);
                 const monthEnd = new Date(year, month, 0); // Dernier jour du mois
-                if (endDate < monthEnd) return false;
+                if (endDate < monthStart) return false; // Terminée avant ce mois
             }
             
             return true;
@@ -5053,6 +5079,194 @@
             displayBudgetItemsList(year);
         }
 
+        async function editBudgetItem(id) {
+            const item = budgetItems.find(i => i.id === id);
+            if (!item) return;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h2 style="color: #667eea; margin-bottom: 20px;">✏️ Modifier la dépense prévisionnelle</h2>
+                    
+                    <form id="edit-budget-form">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>📝 Description</label>
+                                <input type="text" id="edit-budget-description" value="${item.description}" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>💶 Montant (€)</label>
+                                <input type="number" id="edit-budget-amount" step="0.01" value="${item.montant}" required>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>📂 Type</label>
+                                <select id="edit-budget-type" required>
+                                    ${Object.keys(CATEGORIES).map(type => 
+                                        `<option value="${type}" ${item.type === type ? 'selected' : ''}>${type}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>🏷️ Catégorie</label>
+                                <select id="edit-budget-category" required>
+                                    ${CATEGORIES[item.type].map(cat => 
+                                        `<option value="${cat}" ${item.category === cat ? 'selected' : ''}>${cat}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>👤 Payé par</label>
+                                <select id="edit-budget-payeur" required>
+                                    <option value="${settings.parent1_name}" ${item.payeur === settings.parent1_name ? 'selected' : ''}>${settings.parent1_name}</option>
+                                    <option value="${settings.parent2_name}" ${item.payeur === settings.parent2_name ? 'selected' : ''}>${settings.parent2_name}</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>⏰ Fréquence</label>
+                                <select id="edit-budget-frequency" required onchange="updateEditBudgetFrequencyFields()">
+                                    <option value="Ponctuelle" ${item.frequency === 'Ponctuelle' ? 'selected' : ''}>Ponctuelle</option>
+                                    <option value="Hebdomadaire" ${item.frequency === 'Hebdomadaire' ? 'selected' : ''}>Hebdomadaire</option>
+                                    <option value="Mensuel" ${item.frequency === 'Mensuel' ? 'selected' : ''}>Mensuel</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                                <div class="form-group" id="edit-budget-date-group" style="margin-bottom: 0; display: ${item.frequency === 'Ponctuelle' ? 'block' : 'none'};">
+                                    <label>📆 Date prévue</label>
+                                    <input type="date" id="edit-budget-date" value="${item.date || ''}">
+                                </div>
+                                <div class="form-group" id="edit-budget-start-date-group" style="margin-bottom: 0; display: ${item.frequency !== 'Ponctuelle' ? 'block' : 'none'};">
+                                    <label>📅 Date de début</label>
+                                    <input type="date" id="edit-budget-start-date" value="${item.start_date || ''}">
+                                </div>
+                                <div class="form-group" id="edit-budget-end-date-group" style="margin-bottom: 0; display: ${item.frequency !== 'Ponctuelle' ? 'block' : 'none'};">
+                                    <label>📅 Date de fin</label>
+                                    <input type="date" id="edit-budget-end-date" value="${item.end_date || ''}">
+                                </div>
+                                <div class="form-group" id="edit-budget-day-group" style="margin-bottom: 0; display: ${item.frequency === 'Mensuel' ? 'block' : 'none'};">
+                                    <label>📆 Jour du mois</label>
+                                    <input type="number" id="edit-budget-day" min="1" max="31" value="${item.day || 1}">
+                                </div>
+                                <div class="form-group" id="edit-budget-weekday-group" style="margin-bottom: 0; display: ${item.frequency === 'Hebdomadaire' ? 'block' : 'none'};">
+                                    <label>📆 Jour de la semaine</label>
+                                    <select id="edit-budget-weekday">
+                                        <option value="1" ${item.weekday == 1 ? 'selected' : ''}>Lundi</option>
+                                        <option value="2" ${item.weekday == 2 ? 'selected' : ''}>Mardi</option>
+                                        <option value="3" ${item.weekday == 3 ? 'selected' : ''}>Mercredi</option>
+                                        <option value="4" ${item.weekday == 4 ? 'selected' : ''}>Jeudi</option>
+                                        <option value="5" ${item.weekday == 5 ? 'selected' : ''}>Vendredi</option>
+                                        <option value="6" ${item.weekday == 6 ? 'selected' : ''}>Samedi</option>
+                                        <option value="0" ${item.weekday == 0 ? 'selected' : ''}>Dimanche</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>📌 Notes</label>
+                            <textarea id="edit-budget-notes" rows="3">${item.notes || ''}</textarea>
+                        </div>
+                        
+                        ${item.attachment_name ? `
+                            <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                <label>📎 Justificatif actuel</label>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                                    <span style="flex: 1;">${item.attachment_name}</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" onclick="this.closest('.modal').remove()" class="btn btn-secondary" style="flex: 1;">
+                                Annuler
+                            </button>
+                            <button type="submit" class="btn" style="flex: 1;">
+                                💾 Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Gérer le changement de type
+            const typeSelect = modal.querySelector('#edit-budget-type');
+            const categorySelect = modal.querySelector('#edit-budget-category');
+            typeSelect.addEventListener('change', () => {
+                const type = typeSelect.value;
+                categorySelect.innerHTML = CATEGORIES[type].map(cat => 
+                    `<option value="${cat}">${cat}</option>`
+                ).join('');
+            });
+            
+            // Gérer le changement de fréquence
+            window.updateEditBudgetFrequencyFields = function() {
+                const frequency = modal.querySelector('#edit-budget-frequency').value;
+                modal.querySelector('#edit-budget-date-group').style.display = frequency === 'Ponctuelle' ? 'block' : 'none';
+                modal.querySelector('#edit-budget-start-date-group').style.display = frequency !== 'Ponctuelle' ? 'block' : 'none';
+                modal.querySelector('#edit-budget-end-date-group').style.display = frequency !== 'Ponctuelle' ? 'block' : 'none';
+                modal.querySelector('#edit-budget-day-group').style.display = frequency === 'Mensuel' ? 'block' : 'none';
+                modal.querySelector('#edit-budget-weekday-group').style.display = frequency === 'Hebdomadaire' ? 'block' : 'none';
+            };
+            
+            // Gérer la soumission
+            const form = modal.querySelector('#edit-budget-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const frequency = modal.querySelector('#edit-budget-frequency').value;
+                const updatedItem = {
+                    ...item,
+                    description: modal.querySelector('#edit-budget-description').value,
+                    montant: parseFloat(modal.querySelector('#edit-budget-amount').value),
+                    type: modal.querySelector('#edit-budget-type').value,
+                    category: modal.querySelector('#edit-budget-category').value,
+                    payeur: modal.querySelector('#edit-budget-payeur').value,
+                    frequency: frequency,
+                    notes: modal.querySelector('#edit-budget-notes').value
+                };
+                
+                if (frequency === 'Ponctuelle') {
+                    const date = new Date(modal.querySelector('#edit-budget-date').value);
+                    updatedItem.date = modal.querySelector('#edit-budget-date').value;
+                    updatedItem.month = date.getMonth() + 1;
+                    updatedItem.year = date.getFullYear();
+                } else {
+                    updatedItem.start_date = modal.querySelector('#edit-budget-start-date').value;
+                    updatedItem.end_date = modal.querySelector('#edit-budget-end-date').value || null;
+                    
+                    if (frequency === 'Mensuel') {
+                        updatedItem.day = parseInt(modal.querySelector('#edit-budget-day').value);
+                    } else if (frequency === 'Hebdomadaire') {
+                        updatedItem.weekday = parseInt(modal.querySelector('#edit-budget-weekday').value);
+                    }
+                }
+                
+                // Mettre à jour dans le tableau
+                const index = budgetItems.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    budgetItems[index] = updatedItem;
+                }
+                
+                await saveBudgetItemsToSupabase();
+                modal.remove();
+                displayBudget();
+                showNotification('Dépense prévisionnelle modifiée !', 'success');
+            });
+        }
+
         function displayBudgetItemsList(year) {
             const items = budgetItems;
             const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
@@ -5109,8 +5323,11 @@
                             ${item.notes ? `<div style="font-size: 0.85em; color: #888; margin-top: 5px;">💬 ${item.notes}</div>` : ''}
                             ${item.attachment_name ? `<div style="font-size: 0.85em; color: #667eea; margin-top: 5px;">📎 ${item.attachment_name}</div>` : ''}
                         </div>
-                        <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
                             <div style="font-size: 1.3em; font-weight: bold; color: #667eea;">${item.montant.toFixed(2)} ${settings.currency_symbol}</div>
+                            <button onclick="editBudgetItem(${item.id})" class="btn btn-secondary" style="padding: 8px 15px;">
+                                ✏️
+                            </button>
                             <button onclick="deleteBudgetItem(${item.id})" class="btn btn-danger" style="padding: 8px 15px;">
                                 🗑️
                             </button>
