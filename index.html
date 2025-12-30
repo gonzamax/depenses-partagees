@@ -4415,22 +4415,6 @@
                 `}
             `;
         }
-                ${amountOwed > 1 ? `
-                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 1.1em; color: #856404;">
-                            <strong>⚖️ Rééquilibrage :</strong> 
-                            ${debtor} doit <strong>${amountOwed.toFixed(2)} ${settings.currency_symbol}</strong> à ${creditor}
-                        </div>
-                    </div>
-                ` : `
-                    <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 1.1em; color: #155724;">
-                            <strong>✅ Les comptes sont équilibrés !</strong>
-                        </div>
-                    </div>
-                `}
-            `;
-        }
 
         function displayDetailedStats(filtered) {
             const detailedStats = document.getElementById('detailed-stats');
