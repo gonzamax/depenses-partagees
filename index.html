@@ -4304,22 +4304,18 @@
             const totalParent2Direct = parent2Expenses.reduce((sum, e) => sum + e.montant, 0);
             const totalCommun = communExpenses.reduce((sum, e) => sum + e.montant, 0);
             
-            // Calculer la répartition des dépenses communes selon le ratio configuré
-            let parent1ShareCommun, parent2ShareCommun;
+            // Calculer ce que chaque parent DEVRAIT payer selon la répartition configurée
+            // La répartition s'applique sur le TOTAL de TOUTES les dépenses
+            let parent1ShouldPay, parent2ShouldPay;
             if (settings.split_mode === 'custom') {
-                parent1ShareCommun = (totalCommun * settings.parent1_percentage) / 100;
-                parent2ShareCommun = (totalCommun * settings.parent2_percentage) / 100;
+                parent1ShouldPay = (total * settings.parent1_percentage) / 100;
+                parent2ShouldPay = (total * settings.parent2_percentage) / 100;
             } else {
-                parent1ShareCommun = totalCommun / 2;
-                parent2ShareCommun = totalCommun / 2;
+                parent1ShouldPay = total / 2;
+                parent2ShouldPay = total / 2;
             }
             
-            // Ce que chaque parent DEVRAIT payer au total
-            const parent1ShouldPay = totalParent1Direct + parent1ShareCommun;
-            const parent2ShouldPay = totalParent2Direct + parent2ShareCommun;
-            
             // Ce que chaque parent A PAYÉ réellement
-            // totalParent1 et totalParent2 incluent déjà toutes leurs dépenses
             const parent1ActualPaid = totalParent1;
             const parent2ActualPaid = totalParent2;
             
@@ -4345,6 +4341,16 @@
                 amountOwed = 0;
             }
 
+            // Calculer aussi la répartition des dépenses communes pour l'affichage
+            let parent1ShareCommun, parent2ShareCommun;
+            if (settings.split_mode === 'custom') {
+                parent1ShareCommun = (totalCommun * settings.parent1_percentage) / 100;
+                parent2ShareCommun = (totalCommun * settings.parent2_percentage) / 100;
+            } else {
+                parent1ShareCommun = totalCommun / 2;
+                parent2ShareCommun = totalCommun / 2;
+            }
+
             balanceCard.innerHTML = `
                 <h2 style="color: #667eea; margin-bottom: 20px;">💰 Équilibre des comptes</h2>
                 
@@ -4354,6 +4360,9 @@
                             <strong>⚖️ Répartition configurée :</strong> 
                             ${settings.parent1_name} : ${settings.parent1_percentage}% | 
                             ${settings.parent2_name} : ${settings.parent2_percentage}%
+                            <div style="margin-top: 8px; font-size: 0.9em; opacity: 0.8;">
+                                Cette répartition s'applique sur le <strong>total global</strong> des dépenses
+                            </div>
                         </div>
                     </div>
                 ` : ''}
