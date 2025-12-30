@@ -2309,9 +2309,7 @@
                     .eq('room_id', currentRoomId)
                     .order('date', { ascending: false });
 
-                if (expensesData) {
-                    expenses = expensesData;
-                }
+                expenses = expensesData || [];
 
                 // Charger les récurrentes (toutes, pas seulement actives)
                 const { data: recurrentData } = await supabase
@@ -2321,9 +2319,7 @@
                     .order('active', { ascending: false }) // Actives en premier
                     .order('created_at', { ascending: false });
 
-                if (recurrentData) {
-                    recurrentExpenses = recurrentData;
-                }
+                recurrentExpenses = recurrentData || [];
 
                 // Charger les budget items depuis rooms
                 const { data: roomData } = await supabase
@@ -2332,8 +2328,10 @@
                     .eq('room_id', currentRoomId)
                     .single();
 
-                if (roomData && roomData.budget_items) {
-                    budgetItems = roomData.budget_items;
+                if (roomData) {
+                    budgetItems = roomData.budget_items || [];
+                } else {
+                    budgetItems = [];
                 }
 
             } catch (error) {
@@ -2409,6 +2407,11 @@
                     async (payload) => {
                         await loadFromSupabase();
                         displayRecurrentExpenses();
+                        // Si on est sur l'onglet budget, rafraîchir aussi
+                        const activeTab = document.querySelector('.tab.active');
+                        if (activeTab && activeTab.getAttribute('data-tab') === 'budget') {
+                            displayBudget();
+                        }
                     }
                 )
                 .subscribe();
@@ -2437,6 +2440,31 @@
                 .subscribe();
 
             subscriptions.push(typesChannel);
+
+            // S'abonner aux changements des rooms (pour budget_items)
+            const roomsChannel = supabase
+                .channel('rooms_changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'rooms',
+                        filter: `room_id=eq.${currentRoomId}`
+                    },
+                    async (payload) => {
+                        console.log('🔄 Budget items modifiés');
+                        await loadFromSupabase();
+                        // Si on est sur l'onglet budget, rafraîchir
+                        const activeTab = document.querySelector('.tab.active');
+                        if (activeTab && activeTab.getAttribute('data-tab') === 'budget') {
+                            displayBudget();
+                        }
+                    }
+                )
+                .subscribe();
+
+            subscriptions.push(roomsChannel);
         }
 
         function updateSyncStatus(status) {
