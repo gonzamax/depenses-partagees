@@ -661,17 +661,24 @@
             
             /* Réduire les boutons Voir des justificatifs sur mobile */
             .btn-view-attachment {
-                padding: 4px 8px !important;
-                font-size: 0.75em !important;
-                min-width: auto !important;
+                padding: 3px 6px !important;
+                font-size: 1em !important;
+                min-width: 30px !important;
+                width: 30px !important;
+                height: 30px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin-left: 5px !important;
             }
             
-            .btn-view-attachment-text {
-                display: none;
+            .btn-view-attachment .btn-view-attachment-text {
+                display: none !important;
             }
             
-            .btn-view-attachment::after {
+            .btn-view-attachment::before {
                 content: "👁️";
+                font-size: 1.1em;
             }
 
             .tab {
