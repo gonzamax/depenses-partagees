@@ -508,6 +508,34 @@
                 align-items: center;
                 justify-content: center;
             }
+            
+            /* Optimisation modale budget sur mobile */
+            #add-budget-item-modal .modal-content {
+                padding: 20px;
+                max-height: 95vh;
+                width: 95%;
+            }
+            
+            #add-budget-item-modal h2 {
+                font-size: 1.3em;
+                margin-bottom: 15px;
+            }
+            
+            #add-budget-item-modal .form-group label {
+                font-size: 0.9em;
+            }
+            
+            #add-budget-item-modal input,
+            #add-budget-item-modal select,
+            #add-budget-item-modal textarea {
+                font-size: 16px; /* Évite le zoom automatique sur iOS */
+            }
+            
+            /* Force les grilles en colonne unique sur mobile */
+            #add-budget-item-modal form > div[style*="grid"] {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
         }
 
         .welcome-screen {
@@ -574,6 +602,8 @@
             z-index: 2000;
             align-items: center;
             justify-content: center;
+            overflow-y: auto;
+            padding: 20px;
         }
 
         .modal.active {
@@ -587,6 +617,8 @@
             max-width: 500px;
             width: 90%;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin: auto;
+            position: relative;
         }
 
         .modal-content h2 {
@@ -1492,97 +1524,112 @@
 
         <!-- Modale pour ajouter une dépense prévisionnelle -->
         <div id="add-budget-item-modal" class="modal" style="display: none;">
-            <div class="modal-content">
+            <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
                 <span class="close" onclick="closeAddBudgetItemModal()">&times;</span>
                 <h2 style="color: #667eea; margin-bottom: 20px;">➕ Nouvelle dépense prévisionnelle</h2>
                 
                 <form id="budget-item-form" onsubmit="addBudgetItem(event)">
-                    <div class="form-group">
-                        <label for="budget-description">📝 Description</label>
-                        <input type="text" id="budget-description" placeholder="Ex: Vacances d'été, Rentrée scolaire..." required>
+                    <!-- Grille responsive pour les champs principaux -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="budget-description">📝 Description</label>
+                            <input type="text" id="budget-description" placeholder="Ex: Vacances d'été..." required>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="budget-amount">💶 Montant (€)</label>
+                            <input type="number" id="budget-amount" step="0.01" placeholder="0.00" required>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="budget-amount">💶 Montant (€)</label>
-                        <input type="number" id="budget-amount" step="0.01" placeholder="0.00" required>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="budget-type">📂 Type de dépense</label>
+                            <select id="budget-type" onchange="updateBudgetCategories()" required>
+                                <option value="">Sélectionner un type</option>
+                                <option value="Enfants">👶 Enfants</option>
+                                <option value="Immobilier">🏠 Immobilier</option>
+                                <option value="Autre">📦 Autre</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="budget-category">🏷️ Catégorie</label>
+                            <select id="budget-category" required>
+                                <option value="">Sélectionner d'abord un type</option>
+                            </select>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="budget-type">📂 Type de dépense</label>
-                        <select id="budget-type" onchange="updateBudgetCategories()" required>
-                            <option value="">Sélectionner un type</option>
-                            <option value="Enfants">👶 Enfants</option>
-                            <option value="Immobilier">🏠 Immobilier</option>
-                            <option value="Autre">📦 Autre</option>
-                        </select>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="budget-payeur">👤 Payé par</label>
+                            <select id="budget-payeur" required></select>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="budget-frequency">⏰ Fréquence</label>
+                            <select id="budget-frequency" required onchange="updateBudgetFrequencyFields()">
+                                <option value="Ponctuelle" selected>📅 Ponctuelle</option>
+                                <option value="Hebdomadaire">📅 Hebdomadaire</option>
+                                <option value="Mensuel">📅 Mensuel</option>
+                            </select>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="budget-category">🏷️ Catégorie</label>
-                        <select id="budget-category" required>
-                            <option value="">Sélectionner d'abord un type</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="budget-payeur">👤 Payé par</label>
-                        <select id="budget-payeur" required></select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="budget-frequency">⏰ Fréquence</label>
-                        <select id="budget-frequency" required onchange="updateBudgetFrequencyFields()">
-                            <option value="Ponctuelle" selected>📅 Ponctuelle (une seule fois)</option>
-                            <option value="Hebdomadaire">📅 Hebdomadaire</option>
-                            <option value="Mensuel">📅 Mensuel</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" id="budget-date-group">
-                        <label for="budget-date">📆 Date prévue</label>
-                        <input type="date" id="budget-date" required>
-                    </div>
-                    
-                    <div class="form-group" id="budget-day-group" style="display: none;">
-                        <label for="budget-day">📆 Jour du mois</label>
-                        <input type="number" id="budget-day" min="1" max="31" value="1">
-                    </div>
-                    
-                    <div class="form-group" id="budget-weekday-group" style="display: none;">
-                        <label for="budget-weekday">📆 Jour de la semaine</label>
-                        <select id="budget-weekday">
-                            <option value="1">Lundi</option>
-                            <option value="2">Mardi</option>
-                            <option value="3">Mercredi</option>
-                            <option value="4">Jeudi</option>
-                            <option value="5">Vendredi</option>
-                            <option value="6">Samedi</option>
-                            <option value="0">Dimanche</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" id="budget-start-date-group" style="display: none;">
-                        <label for="budget-start-date">📅 Date de début</label>
-                        <input type="date" id="budget-start-date">
-                    </div>
-                    
-                    <div class="form-group" id="budget-end-date-group" style="display: none;">
-                        <label for="budget-end-date">📅 Date de fin (optionnel)</label>
-                        <input type="date" id="budget-end-date">
+                    <!-- Champs conditionnels pour la fréquence -->
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                            <div class="form-group" id="budget-date-group" style="margin-bottom: 0;">
+                                <label for="budget-date">📆 Date prévue</label>
+                                <input type="date" id="budget-date" required>
+                            </div>
+                            
+                            <div class="form-group" id="budget-start-date-group" style="display: none; margin-bottom: 0;">
+                                <label for="budget-start-date">📅 Date de début</label>
+                                <input type="date" id="budget-start-date">
+                            </div>
+                            
+                            <div class="form-group" id="budget-end-date-group" style="display: none; margin-bottom: 0;">
+                                <label for="budget-end-date">📅 Date de fin (optionnel)</label>
+                                <input type="date" id="budget-end-date">
+                            </div>
+                            
+                            <div class="form-group" id="budget-day-group" style="display: none; margin-bottom: 0;">
+                                <label for="budget-day">📆 Jour du mois</label>
+                                <input type="number" id="budget-day" min="1" max="31" value="1">
+                            </div>
+                            
+                            <div class="form-group" id="budget-weekday-group" style="display: none; margin-bottom: 0;">
+                                <label for="budget-weekday">📆 Jour de la semaine</label>
+                                <select id="budget-weekday">
+                                    <option value="1">Lundi</option>
+                                    <option value="2">Mardi</option>
+                                    <option value="3">Mercredi</option>
+                                    <option value="4">Jeudi</option>
+                                    <option value="5">Vendredi</option>
+                                    <option value="6">Samedi</option>
+                                    <option value="0">Dimanche</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-group">
                         <label for="budget-notes">📌 Notes (optionnel)</label>
-                        <textarea id="budget-notes" placeholder="Informations complémentaires..."></textarea>
+                        <textarea id="budget-notes" placeholder="Informations complémentaires..." rows="3"></textarea>
                     </div>
                     
                     <div class="form-group">
                         <label for="budget-attachment">📎 Justificatif (optionnel)</label>
                         <input type="file" id="budget-attachment" accept="image/*,.pdf" capture="environment" style="padding: 10px;">
+                        <p style="font-size: 0.85em; color: #666; margin-top: 8px;">
+                            📷 Prenez une photo ou importez un fichier (image/PDF)
+                        </p>
                         <div id="budget-preview-container" style="margin-top: 10px;"></div>
                     </div>
                     
-                    <button type="submit" class="btn" style="width: 100%; padding: 15px;">
+                    <button type="submit" class="btn" style="width: 100%; padding: 15px; font-size: 1.1em;">
                         💾 Enregistrer
                     </button>
                 </form>
