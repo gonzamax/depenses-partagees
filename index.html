@@ -3109,15 +3109,23 @@
             const baseDate = fromDate ? new Date(fromDate) : new Date();
             const next = new Date(baseDate);
             
-            // Passer au mois suivant
-            next.setMonth(next.getMonth() + 1);
-            
-            // Définir le jour
+            // D'abord essayer le mois en cours
             next.setDate(dayOfMonth);
             
             // Si le jour n'existe pas dans ce mois (ex: 31 février), prendre le dernier jour du mois
             if (next.getDate() !== dayOfMonth) {
-                next.setDate(0); // Revenir au dernier jour du mois précédent
+                next.setDate(0); // Dernier jour du mois
+            }
+            
+            // Si cette date est dans le passé, passer au mois suivant
+            if (next <= baseDate) {
+                next.setMonth(next.getMonth() + 1);
+                next.setDate(dayOfMonth);
+                
+                // Vérifier à nouveau si le jour existe
+                if (next.getDate() !== dayOfMonth) {
+                    next.setDate(0);
+                }
             }
             
             return next.toISOString().split('T')[0];
@@ -3128,11 +3136,13 @@
             const today = new Date(baseDate);
             const currentDay = today.getDay();
             
-            // Calculer combien de jours jusqu'au prochain jour de la semaine souhaité
+            // Calculer combien de jours jusqu'au jour de la semaine souhaité
             let daysUntilNext = dayOfWeek - currentDay;
             
+            // Si c'est un jour passé cette semaine, passer à la semaine prochaine
+            // Si c'est aujourd'hui mais plus tard dans la journée, on pourrait le compter
+            // Pour simplifier, si c'est aujourd'hui ou avant, on passe à la semaine prochaine
             if (daysUntilNext <= 0) {
-                // Si le jour est aujourd'hui ou dans le passé cette semaine, passer à la semaine prochaine
                 daysUntilNext += 7;
             }
             
