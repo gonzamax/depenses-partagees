@@ -502,6 +502,32 @@
             transform: scale(0.95);
         }
 
+        .help-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            font-size: 1.5em;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.5);
+            cursor: pointer;
+            z-index: 999;
+            transition: all 0.3s;
+        }
+
+        .help-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.7);
+        }
+
+        .help-button:active {
+            transform: scale(0.95);
+        }
+
         @media (max-width: 768px) {
             .fab-button {
                 display: flex;
@@ -1250,6 +1276,9 @@
     <div id="main-app" class="container" style="display: none;">
         <!-- Bouton flottant pour accès rapide au formulaire (mobile) -->
         <button class="fab-button" id="fab-add-expense" title="Ajouter une dépense">➕</button>
+        
+        <!-- Bouton flottant pour l'aide -->
+        <button class="help-button" id="help-button" onclick="openHelpModal()" title="Aide">❓</button>
         
         <div class="header">
             <h1>💰 Gestion des Dépenses Partagées</h1>
@@ -5917,6 +5946,451 @@
                 }
             }
         });
+
+        // Fonctions pour la modale d'aide
+        function openHelpModal() {
+            document.getElementById('help-modal').style.display = 'flex';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('help-modal').style.display = 'none';
+        }
+
+        function showHelpSection(sectionId) {
+            // Cacher toutes les sections
+            document.querySelectorAll('.help-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Désactiver tous les boutons
+            document.querySelectorAll('.help-nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Afficher la section demandée
+            document.getElementById(sectionId).style.display = 'block';
+            
+            // Activer le bouton correspondant
+            event.target.classList.add('active');
+        }
     </script>
+
+    <!-- Modale d'aide -->
+    <div id="help-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+            <h2 style="color: #667eea; margin-bottom: 20px;">❓ Guide d'utilisation</h2>
+            
+            <!-- Navigation de l'aide -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button class="help-nav-btn active" onclick="showHelpSection('help-intro')">🏠 Introduction</button>
+                <button class="help-nav-btn" onclick="showHelpSection('help-depenses')">➕ Dépenses</button>
+                <button class="help-nav-btn" onclick="showHelpSection('help-recurrentes')">🔄 Récurrentes</button>
+                <button class="help-nav-btn" onclick="showHelpSection('help-budget')">💰 Budget</button>
+                <button class="help-nav-btn" onclick="showHelpSection('help-stats')">📊 Statistiques</button>
+                <button class="help-nav-btn" onclick="showHelpSection('help-partage')">🔗 Partage</button>
+            </div>
+
+            <!-- Section Introduction -->
+            <div id="help-intro" class="help-section" style="display: block;">
+                <h3 style="color: #667eea;">🏠 Bienvenue dans l'application de gestion des dépenses partagées</h3>
+                
+                <div style="background: #e7f3ff; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #2196F3; margin-top: 0;">🎯 Objectif</h4>
+                    <p>Cette application vous permet de <strong>gérer et partager les dépenses</strong> entre deux parents (ou colocataires). Elle calcule automatiquement qui doit combien à l'autre.</p>
+                </div>
+
+                <h4>📱 Types de dépenses gérés</h4>
+                <div style="display: grid; gap: 15px; margin: 20px 0;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">
+                        <strong>1. Dépenses normales (ponctuelles)</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Ce sont vos dépenses quotidiennes : courses, restaurant, essence, etc.<br>
+                            📅 Une fois enregistrées, elles apparaissent dans les statistiques.
+                        </p>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #764ba2;">
+                        <strong>2. Dépenses récurrentes</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Ce sont vos dépenses qui reviennent régulièrement : loyer, abonnements, etc.<br>
+                            🔄 L'application les ajoute <strong>automatiquement</strong> chaque mois/semaine dans vos dépenses réelles.
+                        </p>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <strong>3. Dépenses prévisionnelles (Budget)</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Ce sont vos dépenses futures planifiées : vacances, travaux, etc.<br>
+                            💰 Elles apparaissent UNIQUEMENT dans le budget, pas dans les statistiques réelles.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="background: #fff3cd; padding: 15px; border-radius: 10px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                    <h4 style="color: #856404; margin-top: 0;">⚡ Point important</h4>
+                    <ul style="margin: 10px 0; color: #666;">
+                        <li><strong>Récurrentes</strong> → Ajoutées automatiquement dans vos <strong>dépenses réelles</strong></li>
+                        <li><strong>Prévisionnelles</strong> → Affichées uniquement dans le <strong>budget</strong> pour planifier</li>
+                        <li><strong>Les deux</strong> → Apparaissent dans le budget pour avoir une vue d'ensemble</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Section Dépenses -->
+            <div id="help-depenses" class="help-section" style="display: none;">
+                <h3 style="color: #667eea;">➕ Ajouter une dépense normale</h3>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #667eea; margin-top: 0;">📝 Étapes</h4>
+                    <ol style="line-height: 1.8;">
+                        <li>Allez dans l'onglet <strong>"➕ Ajouter"</strong></li>
+                        <li>Remplissez le formulaire :
+                            <ul>
+                                <li><strong>Date</strong> : Quand la dépense a eu lieu</li>
+                                <li><strong>Description</strong> : Ex: "Courses chez Carrefour"</li>
+                                <li><strong>Montant</strong> : Le prix payé</li>
+                                <li><strong>Type</strong> : Catégorie principale (Courses, Loisirs, etc.)</li>
+                                <li><strong>Catégorie</strong> : Sous-catégorie plus précise</li>
+                                <li><strong>Payé par</strong> : Qui a payé ?</li>
+                                <li><strong>Répartition</strong> : Comment partager (50/50, 60/40, etc.)</li>
+                            </ul>
+                        </li>
+                        <li>Ajoutez une photo du ticket (optionnel)</li>
+                        <li>Cliquez sur <strong>"Ajouter"</strong></li>
+                    </ol>
+                </div>
+
+                <div style="background: #e7f3ff; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #2196F3; margin-top: 0;">🔍 Que se passe-t-il après ?</h4>
+                    <ul style="margin: 10px 0; line-height: 1.8;">
+                        <li>✅ La dépense apparaît dans l'onglet <strong>"📋 Liste"</strong></li>
+                        <li>✅ Elle est comptée dans les <strong>"📊 Stats"</strong></li>
+                        <li>✅ Le calcul de l'équilibre est mis à jour automatiquement</li>
+                        <li>✅ Si vous partagez l'application, l'autre parent la voit immédiatement</li>
+                    </ul>
+                </div>
+
+                <div style="background: #d4edda; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #155724; margin-top: 0;">💡 Astuce : Répartition personnalisée</h4>
+                    <p style="margin: 0; color: #666;">
+                        Par défaut, les dépenses sont partagées selon le pourcentage que vous avez défini dans les paramètres (ex: 50/50).<br>
+                        Mais vous pouvez choisir une répartition différente pour chaque dépense avec le curseur !
+                    </p>
+                </div>
+            </div>
+
+            <!-- Section Récurrentes -->
+            <div id="help-recurrentes" class="help-section" style="display: none;">
+                <h3 style="color: #667eea;">🔄 Dépenses récurrentes automatiques</h3>
+                
+                <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                    <h4 style="color: #856404; margin-top: 0;">⚡ Fonctionnement</h4>
+                    <p style="color: #666; line-height: 1.8;">
+                        Les dépenses récurrentes sont <strong>automatiquement ajoutées dans vos dépenses réelles</strong> 
+                        à la date prévue. Vous n'avez rien à faire, l'application s'en charge !
+                    </p>
+                </div>
+
+                <h4>📝 Créer une dépense récurrente</h4>
+                <ol style="line-height: 1.8; margin: 15px 0;">
+                    <li>Allez dans l'onglet <strong>"🔄 Récurrentes"</strong></li>
+                    <li>Cliquez sur <strong>"➕ Ajouter une dépense récurrente"</strong></li>
+                    <li>Remplissez les informations (comme une dépense normale)</li>
+                    <li>Choisissez la <strong>fréquence</strong> :
+                        <ul style="margin-top: 10px;">
+                            <li><strong>Mensuel</strong> : Ex: Loyer le 5 de chaque mois</li>
+                            <li><strong>Hebdomadaire</strong> : Ex: Cours de musique tous les mercredis</li>
+                        </ul>
+                    </li>
+                    <li>Définissez le jour (5 du mois, ou Mercredi)</li>
+                    <li>Optionnel : Ajoutez une <strong>date de fin</strong> si la récurrence s'arrête</li>
+                </ol>
+
+                <div style="background: #e7f3ff; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #2196F3; margin-top: 0;">🎯 Exemples concrets</h4>
+                    
+                    <div style="margin: 15px 0;">
+                        <strong>Exemple 1 : Loyer</strong>
+                        <ul style="margin: 5px 0 0 20px; color: #666;">
+                            <li>Fréquence : <strong>Mensuel</strong></li>
+                            <li>Jour : <strong>5</strong> (le 5 du mois)</li>
+                            <li>Date de fin : <em>(vide = continue indéfiniment)</em></li>
+                            <li>➜ Sera ajouté automatiquement le 5 de chaque mois</li>
+                        </ul>
+                    </div>
+
+                    <div style="margin: 15px 0;">
+                        <strong>Exemple 2 : Cours de tennis (septembre à juin)</strong>
+                        <ul style="margin: 5px 0 0 20px; color: #666;">
+                            <li>Fréquence : <strong>Hebdomadaire</strong></li>
+                            <li>Jour : <strong>Mercredi</strong></li>
+                            <li>Date de fin : <strong>30/06/2026</strong></li>
+                            <li>➜ Ajouté chaque mercredi jusqu'au 30 juin</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="background: #d4edda; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #155724; margin-top: 0;">🔍 Où apparaissent les récurrentes ?</h4>
+                    <ul style="margin: 10px 0; line-height: 1.8; color: #666;">
+                        <li>✅ Dans l'onglet <strong>"🔄 Récurrentes"</strong> : Vous voyez la liste et pouvez les modifier/désactiver</li>
+                        <li>✅ Dans l'onglet <strong>"📋 Liste"</strong> : Chaque dépense créée automatiquement apparaît avec "(Récurrente)"</li>
+                        <li>✅ Dans les <strong>"📊 Stats"</strong> : Comptées comme des dépenses normales</li>
+                        <li>✅ Dans le <strong>"💰 Budget"</strong> : Incluses dans les prévisions</li>
+                    </ul>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #667eea;">
+                    <h4 style="color: #667eea; margin-top: 0;">⏰ Quand sont-elles exécutées ?</h4>
+                    <p style="color: #666; margin: 0; line-height: 1.8;">
+                        L'application vérifie automatiquement toutes les heures s'il y a des dépenses à créer.<br>
+                        Si vous créez une récurrente le 1er janvier pour le 5 du mois, elle sera créée le 5 janvier automatiquement.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Section Budget -->
+            <div id="help-budget" class="help-section" style="display: none;">
+                <h3 style="color: #667eea;">💰 Budget prévisionnel</h3>
+                
+                <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                    <h4 style="color: #856404; margin-top: 0;">🎯 À quoi sert le budget ?</h4>
+                    <p style="color: #666; line-height: 1.8; margin: 0;">
+                        Le budget vous permet de <strong>planifier vos dépenses futures</strong> et de voir combien vous allez dépenser 
+                        chaque mois avant que ça arrive. C'est un outil de prévision, pas un historique.
+                    </p>
+                </div>
+
+                <h4>📊 Deux vues disponibles</h4>
+                <div style="margin: 20px 0;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <strong>📊 Tableau de bord</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Vue mensuelle avec 12 cartes interactives. Chaque carte montre :<br>
+                            - Le budget prévu du mois<br>
+                            - Les dépenses réelles vs prévues<br>
+                            - Si vous êtes en économie ou en dépassement
+                        </p>
+                    </div>
+
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                        <strong>📋 Liste détaillée</strong>
+                        <p style="margin: 5px 0 0 0; color: #666;">
+                            Liste complète de toutes vos dépenses prévisionnelles avec possibilité de les modifier ou supprimer.
+                        </p>
+                    </div>
+                </div>
+
+                <h4>➕ Ajouter une dépense prévisionnelle</h4>
+                <ol style="line-height: 1.8; margin: 15px 0;">
+                    <li>Allez dans l'onglet <strong>"💰 Budget"</strong></li>
+                    <li>Cliquez sur <strong>"➕ Ajouter une dépense prévisionnelle"</strong></li>
+                    <li>Choisissez la <strong>fréquence</strong> :
+                        <ul style="margin-top: 10px;">
+                            <li><strong>Ponctuelle</strong> : Une dépense unique (ex: vacances en août)</li>
+                            <li><strong>Mensuel</strong> : Revient chaque mois (ex: budget courses)</li>
+                            <li><strong>Hebdomadaire</strong> : Revient chaque semaine (ex: activité sportive)</li>
+                        </ul>
+                    </li>
+                    <li>Remplissez les informations comme pour une dépense normale</li>
+                </ol>
+
+                <div style="background: #e7f3ff; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #2196F3; margin-top: 0;">🔍 Différence avec les récurrentes</h4>
+                    <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;"></th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Récurrentes 🔄</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Prévisionnelles 💰</th>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Ajout auto</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">✅ OUI (dépenses réelles)</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">❌ NON</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Dans les stats</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">✅ OUI</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">❌ NON</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Dans le budget</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">✅ OUI</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">✅ OUI</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Usage</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">Loyer, abonnements fixes</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">Vacances, projets futurs</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="background: #d4edda; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #155724; margin-top: 0;">💡 Cas d'usage du budget</h4>
+                    <ul style="margin: 10px 0; line-height: 1.8; color: #666;">
+                        <li>📅 Planifier les <strong>vacances</strong> (ponctuelle en juillet)</li>
+                        <li>🏠 Prévoir des <strong>travaux</strong> (ponctuelle en mars)</li>
+                        <li>🛒 Estimer le <strong>budget courses mensuel</strong> (mensuel)</li>
+                        <li>🎓 Anticiper la <strong>rentrée scolaire</strong> (ponctuelle en septembre)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Section Stats -->
+            <div id="help-stats" class="help-section" style="display: none;">
+                <h3 style="color: #667eea;">📊 Statistiques et équilibrage</h3>
+                
+                <div style="background: #e7f3ff; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #2196F3; margin-top: 0;">📈 Que voit-on dans les stats ?</h4>
+                    <ul style="margin: 10px 0; line-height: 1.8; color: #666;">
+                        <li><strong>Total dépensé</strong> : Somme de toutes les dépenses</li>
+                        <li><strong>Dépense moyenne</strong> : Montant moyen par transaction</li>
+                        <li><strong>Plus grosse dépense</strong> : Le maximum</li>
+                        <li><strong>Graphiques</strong> : Répartition par type, par catégorie, par payeur</li>
+                    </ul>
+                </div>
+
+                <h4>⚖️ Équilibre des comptes</h4>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <p style="color: #666; line-height: 1.8; margin: 0 0 15px 0;">
+                        L'application calcule automatiquement <strong>qui doit combien à l'autre</strong> en fonction de la répartition configurée.
+                    </p>
+
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #667eea;">
+                        <strong>Exemple :</strong>
+                        <ul style="margin: 10px 0 0 20px; color: #666;">
+                            <li>Répartition configurée : <strong>50/50</strong></li>
+                            <li>Total dépensé : <strong>1000 €</strong></li>
+                            <li>Parent 1 a payé : <strong>700 €</strong></li>
+                            <li>Parent 2 a payé : <strong>300 €</strong></li>
+                        </ul>
+                        <p style="margin: 15px 0 0 0; padding: 15px; background: #fff3cd; border-radius: 8px; color: #856404;">
+                            <strong>⚖️ Résultat :</strong> Parent 2 doit <strong>200 €</strong> à Parent 1<br>
+                            <em>(Chacun devrait avoir payé 500 €, donc Parent 2 doit rembourser 200 €)</em>
+                        </p>
+                    </div>
+                </div>
+
+                <h4>🔍 Filtres disponibles</h4>
+                <p style="color: #666; margin: 10px 0;">Vous pouvez filtrer les statistiques par période :</p>
+                <ul style="color: #666; line-height: 1.8;">
+                    <li>📅 Toutes les dépenses</li>
+                    <li>📅 Ce mois-ci</li>
+                    <li>📅 Ce trimestre</li>
+                    <li>📅 Cette année</li>
+                    <li>📅 Personnalisé (choisir les dates)</li>
+                </ul>
+
+                <div style="background: #d4edda; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #155724; margin-top: 0;">💡 Astuce</h4>
+                    <p style="margin: 0; color: #666; line-height: 1.8;">
+                        Les statistiques incluent :<br>
+                        ✅ Vos dépenses normales<br>
+                        ✅ Les dépenses créées automatiquement par les récurrentes<br>
+                        ❌ PAS les dépenses prévisionnelles (elles sont uniquement dans le budget)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Section Partage -->
+            <div id="help-partage" class="help-section" style="display: none;">
+                <h3 style="color: #667eea;">🔗 Partager l'application</h3>
+                
+                <div style="background: #e7f3ff; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #2196F3; margin-top: 0;">🎯 Comment ça marche ?</h4>
+                    <p style="color: #666; line-height: 1.8; margin: 0;">
+                        L'application fonctionne en <strong>temps réel</strong>. Quand un parent ajoute une dépense, 
+                        l'autre parent la voit <strong>instantanément</strong> sur son téléphone/ordinateur.
+                    </p>
+                </div>
+
+                <h4>📱 Partager avec l'autre parent</h4>
+                <ol style="line-height: 1.8; margin: 15px 0;">
+                    <li>En haut de l'écran, vous voyez un <strong>code unique</strong> (ex: ABC123)</li>
+                    <li>Cliquez sur le bouton <strong>📋 Copier</strong></li>
+                    <li>Envoyez ce code à l'autre parent (par SMS, email, etc.)</li>
+                    <li>L'autre parent :</li>
+                    <ul style="margin-top: 10px;">
+                        <li>Ouvre l'application</li>
+                        <li>Choisit <strong>"Rejoindre une room existante"</strong></li>
+                        <li>Entre le code que vous lui avez envoyé</li>
+                    </ul>
+                    <li>✅ C'est fait ! Vous partagez maintenant toutes les dépenses</li>
+                </ol>
+
+                <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #856404; margin-top: 0;">🔒 Sécurité</h4>
+                    <ul style="margin: 10px 0; line-height: 1.8; color: #666;">
+                        <li>Seules les personnes avec le code peuvent accéder à vos dépenses</li>
+                        <li>Ne partagez le code qu'avec les personnes de confiance</li>
+                        <li>Vous pouvez quitter une room à tout moment depuis les paramètres</li>
+                    </ul>
+                </div>
+
+                <div style="background: #d4edda; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #155724; margin-top: 0;">✨ Synchronisation</h4>
+                    <p style="margin: 0; color: #666; line-height: 1.8;">
+                        Un indicateur 🟢 en haut à droite vous montre que vous êtes bien connecté.<br>
+                        Toutes les modifications sont synchronisées instantanément entre tous les appareils.
+                    </p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                <p style="color: #666;">Besoin d'aide supplémentaire ? N'hésitez pas à explorer les différentes sections !</p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .help-nav-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .help-nav-btn:hover {
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+
+        .help-nav-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .help-section h4 {
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .help-section ul, .help-section ol {
+            color: #666;
+        }
+
+        .help-section li {
+            margin: 8px 0;
+        }
+
+        .help-section table {
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .help-nav-btn {
+                padding: 8px 12px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
 </body>
 </html>
