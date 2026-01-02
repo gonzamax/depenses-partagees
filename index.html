@@ -1298,9 +1298,9 @@
         <div class="tabs">
             <button class="tab active" data-tab="ajouter">➕ Ajouter</button>
             <button class="tab" data-tab="liste">📋 Liste</button>
-            <button class="tab" data-tab="statistiques">📊 Stats</button>
             <button class="tab" data-tab="budget">💰 Budget</button>
             <button class="tab" data-tab="recurrentes">🔄 Récurrentes</button>
+            <button class="tab" data-tab="statistiques">📊 Stats</button>
             <button class="tab" data-tab="parametres">⚙️ Paramètres</button>
         </div>
 
@@ -3197,6 +3197,7 @@
                 showBudgetConfirmationModal(itemsToConfirm);
             } else {
                 console.log('✅ Aucune dépense prévisionnelle à confirmer');
+                showNotification('✅ Aucune dépense prévisionnelle à confirmer pour le moment', 'success');
             }
         }
 
