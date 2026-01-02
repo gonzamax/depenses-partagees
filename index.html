@@ -3804,13 +3804,18 @@
             
             // Charger la répartition dans le curseur
             const parent1Percentage = settings.parent1_percentage || 50;
-            document.getElementById('split-slider').value = parent1Percentage;
+            const slider = document.getElementById('split-slider');
+            slider.value = parent1Percentage;
+            
+            // Mettre à jour le gradient du slider
+            slider.style.background = `linear-gradient(to right, #667eea 0%, #667eea ${parent1Percentage}%, #764ba2 ${parent1Percentage}%, #764ba2 100%)`;
+            
             document.getElementById('parent1-percentage').value = parent1Percentage;
             document.getElementById('parent2-percentage').value = 100 - parent1Percentage;
             updateSplitDisplay(parent1Percentage);
             updateSplitLabels();
             
-            console.log('✅ Settings chargés');
+            console.log('✅ Settings chargés avec répartition:', parent1Percentage + '/' + (100 - parent1Percentage));
         }
 
         function updateSplitFromSlider(value) {
@@ -4380,12 +4385,6 @@
                 const currentMonth = new Date().getMonth() + 1;
                 monthSelector.value = currentMonth;
             }
-        }
-
-        function loadSettings() {
-            document.getElementById('parent1-name').value = settings.parent1_name;
-            document.getElementById('parent2-name').value = settings.parent2_name;
-            document.getElementById('currency').value = settings.currency_symbol;
         }
 
         function updatePayeurSelects() {
