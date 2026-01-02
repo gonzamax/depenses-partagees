@@ -1523,10 +1523,7 @@
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <label for="budget-year" style="font-weight: bold; color: #667eea;">Année :</label>
                         <select id="budget-year" onchange="displayBudget()" style="padding: 10px 20px; font-size: 1.1em; border-radius: 8px; border: 2px solid #667eea;">
-                            <option value="2024">2024</option>
-                            <option value="2025" selected>2025</option>
-                            <option value="2026">2026</option>
-                            <option value="2027">2027</option>
+                            <!-- Années générées dynamiquement par initializeYearSelectors() -->
                         </select>
                         <select id="budget-view-mode" onchange="displayBudget()" style="padding: 10px 20px; font-size: 1em; border-radius: 8px; border: 2px solid #667eea;">
                             <option value="dashboard">📊 Tableau de bord</option>
@@ -4325,6 +4322,9 @@
             
             console.log('CATEGORIES au démarrage:', CATEGORIES);
             
+            // Initialiser les sélecteurs d'année avec l'année en cours
+            initializeYearSelectors();
+            
             loadSettings();
             updatePayeurSelects();
             updateAllTypeSelects();  // Mettre à jour tous les selects de types
@@ -4343,6 +4343,42 @@
             navigator.clipboard.writeText(currentRoomId).then(() => {
                 showNotification('Code copié ! Partagez-le avec l\'autre parent.', 'success');
             });
+        }
+
+        function initializeYearSelectors() {
+            const currentYear = new Date().getFullYear();
+            
+            // Liste des sélecteurs d'année dans l'application
+            const yearSelectors = [
+                'budget-year',
+                'filter-year'
+            ];
+            
+            yearSelectors.forEach(selectorId => {
+                const select = document.getElementById(selectorId);
+                if (!select) return;
+                
+                // Vider le select
+                select.innerHTML = '';
+                
+                // Ajouter les années de currentYear-2 à currentYear+5
+                for (let year = currentYear - 2; year <= currentYear + 5; year++) {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    if (year === currentYear) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+            });
+            
+            // Initialiser aussi le sélecteur de mois avec le mois en cours
+            const monthSelector = document.getElementById('budget-month-selector');
+            if (monthSelector) {
+                const currentMonth = new Date().getMonth() + 1;
+                monthSelector.value = currentMonth;
+            }
         }
 
         function loadSettings() {
