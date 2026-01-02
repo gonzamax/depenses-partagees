@@ -1533,9 +1533,14 @@
                             <option value="list">📋 Liste détaillée</option>
                         </select>
                     </div>
-                    <button class="btn" onclick="openAddBudgetItemModal()" style="padding: 12px 24px;">
-                        ➕ Ajouter une dépense prévisionnelle
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="checkBudgetItemsToConfirm()" style="padding: 12px 20px;" title="Vérifier les dépenses à confirmer">
+                            ✅ Vérifier confirmations
+                        </button>
+                        <button class="btn" onclick="openAddBudgetItemModal()" style="padding: 12px 24px;">
+                            ➕ Ajouter une dépense prévisionnelle
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -1552,12 +1557,51 @@
             
             <!-- Vue liste détaillée -->
             <div id="budget-list-view" style="display: none;">
-                <!-- Liste des dépenses prévisionnelles -->
+                <!-- Sélecteur de mois -->
+                <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <h3 style="color: #667eea; margin: 0;">📅 Vue mensuelle détaillée</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="font-weight: bold; color: #666;">Mois :</label>
+                            <select id="budget-month-selector" onchange="displayBudgetMonthlyDetail()" style="padding: 10px 20px; font-size: 1em; border-radius: 8px; border: 2px solid #667eea;">
+                                <option value="1">Janvier</option>
+                                <option value="2">Février</option>
+                                <option value="3">Mars</option>
+                                <option value="4">Avril</option>
+                                <option value="5">Mai</option>
+                                <option value="6">Juin</option>
+                                <option value="7">Juillet</option>
+                                <option value="8">Août</option>
+                                <option value="9">Septembre</option>
+                                <option value="10">Octobre</option>
+                                <option value="11">Novembre</option>
+                                <option value="12">Décembre</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Montants à prévoir par parent -->
+                <div id="budget-parent-amounts" style="margin-bottom: 20px;"></div>
+                
+                <!-- Dépenses récurrentes du mois -->
                 <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                    <h3 style="color: #764ba2; margin-bottom: 20px;">🔄 Dépenses récurrentes ce mois</h3>
+                    <div id="budget-monthly-recurrents"></div>
+                </div>
+                
+                <!-- Dépenses prévisionnelles du mois -->
+                <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                    <h3 style="color: #667eea; margin-bottom: 20px;">💰 Dépenses prévisionnelles ce mois</h3>
+                    <div id="budget-monthly-items"></div>
+                </div>
+                
+                <!-- Vue annuelle de toutes les dépenses -->
+                <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="color: #667eea; margin: 0;">📝 Dépenses prévisionnelles</h3>
+                        <h3 style="color: #667eea; margin: 0;">📋 Toutes les dépenses de l'année</h3>
                         <div style="display: flex; gap: 10px;">
-                            <select id="budget-filter-type" onchange="displayBudget()" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                            <select id="budget-filter-type" onchange="displayBudgetItemsList(parseInt(document.getElementById('budget-year').value))" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #e0e0e0;">
                                 <option value="all">Toutes</option>
                                 <option value="Ponctuelle">Ponctuelles</option>
                                 <option value="Mensuel">Mensuelles</option>
@@ -1566,12 +1610,6 @@
                         </div>
                     </div>
                     <div id="budget-items-list"></div>
-                </div>
-                
-                <!-- Détail mensuel -->
-                <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h3 style="color: #667eea; margin-bottom: 20px;">📅 Détail par mois</h3>
-                    <div id="budget-months-detail"></div>
                 </div>
             </div>
         </div>
@@ -3131,6 +3169,198 @@
                 
             } catch (error) {
                 console.error('❌ Erreur vérification dépenses récurrentes:', error);
+            }
+        }
+
+        async function checkBudgetItemsToConfirm() {
+            if (!currentRoomId) return;
+            
+            console.log('🔍 Vérification des dépenses prévisionnelles à confirmer...');
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const itemsToConfirm = [];
+            
+            // Vérifier les dépenses ponctuelles dont la date est arrivée
+            budgetItems.forEach(item => {
+                if (item.frequency === 'Ponctuelle' && !item.confirmed) {
+                    const itemDate = new Date(item.date);
+                    itemDate.setHours(0, 0, 0, 0);
+                    
+                    // Si la date est aujourd'hui ou dans le passé
+                    if (itemDate <= today) {
+                        itemsToConfirm.push(item);
+                    }
+                }
+            });
+            
+            if (itemsToConfirm.length > 0) {
+                console.log(`📋 ${itemsToConfirm.length} dépense(s) prévisionnelle(s) à confirmer`);
+                showBudgetConfirmationModal(itemsToConfirm);
+            } else {
+                console.log('✅ Aucune dépense prévisionnelle à confirmer');
+            }
+        }
+
+        function showBudgetConfirmationModal(items) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            
+            let itemsHTML = '';
+            items.forEach(item => {
+                const date = new Date(item.date);
+                itemsHTML += `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold; color: #333; margin-bottom: 5px;">${item.description}</div>
+                                <div style="font-size: 0.9em; color: #666;">
+                                    📅 ${date.toLocaleDateString('fr-FR')} | 
+                                    💰 ${item.montant.toFixed(2)} ${settings.currency_symbol} | 
+                                    👤 ${item.payeur}
+                                </div>
+                                <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                                    📂 ${item.type} - ${item.category}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button onclick="confirmBudgetItem(${item.id}, true)" class="btn" style="flex: 1; padding: 8px;">
+                                ✅ Confirmer
+                            </button>
+                            <button onclick="skipBudgetItem(${item.id})" class="btn btn-secondary" style="flex: 1; padding: 8px;">
+                                ⏭️ Reporter
+                            </button>
+                            <button onclick="cancelBudgetItem(${item.id})" class="btn btn-danger" style="flex: 1; padding: 8px;">
+                                ❌ Annuler
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px;">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h2 style="color: #667eea; margin-bottom: 20px;">💰 Dépenses prévisionnelles à confirmer</h2>
+                    
+                    <div style="background: #e7f3ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
+                        <p style="margin: 0; color: #666; line-height: 1.6;">
+                            <strong>📌 Ces dépenses prévisionnelles sont arrivées à leur date prévue.</strong><br>
+                            Voulez-vous les ajouter comme dépenses réelles ou les reporter ?
+                        </p>
+                    </div>
+                    
+                    <div id="budget-items-to-confirm">
+                        ${itemsHTML}
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                        <button onclick="this.closest('.modal').remove()" class="btn btn-secondary">
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        async function confirmBudgetItem(id, addToExpenses = true) {
+            const item = budgetItems.find(i => i.id === id);
+            if (!item) return;
+            
+            if (addToExpenses) {
+                // Créer une dépense réelle à partir de la dépense prévisionnelle
+                const expense = {
+                    room_id: currentRoomId,
+                    date: item.date,
+                    description: item.description,
+                    montant: item.montant,
+                    type: item.type,
+                    categorie: item.category,
+                    payeur: item.payeur,
+                    notes: item.notes ? item.notes + ' [Budget confirmé]' : 'Dépense confirmée depuis le budget',
+                    attachment_name: item.attachment_name,
+                    attachment_data: item.attachment_data,
+                    attachment_type: item.attachment_type,
+                    created_at: new Date().toISOString()
+                };
+                
+                const { error } = await supabase
+                    .from('expenses')
+                    .insert([expense]);
+                
+                if (error) {
+                    console.error('Erreur ajout dépense:', error);
+                    showNotification('Erreur lors de la confirmation', 'error');
+                    return;
+                }
+                
+                showNotification('Dépense confirmée et ajoutée !', 'success');
+            }
+            
+            // Marquer comme confirmé ou supprimer selon les préférences
+            budgetItems = budgetItems.filter(i => i.id !== id);
+            await saveBudgetItemsToSupabase();
+            
+            // Recharger l'affichage
+            await loadFromSupabase();
+            displayExpenses();
+            displayStatistics();
+            displayBudget();
+            
+            // Fermer la modale si toutes les dépenses sont traitées
+            const remainingItems = document.querySelectorAll('#budget-items-to-confirm > div').length;
+            if (remainingItems <= 1) {
+                document.querySelector('.modal').remove();
+            } else {
+                // Retirer juste l'item de la liste
+                event.target.closest('div[style*="border-left"]').remove();
+            }
+        }
+
+        async function skipBudgetItem(id) {
+            // Reporter la dépense d'un mois (pour les ponctuelles)
+            const item = budgetItems.find(i => i.id === id);
+            if (!item) return;
+            
+            const currentDate = new Date(item.date);
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            
+            item.date = currentDate.toISOString().split('T')[0];
+            item.month = currentDate.getMonth() + 1;
+            item.year = currentDate.getFullYear();
+            
+            await saveBudgetItemsToSupabase();
+            showNotification('Dépense reportée d\'un mois', 'success');
+            
+            // Retirer de la liste de confirmation
+            event.target.closest('div[style*="border-left"]').remove();
+            
+            const remainingItems = document.querySelectorAll('#budget-items-to-confirm > div').length;
+            if (remainingItems === 0) {
+                document.querySelector('.modal').remove();
+            }
+        }
+
+        async function cancelBudgetItem(id) {
+            if (!confirm('Voulez-vous vraiment annuler cette dépense prévisionnelle ?')) return;
+            
+            budgetItems = budgetItems.filter(i => i.id !== id);
+            await saveBudgetItemsToSupabase();
+            
+            showNotification('Dépense prévisionnelle annulée', 'success');
+            displayBudget();
+            
+            // Retirer de la liste de confirmation
+            event.target.closest('div[style*="border-left"]').remove();
+            
+            const remainingItems = document.querySelectorAll('#budget-items-to-confirm > div').length;
+            if (remainingItems === 0) {
+                document.querySelector('.modal').remove();
             }
         }
 
@@ -5236,57 +5466,244 @@
         }
 
         function displayBudgetListView(monthlyData, year) {
-            // Afficher la liste des dépenses prévisionnelles
-            displayBudgetItemsList(year);
+            // Initialiser le sélecteur de mois avec le mois en cours
+            const currentMonth = new Date().getMonth() + 1;
+            const monthSelector = document.getElementById('budget-month-selector');
+            if (monthSelector && !monthSelector.value) {
+                monthSelector.value = currentMonth;
+            }
             
             // Afficher le détail mensuel
-            let monthsHTML = '<div style="display: grid; gap: 15px;">';
+            displayBudgetMonthlyDetail();
             
-            monthlyData.forEach(data => {
-                const parent1Month = (data.total * settings.parent1_percentage) / 100;
-                const parent2Month = (data.total * settings.parent2_percentage) / 100;
+            // Afficher la liste annuelle complète
+            displayBudgetItemsList(year);
+        }
+
+        function displayBudgetMonthlyDetail() {
+            const year = parseInt(document.getElementById('budget-year').value);
+            const month = parseInt(document.getElementById('budget-month-selector').value);
+            const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                           'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+            const monthName = months[month - 1];
+            
+            // Calculer les totaux du mois
+            const recurrentTotal = calculateMonthlyRecurrent(month, year);
+            const budgetTotal = calculateMonthlyBudgetItems(month, year);
+            const total = recurrentTotal + budgetTotal;
+            
+            const parent1Amount = (total * settings.parent1_percentage) / 100;
+            const parent2Amount = (total * settings.parent2_percentage) / 100;
+            
+            // Afficher les montants à prévoir par parent
+            document.getElementById('budget-parent-amounts').innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                        <h4 style="opacity: 0.9; margin: 0 0 15px 0; font-size: 1em;">💰 Total prévu ${monthName} ${year}</h4>
+                        <div style="font-size: 2.5em; font-weight: bold; margin-bottom: 15px;">${total.toFixed(2)} ${settings.currency_symbol}</div>
+                        <div style="display: flex; justify-content: space-between; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.9em;">
+                            <span>🔄 Récurrentes: ${recurrentTotal.toFixed(2)} ${settings.currency_symbol}</span>
+                            <span>💎 Prévisionnelles: ${budgetTotal.toFixed(2)} ${settings.currency_symbol}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
+                        <h4 style="opacity: 0.9; margin: 0 0 15px 0; font-size: 1em;">👤 ${settings.parent1_name}</h4>
+                        <div style="font-size: 2.5em; font-weight: bold; margin-bottom: 10px;">${parent1Amount.toFixed(2)} ${settings.currency_symbol}</div>
+                        <div style="padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.9em;">
+                            <div style="margin-bottom: 5px;">📊 ${settings.parent1_percentage}% du total</div>
+                            <div>🔄 Récurrentes: ${(recurrentTotal * settings.parent1_percentage / 100).toFixed(2)} ${settings.currency_symbol}</div>
+                            <div>💎 Prévisionnelles: ${(budgetTotal * settings.parent1_percentage / 100).toFixed(2)} ${settings.currency_symbol}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);">
+                        <h4 style="opacity: 0.9; margin: 0 0 15px 0; font-size: 1em;">👤 ${settings.parent2_name}</h4>
+                        <div style="font-size: 2.5em; font-weight: bold; margin-bottom: 10px;">${parent2Amount.toFixed(2)} ${settings.currency_symbol}</div>
+                        <div style="padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.9em;">
+                            <div style="margin-bottom: 5px;">📊 ${settings.parent2_percentage}% du total</div>
+                            <div>🔄 Récurrentes: ${(recurrentTotal * settings.parent2_percentage / 100).toFixed(2)} ${settings.currency_symbol}</div>
+                            <div>💎 Prévisionnelles: ${(budgetTotal * settings.parent2_percentage / 100).toFixed(2)} ${settings.currency_symbol}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Afficher les dépenses récurrentes du mois
+            displayMonthlyRecurrents(month, year);
+            
+            // Afficher les dépenses prévisionnelles du mois
+            displayMonthlyBudgetItems(month, year);
+        }
+
+        function displayMonthlyRecurrents(month, year) {
+            const activeRecurrents = recurrentExpenses.filter(rec => {
+                return rec.active && isRecurrentActiveForMonth(rec, month, year);
+            });
+            
+            if (activeRecurrents.length === 0) {
+                document.getElementById('budget-monthly-recurrents').innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #999; background: #f8f9fa; border-radius: 8px;">
+                        <p style="margin: 0;">Aucune dépense récurrente ce mois</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div style="display: grid; gap: 12px;">';
+            
+            activeRecurrents.forEach(rec => {
+                const parent1Amount = (rec.montant * settings.parent1_percentage) / 100;
+                const parent2Amount = (rec.montant * settings.parent2_percentage) / 100;
                 
-                monthsHTML += `
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #667eea;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <h4 style="color: #667eea; margin: 0; font-size: 1.2em;">${data.name} ${year}</h4>
-                            <div style="font-size: 1.3em; font-weight: bold; color: #333;">${data.total.toFixed(2)} ${settings.currency_symbol}</div>
+                let frequencyDisplay = '';
+                if (rec.frequency === 'Mensuel') {
+                    frequencyDisplay = `📅 Le ${rec.day_of_month} du mois`;
+                } else if (rec.frequency === 'Hebdomadaire') {
+                    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+                    frequencyDisplay = `📅 Chaque ${days[rec.day_of_week]}`;
+                }
+                
+                html += `
+                    <div style="background: linear-gradient(135deg, #f0e6ff 0%, #f8f9fa 100%); padding: 15px; border-radius: 10px; border-left: 4px solid #764ba2;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold; color: #333; font-size: 1.1em; margin-bottom: 5px;">${rec.description}</div>
+                                <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">${frequencyDisplay}</div>
+                                <div style="font-size: 0.85em; color: #666;">📂 ${rec.type} | 🏷️ ${rec.categorie} | 👤 ${rec.payeur}</div>
+                            </div>
+                            <div style="text-align: right; margin-left: 20px;">
+                                <div style="font-size: 1.4em; font-weight: bold; color: #764ba2; margin-bottom: 5px;">${rec.montant.toFixed(2)} ${settings.currency_symbol}</div>
+                                <div style="font-size: 0.8em; color: #666;">
+                                    ${settings.parent1_name}: ${parent1Amount.toFixed(2)} ${settings.currency_symbol}<br>
+                                    ${settings.parent2_name}: ${parent2Amount.toFixed(2)} ${settings.currency_symbol}
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <div style="font-size: 0.85em; color: #666;">Récurrentes</div>
-                                <div style="font-weight: bold; color: #667eea;">${data.recurrent.toFixed(2)} ${settings.currency_symbol}</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.85em; color: #666;">Prévisionnelles</div>
-                                <div style="font-weight: bold; color: #764ba2;">${data.budget.toFixed(2)} ${settings.currency_symbol}</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.85em; color: #666;">${settings.parent1_name}</div>
-                                <div style="font-weight: bold; color: #28a745;">${parent1Month.toFixed(2)} ${settings.currency_symbol}</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.85em; color: #666;">${settings.parent2_name}</div>
-                                <div style="font-weight: bold; color: #17a2b8;">${parent2Month.toFixed(2)} ${settings.currency_symbol}</div>
-                            </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
+                            <button onclick="editRecurrentFromBudget(${rec.id})" class="btn btn-secondary" style="flex: 1; padding: 8px; font-size: 0.9em;">
+                                ✏️ Modifier
+                            </button>
+                            <button onclick="toggleRecurrent(${rec.id})" class="btn btn-danger" style="flex: 1; padding: 8px; font-size: 0.9em;">
+                                🔴 Désactiver
+                            </button>
                         </div>
-                        
-                        ${data.actual > 0 ? `
-                            <div style="padding: 10px; background: ${data.difference > 0 ? '#fff3cd' : '#d4edda'}; border-radius: 8px; font-size: 0.9em;">
-                                <strong>Réel :</strong> ${data.actual.toFixed(2)} ${settings.currency_symbol} 
-                                | <strong>${data.difference > 0 ? 'Dépassement' : 'Économie'} :</strong> 
-                                <span style="color: ${data.difference > 0 ? '#856404' : '#155724'}; font-weight: bold;">
-                                    ${Math.abs(data.difference).toFixed(2)} ${settings.currency_symbol}
-                                </span>
-                            </div>
-                        ` : ''}
                     </div>
                 `;
             });
             
-            monthsHTML += '</div>';
-            document.getElementById('budget-months-detail').innerHTML = monthsHTML;
+            html += '</div>';
+            
+            const totalRecurrents = activeRecurrents.reduce((sum, rec) => sum + rec.montant, 0);
+            const summary = `
+                <div style="background: #e7f3ff; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #2196F3; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #2196F3; font-weight: bold;">📊 Total récurrentes ce mois :</span>
+                    <span style="font-size: 1.2em; font-weight: bold; color: #764ba2;">${totalRecurrents.toFixed(2)} ${settings.currency_symbol}</span>
+                </div>
+            `;
+            
+            document.getElementById('budget-monthly-recurrents').innerHTML = summary + html;
+        }
+
+        function displayMonthlyBudgetItems(month, year) {
+            const monthlyItems = budgetItems.filter(item => {
+                if (item.frequency === 'Ponctuelle') {
+                    const itemDate = new Date(item.date);
+                    return itemDate.getFullYear() === year && (itemDate.getMonth() + 1) === month;
+                } else if (item.frequency === 'Mensuel') {
+                    // Vérifier si active ce mois
+                    const startDate = new Date(item.start_date);
+                    const endDate = item.end_date ? new Date(item.end_date) : null;
+                    const monthDate = new Date(year, month - 1, 1);
+                    
+                    if (startDate > monthDate) return false;
+                    if (endDate && endDate < monthDate) return false;
+                    return true;
+                } else if (item.frequency === 'Hebdomadaire') {
+                    // Vérifier si active ce mois
+                    const startDate = new Date(item.start_date);
+                    const endDate = item.end_date ? new Date(item.end_date) : null;
+                    const monthStart = new Date(year, month - 1, 1);
+                    const monthEnd = new Date(year, month, 0);
+                    
+                    if (startDate > monthEnd) return false;
+                    if (endDate && endDate < monthStart) return false;
+                    return true;
+                }
+                return false;
+            });
+            
+            if (monthlyItems.length === 0) {
+                document.getElementById('budget-monthly-items').innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #999; background: #f8f9fa; border-radius: 8px;">
+                        <p style="margin: 0 0 15px 0;">Aucune dépense prévisionnelle ce mois</p>
+                        <button class="btn" onclick="openAddBudgetItemModal()" style="padding: 10px 20px;">
+                            ➕ Ajouter une dépense
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div style="display: grid; gap: 12px;">';
+            
+            monthlyItems.forEach(item => {
+                const parent1Amount = (item.montant * settings.parent1_percentage) / 100;
+                const parent2Amount = (item.montant * settings.parent2_percentage) / 100;
+                
+                let dateDisplay = '';
+                if (item.frequency === 'Ponctuelle') {
+                    const date = new Date(item.date);
+                    dateDisplay = `📅 Le ${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`;
+                } else if (item.frequency === 'Mensuel') {
+                    dateDisplay = `📅 Le ${item.day} du mois`;
+                } else if (item.frequency === 'Hebdomadaire') {
+                    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+                    dateDisplay = `📅 Chaque ${days[item.weekday]}`;
+                }
+                
+                html += `
+                    <div style="background: linear-gradient(135deg, #e7f3ff 0%, #f8f9fa 100%); padding: 15px; border-radius: 10px; border-left: 4px solid #667eea;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                    <div style="font-weight: bold; color: #333; font-size: 1.1em;">${item.description}</div>
+                                    <span style="background: #667eea; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.7em;">${item.frequency}</span>
+                                </div>
+                                <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">${dateDisplay}</div>
+                                <div style="font-size: 0.85em; color: #666;">📂 ${item.type} | 🏷️ ${item.category} | 👤 ${item.payeur}</div>
+                            </div>
+                            <div style="text-align: right; margin-left: 20px;">
+                                <div style="font-size: 1.4em; font-weight: bold; color: #667eea; margin-bottom: 5px;">${item.montant.toFixed(2)} ${settings.currency_symbol}</div>
+                                <div style="font-size: 0.8em; color: #666;">
+                                    ${settings.parent1_name}: ${parent1Amount.toFixed(2)} ${settings.currency_symbol}<br>
+                                    ${settings.parent2_name}: ${parent2Amount.toFixed(2)} ${settings.currency_symbol}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
+                            <button onclick="editBudgetItem(${item.id})" class="btn btn-secondary" style="flex: 1; padding: 8px; font-size: 0.9em;">
+                                ✏️ Modifier
+                            </button>
+                            <button onclick="deleteBudgetItem(${item.id})" class="btn btn-danger" style="flex: 1; padding: 8px; font-size: 0.9em;">
+                                🗑️ Supprimer
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            const totalItems = monthlyItems.reduce((sum, item) => sum + item.montant, 0);
+            const summary = `
+                <div style="background: #d4edda; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #28a745; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #155724; font-weight: bold;">📊 Total prévisionnelles ce mois :</span>
+                    <span style="font-size: 1.2em; font-weight: bold; color: #667eea;">${totalItems.toFixed(2)} ${settings.currency_symbol}</span>
+                </div>
+            `;
+            
+            document.getElementById('budget-monthly-items').innerHTML = summary + html;
         }
 
 
@@ -5479,76 +5896,209 @@
         }
 
         function displayBudgetItemsList(year) {
-            const items = budgetItems;
             const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
                            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
             
-            if (items.length === 0) {
+            // Récupérer le filtre de type
+            const filterType = document.getElementById('budget-filter-type')?.value || 'all';
+            
+            // Créer une liste combinée de toutes les dépenses
+            const allItems = [];
+            
+            // Ajouter les dépenses prévisionnelles
+            budgetItems.forEach(item => {
+                // Vérifier si l'item est dans l'année sélectionnée
+                let inYear = false;
+                
+                if (item.frequency === 'Ponctuelle') {
+                    const itemDate = new Date(item.date);
+                    inYear = itemDate.getFullYear() === year;
+                } else {
+                    // Pour les récurrentes, vérifier si elles sont actives dans l'année
+                    const startDate = new Date(item.start_date);
+                    const endDate = item.end_date ? new Date(item.end_date) : new Date(year, 11, 31);
+                    const yearStart = new Date(year, 0, 1);
+                    const yearEnd = new Date(year, 11, 31);
+                    
+                    inYear = startDate <= yearEnd && endDate >= yearStart;
+                }
+                
+                if (inYear) {
+                    allItems.push({
+                        ...item,
+                        source: 'budget',
+                        displayType: item.frequency === 'Ponctuelle' ? 'Ponctuelle' : item.frequency
+                    });
+                }
+            });
+            
+            // Ajouter les dépenses récurrentes
+            recurrentExpenses.forEach(rec => {
+                if (!rec.active) return;
+                
+                // Vérifier si la récurrente est active dans l'année
+                const startDate = rec.start_date ? new Date(rec.start_date) : rec.created_at ? new Date(rec.created_at) : new Date();
+                const endDate = rec.end_date ? new Date(rec.end_date) : new Date(year, 11, 31);
+                const yearStart = new Date(year, 0, 1);
+                const yearEnd = new Date(year, 11, 31);
+                
+                const inYear = startDate <= yearEnd && endDate >= yearStart;
+                
+                if (inYear) {
+                    allItems.push({
+                        id: rec.id,
+                        description: rec.description,
+                        montant: rec.montant,
+                        type: rec.type,
+                        category: rec.categorie,
+                        payeur: rec.payeur,
+                        frequency: rec.frequency,
+                        start_date: rec.start_date || rec.created_at,
+                        end_date: rec.end_date,
+                        day: rec.day_of_month,
+                        weekday: rec.day_of_week,
+                        notes: rec.notes,
+                        attachment_name: rec.attachment_name,
+                        source: 'recurrent',
+                        displayType: rec.frequency
+                    });
+                }
+            });
+            
+            // Appliquer le filtre
+            let filteredItems = allItems;
+            if (filterType !== 'all') {
+                filteredItems = allItems.filter(item => item.displayType === filterType);
+            }
+            
+            if (filteredItems.length === 0) {
                 document.getElementById('budget-items-list').innerHTML = `
                     <div style="text-align: center; padding: 40px; color: #999;">
-                        <p>Aucune dépense prévisionnelle</p>
+                        <p>Aucune dépense ${filterType !== 'all' ? `de type "${filterType}"` : ''}</p>
                         <button class="btn" onclick="openAddBudgetItemModal()" style="margin-top: 15px;">
-                            ➕ Ajouter une dépense
+                            ➕ Ajouter une dépense prévisionnelle
                         </button>
                     </div>
                 `;
                 return;
             }
             
-            let html = '<div style="display: grid; gap: 15px;">';
-            
-            // Trier par date ou par fréquence
-            items.sort((a, b) => {
+            // Trier par date
+            filteredItems.sort((a, b) => {
                 if (a.frequency === 'Ponctuelle' && b.frequency === 'Ponctuelle') {
                     return new Date(a.date) - new Date(b.date);
                 }
                 if (a.frequency === 'Ponctuelle') return -1;
                 if (b.frequency === 'Ponctuelle') return 1;
-                return new Date(a.start_date) - new Date(b.start_date);
+                
+                const dateA = new Date(a.start_date);
+                const dateB = new Date(b.start_date);
+                return dateA - dateB;
             });
             
-            items.forEach(item => {
+            let html = '<div style="display: grid; gap: 15px;">';
+            
+            filteredItems.forEach(item => {
                 let dateDisplay = '';
+                let badge = '';
+                
                 if (item.frequency === 'Ponctuelle') {
                     const date = new Date(item.date);
                     dateDisplay = `📅 ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+                    badge = '<span style="background: #667eea; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75em; margin-left: 10px;">Ponctuelle</span>';
                 } else {
                     const startDate = new Date(item.start_date);
-                    dateDisplay = `🔄 ${item.frequency} - Début: ${startDate.getDate()}/${startDate.getMonth()+1}/${startDate.getFullYear()}`;
+                    const dayInfo = item.frequency === 'Mensuel' 
+                        ? `le ${item.day} du mois`
+                        : `le ${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][item.weekday]}`;
+                    
+                    dateDisplay = `🔄 ${item.frequency} ${dayInfo} - Début: ${startDate.getDate()}/${startDate.getMonth()+1}/${startDate.getFullYear()}`;
                     if (item.end_date) {
                         const endDate = new Date(item.end_date);
                         dateDisplay += ` - Fin: ${endDate.getDate()}/${endDate.getMonth()+1}/${endDate.getFullYear()}`;
                     }
+                    
+                    const badgeColor = item.source === 'recurrent' ? '#764ba2' : '#28a745';
+                    const badgeText = item.source === 'recurrent' ? 'Récurrente' : 'Budget récurrent';
+                    badge = `<span style="background: ${badgeColor}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75em; margin-left: 10px;">${badgeText}</span>`;
                 }
                 
                 html += `
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: start;">
-                        <div style="flex: 1;">
-                            <div style="font-weight: bold; color: #333; margin-bottom: 5px;">${item.description}</div>
-                            <div style="font-size: 0.9em; color: #666; margin-bottom: 3px;">
-                                ${dateDisplay}
+                    <div style="background: ${item.source === 'recurrent' ? '#f0e6ff' : '#f8f9fa'}; padding: 15px; border-radius: 8px; border-left: 4px solid ${item.source === 'recurrent' ? '#764ba2' : '#667eea'};">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center;">
+                                    <div style="font-weight: bold; color: #333; font-size: 1.1em;">${item.description}</div>
+                                    ${badge}
+                                </div>
                             </div>
-                            <div style="font-size: 0.9em; color: #666;">
-                                📂 ${item.type} | 🏷️ ${item.category} | 👤 ${item.payeur}
+                            <div style="font-size: 1.4em; font-weight: bold; color: ${item.source === 'recurrent' ? '#764ba2' : '#667eea'}; margin-left: 20px;">
+                                ${item.montant.toFixed(2)} ${settings.currency_symbol}
                             </div>
-                            ${item.notes ? `<div style="font-size: 0.85em; color: #888; margin-top: 5px;">💬 ${item.notes}</div>` : ''}
-                            ${item.attachment_name ? `<div style="font-size: 0.85em; color: #667eea; margin-top: 5px;">📎 ${item.attachment_name}</div>` : ''}
                         </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="font-size: 1.3em; font-weight: bold; color: #667eea;">${item.montant.toFixed(2)} ${settings.currency_symbol}</div>
-                            <button onclick="editBudgetItem(${item.id})" class="btn btn-secondary" style="padding: 8px 15px;">
-                                ✏️
-                            </button>
-                            <button onclick="deleteBudgetItem(${item.id})" class="btn btn-danger" style="padding: 8px 15px;">
-                                🗑️
-                            </button>
+                        
+                        <div style="font-size: 0.9em; color: #666; margin-bottom: 8px;">
+                            ${dateDisplay}
+                        </div>
+                        
+                        <div style="font-size: 0.9em; color: #666; margin-bottom: 8px;">
+                            📂 ${item.type} | 🏷️ ${item.category} | 👤 ${item.payeur}
+                        </div>
+                        
+                        ${item.notes ? `<div style="font-size: 0.85em; color: #888; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.5); border-radius: 6px;">💬 ${item.notes}</div>` : ''}
+                        ${item.attachment_name ? `<div style="font-size: 0.85em; color: #667eea; margin-bottom: 8px;">📎 ${item.attachment_name}</div>` : ''}
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.1);">
+                            ${item.source === 'budget' ? `
+                                <button onclick="editBudgetItem(${item.id})" class="btn btn-secondary" style="flex: 1; padding: 10px;">
+                                    ✏️ Modifier
+                                </button>
+                                <button onclick="deleteBudgetItem(${item.id})" class="btn btn-danger" style="flex: 1; padding: 10px;">
+                                    🗑️ Supprimer
+                                </button>
+                            ` : `
+                                <button onclick="editRecurrentFromBudget(${item.id})" class="btn btn-secondary" style="flex: 1; padding: 10px;">
+                                    ✏️ Modifier
+                                </button>
+                                <button onclick="toggleRecurrent(${item.id})" class="btn btn-danger" style="flex: 1; padding: 10px;">
+                                    🔴 Désactiver
+                                </button>
+                            `}
                         </div>
                     </div>
                 `;
             });
             
             html += '</div>';
-            document.getElementById('budget-items-list').innerHTML = html;
+            
+            // Afficher un résumé en haut
+            const summary = `
+                <div style="background: #e7f3ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <strong style="color: #2196F3;">📊 Résumé :</strong>
+                            <span style="color: #666; margin-left: 10px;">
+                                ${filteredItems.length} dépense(s) affichée(s) pour ${year}
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 15px; font-size: 0.9em;">
+                            <span>💰 ${filteredItems.filter(i => i.source === 'budget').length} prévisionnelles</span>
+                            <span>🔄 ${filteredItems.filter(i => i.source === 'recurrent').length} récurrentes</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('budget-items-list').innerHTML = summary + html;
+        }
+
+        // Fonction pour éditer une récurrente depuis le budget
+        async function editRecurrentFromBudget(id) {
+            // Rediriger vers l'onglet récurrentes et ouvrir l'édition
+            switchTab('recurrentes');
+            setTimeout(() => {
+                editRecurrent(id);
+            }, 100);
         }
 
         async function saveBudgetItemsToSupabase() {
@@ -5934,8 +6484,14 @@
                         // Vérifier et exécuter les dépenses récurrentes au démarrage
                         await checkAndExecuteRecurrentExpenses();
                         
+                        // Vérifier les dépenses prévisionnelles à confirmer
+                        await checkBudgetItemsToConfirm();
+                        
                         // Vérifier toutes les heures si des dépenses récurrentes sont à exécuter
                         setInterval(checkAndExecuteRecurrentExpenses, 60 * 60 * 1000);
+                        
+                        // Vérifier toutes les 6 heures les dépenses prévisionnelles à confirmer
+                        setInterval(checkBudgetItemsToConfirm, 6 * 60 * 60 * 1000);
                     } else {
                         // Room n'existe plus
                         localStorage.removeItem('currentRoomId');
@@ -6235,6 +6791,26 @@
                         <li>🛒 Estimer le <strong>budget courses mensuel</strong> (mensuel)</li>
                         <li>🎓 Anticiper la <strong>rentrée scolaire</strong> (ponctuelle en septembre)</li>
                     </ul>
+                </div>
+
+                <div style="background: #e7f3ff; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h4 style="color: #2196F3; margin-top: 0;">✅ Confirmation automatique</h4>
+                    <p style="margin: 0 0 10px 0; color: #666; line-height: 1.8;">
+                        Quand une dépense prévisionnelle <strong>ponctuelle</strong> arrive à sa date prévue, 
+                        l'application vous propose de la confirmer.
+                    </p>
+                    <p style="margin: 0; color: #666; line-height: 1.8;">
+                        <strong>Vous avez 3 choix :</strong>
+                    </p>
+                    <ul style="margin: 10px 0; line-height: 1.8; color: #666;">
+                        <li><strong>✅ Confirmer</strong> : La dépense est ajoutée dans vos dépenses réelles</li>
+                        <li><strong>⏭️ Reporter</strong> : La date est reportée d'un mois</li>
+                        <li><strong>❌ Annuler</strong> : La dépense prévisionnelle est supprimée</li>
+                    </ul>
+                    <p style="margin: 10px 0 0 0; padding: 10px; background: #d4edda; border-radius: 8px; color: #155724; font-size: 0.9em;">
+                        💡 <strong>Astuce :</strong> Cliquez sur "✅ Vérifier confirmations" dans l'onglet Budget 
+                        pour voir s'il y a des dépenses à confirmer.
+                    </p>
                 </div>
             </div>
 
