@@ -1974,6 +1974,34 @@
                 </p>
             </div>
 
+            <div class="settings-section">
+                <h3>💾 Sauvegarde et Restauration</h3>
+                <p style="margin-bottom: 20px; font-size: 0.9em; color: #666;">
+                    Sauvegardez toutes vos données (dépenses, récurrentes, budget, paramètres) ou restaurez une sauvegarde précédente.
+                </p>
+                
+                <div style="background: #e7f3ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
+                    <h4 style="color: #2196F3; margin-top: 0;">📥 Sauvegarder vos données</h4>
+                    <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
+                        Crée un fichier de sauvegarde complet avec toutes vos données. Conservez ce fichier en lieu sûr !
+                    </p>
+                    <button class="btn btn-success" onclick="backupAllData()" style="width: 100%;">
+                        💾 Créer une sauvegarde complète
+                    </button>
+                </div>
+                
+                <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 4px solid #ffc107;">
+                    <h4 style="color: #856404; margin-top: 0;">📤 Restaurer une sauvegarde</h4>
+                    <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
+                        ⚠️ <strong>Attention :</strong> La restauration remplacera toutes vos données actuelles par celles de la sauvegarde.
+                    </p>
+                    <input type="file" id="restore-file-input" accept=".json" style="display: none;" onchange="restoreFromFile(event)">
+                    <button class="btn btn-warning" onclick="document.getElementById('restore-file-input').click()" style="width: 100%;">
+                        📤 Restaurer une sauvegarde
+                    </button>
+                </div>
+            </div>
+
             <div class="btn-group">
                 <button class="btn btn-success" onclick="saveSettings()">💾 Enregistrer</button>
                 <button class="btn btn-secondary" onclick="exportData()">📥 Exporter JSON</button>
@@ -3816,6 +3844,205 @@
             updateSplitLabels();
             
             console.log('✅ Settings chargés avec répartition:', parent1Percentage + '/' + (100 - parent1Percentage));
+        }
+
+        async function backupAllData() {
+            if (!currentRoomId || !supabase) {
+                showNotification('Impossible de créer la sauvegarde', 'error');
+                return;
+            }
+
+            try {
+                showNotification('⏳ Création de la sauvegarde...', 'info');
+
+                // Récupérer toutes les données depuis Supabase
+                const { data: expensesData } = await supabase
+                    .from('expenses')
+                    .select('*')
+                    .eq('room_id', currentRoomId)
+                    .order('date', { ascending: false });
+
+                const { data: recurrentData } = await supabase
+                    .from('recurrent_expenses')
+                    .select('*')
+                    .eq('room_id', currentRoomId);
+
+                const { data: roomData } = await supabase
+                    .from('rooms')
+                    .select('budget_items')
+                    .eq('room_id', currentRoomId)
+                    .single();
+
+                const { data: settingsData } = await supabase
+                    .from('settings')
+                    .select('*')
+                    .eq('room_id', currentRoomId)
+                    .single();
+
+                const { data: typesData } = await supabase
+                    .from('types')
+                    .select('*')
+                    .eq('room_id', currentRoomId);
+
+                // Créer l'objet de sauvegarde
+                const backup = {
+                    version: '1.0',
+                    backup_date: new Date().toISOString(),
+                    room_id: currentRoomId,
+                    data: {
+                        expenses: expensesData || [],
+                        recurrent_expenses: recurrentData || [],
+                        budget_items: roomData?.budget_items || [],
+                        settings: settingsData || {},
+                        types: typesData || []
+                    },
+                    stats: {
+                        total_expenses: expensesData?.length || 0,
+                        total_recurrents: recurrentData?.length || 0,
+                        total_budget_items: (roomData?.budget_items || []).length,
+                        total_types: typesData?.length || 0
+                    }
+                };
+
+                // Créer le fichier de sauvegarde
+                const dataStr = JSON.stringify(backup, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const fileName = `sauvegarde_depenses_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
+                
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showNotification(`✅ Sauvegarde créée : ${backup.stats.total_expenses} dépenses, ${backup.stats.total_recurrents} récurrentes`, 'success');
+                
+            } catch (error) {
+                console.error('Erreur lors de la sauvegarde:', error);
+                showNotification('❌ Erreur lors de la création de la sauvegarde', 'error');
+            }
+        }
+
+        async function restoreFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Vérifier que c'est un fichier JSON
+            if (!file.name.endsWith('.json')) {
+                showNotification('❌ Veuillez sélectionner un fichier JSON de sauvegarde', 'error');
+                return;
+            }
+
+            // Demander confirmation
+            const confirmMessage = `⚠️ ATTENTION !\n\nLa restauration va REMPLACER toutes vos données actuelles par celles de la sauvegarde.\n\nDonnées actuelles :\n- ${expenses.length} dépenses\n- ${recurrentExpenses.length} récurrentes\n- ${budgetItems.length} prévisionnelles\n\nCes données seront SUPPRIMÉES et remplacées.\n\nVoulez-vous vraiment continuer ?`;
+            
+            if (!confirm(confirmMessage)) {
+                event.target.value = ''; // Réinitialiser l'input
+                return;
+            }
+
+            const reader = new FileReader();
+            
+            reader.onload = async (e) => {
+                try {
+                    showNotification('⏳ Restauration en cours...', 'info');
+
+                    // Parser le fichier JSON
+                    const backup = JSON.parse(e.target.result);
+
+                    // Vérifier la structure
+                    if (!backup.version || !backup.data) {
+                        throw new Error('Format de sauvegarde invalide');
+                    }
+
+                    // Afficher les statistiques de la sauvegarde
+                    console.log('📊 Sauvegarde à restaurer:', backup.stats);
+
+                    // ÉTAPE 1 : Supprimer toutes les données existantes
+                    await supabase.from('expenses').delete().eq('room_id', currentRoomId);
+                    await supabase.from('recurrent_expenses').delete().eq('room_id', currentRoomId);
+                    await supabase.from('types').delete().eq('room_id', currentRoomId);
+
+                    // ÉTAPE 2 : Restaurer les dépenses
+                    if (backup.data.expenses && backup.data.expenses.length > 0) {
+                        const { error: expensesError } = await supabase
+                            .from('expenses')
+                            .insert(backup.data.expenses);
+                        
+                        if (expensesError) throw expensesError;
+                    }
+
+                    // ÉTAPE 3 : Restaurer les récurrentes
+                    if (backup.data.recurrent_expenses && backup.data.recurrent_expenses.length > 0) {
+                        const { error: recurrentError } = await supabase
+                            .from('recurrent_expenses')
+                            .insert(backup.data.recurrent_expenses);
+                        
+                        if (recurrentError) throw recurrentError;
+                    }
+
+                    // ÉTAPE 4 : Restaurer le budget
+                    if (backup.data.budget_items) {
+                        const { error: budgetError } = await supabase
+                            .from('rooms')
+                            .update({ budget_items: backup.data.budget_items })
+                            .eq('room_id', currentRoomId);
+                        
+                        if (budgetError) throw budgetError;
+                    }
+
+                    // ÉTAPE 5 : Restaurer les paramètres
+                    if (backup.data.settings) {
+                        const { error: settingsError } = await supabase
+                            .from('settings')
+                            .update(backup.data.settings)
+                            .eq('room_id', currentRoomId);
+                        
+                        if (settingsError) throw settingsError;
+                    }
+
+                    // ÉTAPE 6 : Restaurer les types personnalisés
+                    if (backup.data.types && backup.data.types.length > 0) {
+                        const { error: typesError } = await supabase
+                            .from('types')
+                            .insert(backup.data.types);
+                        
+                        if (typesError) throw typesError;
+                    }
+
+                    // ÉTAPE 7 : Recharger toutes les données
+                    await loadFromSupabase();
+                    
+                    // ÉTAPE 8 : Rafraîchir tous les affichages
+                    displayExpenses();
+                    displayStatistics();
+                    displayBudget();
+                    displayRecurrentExpenses();
+                    loadSettings();
+                    updateAllTypeSelects();
+                    displayTypesList();
+
+                    showNotification(`✅ Restauration réussie ! ${backup.stats.total_expenses} dépenses, ${backup.stats.total_recurrents} récurrentes restaurées`, 'success');
+                    
+                } catch (error) {
+                    console.error('Erreur lors de la restauration:', error);
+                    showNotification('❌ Erreur lors de la restauration : ' + error.message, 'error');
+                }
+
+                // Réinitialiser l'input
+                event.target.value = '';
+            };
+
+            reader.onerror = () => {
+                showNotification('❌ Erreur de lecture du fichier', 'error');
+                event.target.value = '';
+            };
+
+            reader.readAsText(file);
         }
 
         function updateSplitFromSlider(value) {
