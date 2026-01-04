@@ -1462,14 +1462,41 @@
             <!-- Filtres de période -->
             <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
                 <label style="font-weight: 600; color: #333; margin-bottom: 10px; display: block;">📅 Période d'analyse</label>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <select id="stats-period" onchange="displayStatistics()" style="padding: 10px; border-radius: 8px; border: 2px solid #e0e0e0; flex: 1; min-width: 150px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                    <select id="stats-period" onchange="handlePeriodChange()" style="padding: 10px; border-radius: 8px; border: 2px solid #e0e0e0; flex: 1; min-width: 150px;">
                         <option value="all">Depuis le début</option>
                         <option value="month" selected>Ce mois-ci</option>
+                        <option value="lastMonth">Mois précédent</option>
                         <option value="3months">3 derniers mois</option>
                         <option value="6months">6 derniers mois</option>
                         <option value="year">Cette année</option>
+                        <option value="lastYear">Année précédente</option>
+                        <option value="custom">📆 Période personnalisée</option>
                     </select>
+                </div>
+                
+                <!-- Sélecteur de période personnalisée -->
+                <div id="custom-period-selector" style="display: none; background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border: 2px solid #667eea;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>
+                            <label style="font-size: 0.9em; color: #666; margin-bottom: 5px; display: block;">📅 Date de début</label>
+                            <input type="date" id="custom-start-date" style="width: 100%; padding: 8px; border-radius: 6px; border: 2px solid #e0e0e0;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.9em; color: #666; margin-bottom: 5px; display: block;">📅 Date de fin</label>
+                            <input type="date" id="custom-end-date" style="width: 100%; padding: 8px; border-radius: 6px; border: 2px solid #e0e0e0;">
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button onclick="applyCustomPeriod()" class="btn" style="width: 100%; padding: 8px;">
+                                ✅ Appliquer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Affichage de la période sélectionnée -->
+                <div id="period-display" style="margin-top: 10px; padding: 10px; background: #e7f3ff; border-radius: 6px; font-size: 0.9em; color: #2196F3; display: none;">
+                    <strong>📊 Période analysée :</strong> <span id="period-text"></span>
                 </div>
             </div>
             
@@ -4960,27 +4987,153 @@
 
         function filterExpensesByPeriod(expenses, period) {
             const now = new Date();
-            let startDate;
+            let startDate, endDate;
 
             switch(period) {
                 case 'month':
                     startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                    break;
+                case 'lastMonth':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
                     break;
                 case '3months':
                     startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                    endDate = now;
                     break;
                 case '6months':
                     startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+                    endDate = now;
                     break;
                 case 'year':
                     startDate = new Date(now.getFullYear(), 0, 1);
+                    endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+                    break;
+                case 'lastYear':
+                    startDate = new Date(now.getFullYear() - 1, 0, 1);
+                    endDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+                    break;
+                case 'custom':
+                    // Les dates personnalisées sont stockées dans des variables globales
+                    if (window.customStartDate && window.customEndDate) {
+                        startDate = new Date(window.customStartDate);
+                        endDate = new Date(window.customEndDate);
+                        endDate.setHours(23, 59, 59);
+                    } else {
+                        return expenses;
+                    }
                     break;
                 case 'all':
                 default:
                     return expenses;
             }
 
-            return expenses.filter(e => new Date(e.date) >= startDate);
+            if (endDate) {
+                return expenses.filter(e => {
+                    const date = new Date(e.date);
+                    return date >= startDate && date <= endDate;
+                });
+            } else {
+                return expenses.filter(e => new Date(e.date) >= startDate);
+            }
+        }
+
+        function handlePeriodChange() {
+            const period = document.getElementById('stats-period').value;
+            const customSelector = document.getElementById('custom-period-selector');
+            const periodDisplay = document.getElementById('period-display');
+            
+            if (period === 'custom') {
+                customSelector.style.display = 'block';
+                
+                // Initialiser les dates avec le mois en cours
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                
+                document.getElementById('custom-start-date').valueAsDate = firstDay;
+                document.getElementById('custom-end-date').valueAsDate = lastDay;
+                
+                periodDisplay.style.display = 'none';
+            } else {
+                customSelector.style.display = 'none';
+                updatePeriodDisplay(period);
+                displayStatistics();
+            }
+        }
+
+        function applyCustomPeriod() {
+            const startDate = document.getElementById('custom-start-date').value;
+            const endDate = document.getElementById('custom-end-date').value;
+            
+            if (!startDate || !endDate) {
+                showNotification('⚠️ Veuillez sélectionner une date de début et de fin', 'error');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                showNotification('⚠️ La date de début doit être antérieure à la date de fin', 'error');
+                return;
+            }
+            
+            // Stocker les dates dans des variables globales
+            window.customStartDate = startDate;
+            window.customEndDate = endDate;
+            
+            updatePeriodDisplay('custom');
+            displayStatistics();
+        }
+
+        function updatePeriodDisplay(period) {
+            const periodDisplay = document.getElementById('period-display');
+            const periodText = document.getElementById('period-text');
+            const now = new Date();
+            
+            let text = '';
+            
+            switch(period) {
+                case 'month':
+                    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                                       'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+                    text = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+                    break;
+                case 'lastMonth':
+                    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    const lastMonthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                                           'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+                    text = `${lastMonthNames[lastMonth.getMonth()]} ${lastMonth.getFullYear()}`;
+                    break;
+                case '3months':
+                    text = '3 derniers mois';
+                    break;
+                case '6months':
+                    text = '6 derniers mois';
+                    break;
+                case 'year':
+                    text = `Année ${now.getFullYear()}`;
+                    break;
+                case 'lastYear':
+                    text = `Année ${now.getFullYear() - 1}`;
+                    break;
+                case 'custom':
+                    if (window.customStartDate && window.customEndDate) {
+                        const start = new Date(window.customStartDate);
+                        const end = new Date(window.customEndDate);
+                        text = `Du ${start.toLocaleDateString('fr-FR')} au ${end.toLocaleDateString('fr-FR')}`;
+                    }
+                    break;
+                case 'all':
+                    text = 'Toutes les dépenses';
+                    break;
+            }
+            
+            if (text && period !== 'all') {
+                periodText.textContent = text;
+                periodDisplay.style.display = 'block';
+            } else {
+                periodDisplay.style.display = 'none';
+            }
         }
 
         function createPieChart(filtered) {
