@@ -4366,10 +4366,23 @@
                     })
                 });
                 
-                const result = await response.json();
+                let result;
+                let errorDetails = '';
+                
+                try {
+                    result = await response.json();
+                    if (result.error) {
+                        errorDetails = result.error;
+                    }
+                } catch (jsonError) {
+                    // Si le JSON ne peut pas être parsé, récupérer le texte brut
+                    const text = await response.text();
+                    errorDetails = text || 'Erreur inconnue';
+                }
                 
                 if (!response.ok) {
-                    throw new Error(result.error || `Erreur ${response.status}`);
+                    console.error('❌ Réponse Edge Function:', result || errorDetails);
+                    throw new Error(errorDetails || `Erreur ${response.status}`);
                 }
                 
                 console.log('✅ Email envoyé avec succès:', result);
@@ -4466,6 +4479,24 @@
                         <li>Ajouter la variable d'environnement <code>RESEND_API_KEY</code></li>
                         <li>Déployer la fonction</li>
                     </ol>
+                `;
+            } else if (errorMessage.includes('500') || errorMessage.includes('RESEND_API_KEY')) {
+                helpTitle = '🔑 Clé API Resend manquante ou invalide';
+                instructions = `
+                    <p>L'Edge Function est déployée mais la clé API Resend n'est pas configurée ou est invalide.</p>
+                    <p><strong>Solution :</strong></p>
+                    <ol style="margin: 10px 0; padding-left: 20px; text-align: left;">
+                        <li>Créer un compte sur <a href="https://resend.com/signup" target="_blank">Resend.com</a> (gratuit)</li>
+                        <li>Obtenir votre clé API (format: <code>re_xxxxxxxxxxxxx</code>)</li>
+                        <li>Dans Supabase : Edge Functions → send-test-email → Settings</li>
+                        <li>Ajouter le secret : <code>RESEND_API_KEY</code> = votre clé</li>
+                        <li>Sauvegarder et réessayer</li>
+                    </ol>
+                    <div style="background: #e7f3ff; padding: 12px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2196F3;">
+                        <p style="margin: 0; color: #1976D2; font-size: 0.9em;">
+                            💡 <strong>Plan gratuit Resend :</strong> 100 emails/jour, 3000/mois - Parfait pour un usage familial !
+                        </p>
+                    </div>
                 `;
             } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
                 helpTitle = '🔐 Problème d\'authentification';
