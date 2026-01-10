@@ -4452,14 +4452,18 @@
                     <p>L'application n'est pas connectée à Supabase ou l'URL est invalide.</p>
                     <p><strong>Solution :</strong> Vérifiez votre connexion à Supabase dans la console.</p>
                 `;
-            } else if (errorMessage.includes('404') || errorMessage.includes('Function not found')) {
+            } else if (errorMessage.includes('404') || errorMessage.includes('NetworkError') || errorMessage.includes('Function not found')) {
                 helpTitle = '📦 Edge Function non déployée';
                 instructions = `
                     <p>L'Edge Function <code>send-test-email</code> n'est pas déployée sur Supabase.</p>
                     <p><strong>Solution :</strong></p>
                     <ol style="margin: 10px 0; padding-left: 20px; text-align: left;">
-                        <li>Créer l'Edge Function dans Supabase</li>
-                        <li>Utiliser le code fourni dans <code>supabase-edge-function-send-test-email.ts</code></li>
+                        <li>Aller dans Supabase → Edge Functions</li>
+                        <li>Cliquer "New Function"</li>
+                        <li>Nom : <code>send-test-email</code></li>
+                        <li>Copier le code fourni dans <code>supabase-edge-function-send-test-email.ts</code></li>
+                        <li>Configurer : Verify JWT = <strong>OFF</strong></li>
+                        <li>Ajouter la variable d'environnement <code>RESEND_API_KEY</code></li>
                         <li>Déployer la fonction</li>
                     </ol>
                 `;
@@ -4482,6 +4486,9 @@
                 `;
             }
             
+            // Stocker le HTML dans une variable globale temporaire au lieu d'utiliser btoa
+            window._tempEmailHTML = emailData.html;
+            
             modal.innerHTML = `
                 <div class="modal-content" style="max-width: 700px;">
                     <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
@@ -4500,10 +4507,10 @@
                             En attendant la configuration de l'Edge Function, vous pouvez télécharger l'email pour le prévisualiser :
                         </p>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button onclick="copyTestEmailHTML('${btoa(emailData.html)}')" class="btn btn-secondary">
+                            <button onclick="copyTestEmailHTMLFromTemp()" class="btn btn-secondary">
                                 📋 Copier le HTML
                             </button>
-                            <button onclick="downloadTestEmailFile('${btoa(emailData.html)}')" class="btn btn-secondary">
+                            <button onclick="downloadTestEmailFileFromTemp()" class="btn btn-secondary">
                                 💾 Télécharger .html
                             </button>
                         </div>
@@ -4525,9 +4532,6 @@
                     </details>
                     
                     <div style="text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                        <button onclick="window.open('${document.location.origin}/guide', '_blank')" class="btn btn-secondary">
-                            📖 Voir le guide
-                        </button>
                         <button onclick="this.closest('.modal').remove()" class="btn">
                             Fermer
                         </button>
@@ -4538,9 +4542,13 @@
             document.body.appendChild(modal);
         }
 
-        function copyTestEmailHTML(base64Html) {
+        function copyTestEmailHTMLFromTemp() {
             try {
-                const html = atob(base64Html);
+                const html = window._tempEmailHTML;
+                if (!html) {
+                    showNotification('❌ Contenu non disponible', 'error');
+                    return;
+                }
                 const textarea = document.createElement('textarea');
                 textarea.value = html;
                 document.body.appendChild(textarea);
@@ -4554,9 +4562,13 @@
             }
         }
 
-        function downloadTestEmailFile(base64Html) {
+        function downloadTestEmailFileFromTemp() {
             try {
-                const html = atob(base64Html);
+                const html = window._tempEmailHTML;
+                if (!html) {
+                    showNotification('❌ Contenu non disponible', 'error');
+                    return;
+                }
                 const blob = new Blob([html], { type: 'text/html' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
