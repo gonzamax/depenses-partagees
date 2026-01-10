@@ -1473,11 +1473,22 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="attachment">📎 Justificatif (optionnel)</label>
-                    <input type="file" id="attachment" accept="image/*,.pdf" style="padding: 10px;">
-                    <p style="font-size: 0.85em; color: #666; margin-top: 8px;">
-                        📸 Choisissez une photo existante, prenez une nouvelle photo ou importez un PDF
-                    </p>
+                    <label>📎 Justificatif (optionnel)</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                        <button type="button" onclick="triggerFileInput('attachment', 'camera')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                            📸 Prendre photo
+                        </button>
+                        <button type="button" onclick="triggerFileInput('attachment', 'gallery')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                            🖼️ Choisir photo
+                        </button>
+                        <button type="button" onclick="triggerFileInput('attachment', 'file')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                            📄 Importer PDF
+                        </button>
+                    </div>
+                    <input type="file" id="attachment-camera" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(this, 'attachment', 'preview-container')">
+                    <input type="file" id="attachment-gallery" accept="image/*" style="display: none;" onchange="handleFileSelect(this, 'attachment', 'preview-container')">
+                    <input type="file" id="attachment-file" accept=".pdf,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'attachment', 'preview-container')">
+                    <input type="file" id="attachment" style="display: none;">
                     <div id="preview-container" style="margin-top: 10px;"></div>
                 </div>
 
@@ -1853,11 +1864,22 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="budget-attachment">📎 Justificatif (optionnel)</label>
-                        <input type="file" id="budget-attachment" accept="image/*,.pdf" style="padding: 10px;">
-                        <p style="font-size: 0.85em; color: #666; margin-top: 8px;">
-                            📸 Choisissez une photo existante, prenez une nouvelle photo ou importez un PDF
-                        </p>
+                        <label>📎 Justificatif (optionnel)</label>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                            <button type="button" onclick="triggerFileInput('budget-attachment', 'camera')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                                📸 Prendre photo
+                            </button>
+                            <button type="button" onclick="triggerFileInput('budget-attachment', 'gallery')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                                🖼️ Choisir photo
+                            </button>
+                            <button type="button" onclick="triggerFileInput('budget-attachment', 'file')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                                📄 Importer PDF
+                            </button>
+                        </div>
+                        <input type="file" id="budget-attachment-camera" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(this, 'budget-attachment', 'budget-preview-container')">
+                        <input type="file" id="budget-attachment-gallery" accept="image/*" style="display: none;" onchange="handleFileSelect(this, 'budget-attachment', 'budget-preview-container')">
+                        <input type="file" id="budget-attachment-file" accept=".pdf,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'budget-attachment', 'budget-preview-container')">
+                        <input type="file" id="budget-attachment" style="display: none;">
                         <div id="budget-preview-container" style="margin-top: 10px;"></div>
                     </div>
                     
@@ -1945,12 +1967,25 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="rec-attachment">📎 Justificatif (optionnel)</label>
-                    <input type="file" id="rec-attachment" accept="image/*,.pdf" style="padding: 10px;">
-                    <p style="font-size: 0.85em; color: #666; margin-top: 8px;">
-                        📸 Choisissez une photo existante, prenez une nouvelle photo ou importez un PDF<br>
+                    <label>📎 Justificatif (optionnel)</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                        <button type="button" onclick="triggerFileInput('rec-attachment', 'camera')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                            📸 Prendre photo
+                        </button>
+                        <button type="button" onclick="triggerFileInput('rec-attachment', 'gallery')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                            🖼️ Choisir photo
+                        </button>
+                        <button type="button" onclick="triggerFileInput('rec-attachment', 'file')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                            📄 Importer PDF
+                        </button>
+                    </div>
+                    <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
                         ℹ️ Ce fichier sera attaché à chaque dépense créée automatiquement
                     </p>
+                    <input type="file" id="rec-attachment-camera" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
+                    <input type="file" id="rec-attachment-gallery" accept="image/*" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
+                    <input type="file" id="rec-attachment-file" accept=".pdf,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
+                    <input type="file" id="rec-attachment" style="display: none;">
                     <div id="rec-preview-container" style="margin-top: 10px;"></div>
                 </div>
 
@@ -1996,6 +2031,21 @@
                 <div class="form-group">
                     <label for="parent2-email">Email Parent 2</label>
                     <input type="email" id="parent2-email" placeholder="parent2@example.com">
+                </div>
+                
+                <!-- Bouton de test d'envoi -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2196F3;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="font-weight: 500; color: #333; margin-bottom: 5px;">🧪 Tester l'envoi d'email</div>
+                            <div style="font-size: 0.85em; color: #666;">
+                                Recevez un email de test avec les dépenses du mois en cours
+                            </div>
+                        </div>
+                        <button type="button" onclick="sendTestEmail()" class="btn btn-secondary" id="test-email-btn" style="white-space: nowrap;">
+                            📨 Envoyer un test
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -3003,12 +3053,100 @@
 
         function clearAttachment() {
             document.getElementById('attachment').value = '';
+            document.getElementById('attachment-camera').value = '';
+            document.getElementById('attachment-gallery').value = '';
+            document.getElementById('attachment-file').value = '';
             document.getElementById('preview-container').innerHTML = '';
         }
 
         function clearRecurrentAttachment() {
             document.getElementById('rec-attachment').value = '';
+            document.getElementById('rec-attachment-camera').value = '';
+            document.getElementById('rec-attachment-gallery').value = '';
+            document.getElementById('rec-attachment-file').value = '';
             document.getElementById('rec-preview-container').innerHTML = '';
+        }
+
+        function clearBudgetAttachment() {
+            const budgetAttachment = document.getElementById('budget-attachment');
+            if (budgetAttachment) budgetAttachment.value = '';
+            
+            const budgetCamera = document.getElementById('budget-attachment-camera');
+            if (budgetCamera) budgetCamera.value = '';
+            
+            const budgetGallery = document.getElementById('budget-attachment-gallery');
+            if (budgetGallery) budgetGallery.value = '';
+            
+            const budgetFile = document.getElementById('budget-attachment-file');
+            if (budgetFile) budgetFile.value = '';
+            
+            const budgetPreview = document.getElementById('budget-preview-container');
+            if (budgetPreview) budgetPreview.innerHTML = '';
+        }
+
+        // Fonction pour déclencher l'input file approprié
+        function triggerFileInput(baseId, type) {
+            const inputId = type === 'camera' ? `${baseId}-camera` : 
+                           type === 'gallery' ? `${baseId}-gallery` : 
+                           `${baseId}-file`;
+            document.getElementById(inputId).click();
+        }
+
+        // Fonction pour gérer la sélection de fichier
+        function handleFileSelect(sourceInput, targetId, previewContainerId) {
+            const file = sourceInput.files[0];
+            if (!file) return;
+
+            // Copier le fichier vers l'input principal caché
+            const targetInput = document.getElementById(targetId);
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            targetInput.files = dataTransfer.files;
+
+            // Afficher la prévisualisation
+            const previewContainer = document.getElementById(previewContainerId);
+            previewContainer.innerHTML = '';
+
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewContainer.innerHTML = `
+                        <div style="position: relative; display: inline-block;">
+                            <img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                            <button type="button" onclick="clearFilePreview('${targetId}', '${previewContainerId}')" 
+                                    style="position: absolute; top: -8px; right: -8px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold;">×</button>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'application/pdf') {
+                previewContainer.innerHTML = `
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 2em;">📄</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500;">${file.name}</div>
+                            <div style="font-size: 0.85em; color: #666;">${(file.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                        <button type="button" onclick="clearFilePreview('${targetId}', '${previewContainerId}')" 
+                                style="background: #ff4444; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold;">×</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Fonction pour effacer la prévisualisation
+        function clearFilePreview(targetId, previewContainerId) {
+            const targetInput = document.getElementById(targetId);
+            targetInput.value = '';
+            
+            // Effacer aussi les inputs sources
+            const baseId = targetId.replace('-camera', '').replace('-gallery', '').replace('-file', '');
+            ['camera', 'gallery', 'file'].forEach(type => {
+                const input = document.getElementById(`${baseId}-${type}`);
+                if (input) input.value = '';
+            });
+            
+            document.getElementById(previewContainerId).innerHTML = '';
         }
 
         // Convertir le fichier en base64
@@ -4121,6 +4259,242 @@
             displayExpenses();
             displayStatistics();
             showNotification('Paramètres sauvegardés !', 'success');
+        }
+
+        async function sendTestEmail() {
+            const btn = document.getElementById('test-email-btn');
+            const originalHTML = btn.innerHTML;
+            
+            // Récupérer les emails
+            const email1 = document.getElementById('parent1-email').value;
+            const email2 = document.getElementById('parent2-email').value;
+            
+            // Vérifier qu'au moins un email est configuré
+            if (!email1 && !email2) {
+                showNotification('⚠️ Veuillez configurer au moins une adresse email avant de tester', 'error');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Envoi en cours...';
+            
+            try {
+                // Obtenir les dépenses du mois en cours
+                const now = new Date();
+                const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                
+                const monthExpenses = expenses.filter(e => {
+                    const expenseDate = new Date(e.date);
+                    return expenseDate >= firstDayOfMonth && expenseDate <= lastDayOfMonth;
+                });
+                
+                if (monthExpenses.length === 0) {
+                    showNotification('ℹ️ Aucune dépense ce mois-ci pour générer un email de test', 'info');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    return;
+                }
+                
+                // Calculer le total
+                const total = monthExpenses.reduce((sum, e) => sum + parseFloat(e.montant), 0);
+                
+                // Générer l'HTML de l'email
+                const emailHTML = generateTestEmailHTML(monthExpenses, total, now);
+                
+                // Préparer les données pour l'envoi
+                const emailData = {
+                    emails: [],
+                    subject: `Test - Résumé des dépenses ${now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`,
+                    html: emailHTML,
+                    expensesCount: monthExpenses.length,
+                    total: total
+                };
+                
+                if (email1) emailData.emails.push(email1);
+                if (email2) emailData.emails.push(email2);
+                
+                // Afficher la modale de confirmation
+                showTestEmailModal(emailData);
+                
+            } catch (error) {
+                console.error('Erreur génération email test:', error);
+                showNotification('❌ Erreur lors de la génération de l\'email de test', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        function generateTestEmailHTML(expenses, total, date) {
+            const expensesHTML = expenses
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .map(expense => {
+                    const expenseDate = new Date(expense.date);
+                    return `
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #667eea;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 10px;">
+                                <div style="flex: 1; min-width: 200px;">
+                                    <div style="font-weight: bold; font-size: 16px; color: #333; margin-bottom: 5px;">
+                                        ${expense.description}
+                                    </div>
+                                    <div style="font-size: 14px; color: #666;">
+                                        📅 ${expenseDate.toLocaleDateString('fr-FR')} | 
+                                        📂 ${expense.type} | 
+                                        👤 ${expense.payeur}
+                                    </div>
+                                    ${expense.notes ? `<div style="font-size: 13px; color: #999; margin-top: 5px; font-style: italic;">${expense.notes}</div>` : ''}
+                                </div>
+                                <div style="font-size: 20px; font-weight: bold; color: #667eea; white-space: nowrap;">
+                                    ${expense.montant.toFixed(2)} ${settings.currency_symbol}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            
+            return `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                </head>
+                <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; margin: 0;">
+                    <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        
+                        <!-- Header -->
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+                            <h1 style="color: white; margin: 0; font-size: 24px;">💰 Dépenses Partagées</h1>
+                            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Email de test</p>
+                        </div>
+                        
+                        <!-- Alerte test -->
+                        <div style="background: #fff3cd; padding: 15px; text-align: center; border-bottom: 1px solid #ffc107;">
+                            <strong style="color: #856404;">🧪 Ceci est un email de test</strong>
+                        </div>
+                        
+                        <!-- Résumé -->
+                        <div style="padding: 30px;">
+                            <div style="background: #e7f3ff; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 4px solid #2196F3;">
+                                <h2 style="color: #2196F3; margin: 0 0 10px 0; font-size: 18px;">
+                                    📊 ${date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                                </h2>
+                                <p style="margin: 0; color: #666; font-size: 16px;">
+                                    <strong>${expenses.length} dépense(s)</strong> ce mois pour un total de <strong style="color: #667eea;">${total.toFixed(2)} ${settings.currency_symbol}</strong>
+                                </p>
+                            </div>
+                            
+                            <!-- Liste des dépenses -->
+                            <h3 style="color: #333; margin: 0 0 15px 0;">Détail des dépenses</h3>
+                            ${expensesHTML}
+                            
+                            <!-- Total -->
+                            <div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                    <span style="font-size: 18px; font-weight: bold; color: #333;">Total du mois</span>
+                                    <span style="font-size: 24px; font-weight: bold; color: #667eea;">${total.toFixed(2)} ${settings.currency_symbol}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="margin: 0; color: #999; font-size: 12px;">
+                                🧪 Ceci est un email de test pour vérifier votre configuration
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #999; font-size: 12px;">
+                                Les emails quotidiens auront le même format mais contiendront les dépenses du jour précédent
+                            </p>
+                        </div>
+                        
+                    </div>
+                </body>
+                </html>
+            `;
+        }
+
+        function showTestEmailModal(emailData) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            
+            const emailsList = emailData.emails.map(e => `<li>${e}</li>`).join('');
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h2 style="color: #667eea; margin-bottom: 20px;">📨 Email de test</h2>
+                    
+                    <div style="background: #e7f3ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
+                        <h3 style="margin: 0 0 15px 0; color: #2196F3;">📊 Contenu de l'email</h3>
+                        <div style="color: #666;">
+                            <p style="margin: 5px 0;"><strong>${emailData.expensesCount} dépense(s)</strong> du mois en cours</p>
+                            <p style="margin: 5px 0;">Total : <strong>${emailData.total.toFixed(2)} ${settings.currency_symbol}</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0; color: #333;">📧 Destinataires</h3>
+                        <ul style="margin: 0; padding-left: 20px; color: #666;">
+                            ${emailsList}
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+                        <p style="margin: 0; color: #856404; font-size: 0.9em;">
+                            <strong>⚠️ Note importante :</strong> Cette fonctionnalité nécessite que l'Edge Function Supabase soit déployée et configurée. 
+                            Si vous n'avez pas encore configuré l'envoi d'emails, consultez le guide <code>GUIDE_DEPLOIEMENT_NOTIFICATIONS.md</code>
+                        </p>
+                    </div>
+                    
+                    <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p style="margin: 0; color: #667eea; font-size: 0.9em;">
+                            💡 <strong>Pour tester :</strong> Copiez le code HTML ci-dessous et collez-le dans un visualiseur HTML ou envoyez-le manuellement via votre service d'email.
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 10px; font-weight: 500;">📄 Code HTML de l'email :</label>
+                        <textarea id="email-html-preview" readonly style="width: 100%; height: 150px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: monospace; font-size: 0.85em; resize: vertical;">${emailData.html}</textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                        <button onclick="copyTestEmailHTML()" class="btn btn-secondary">
+                            📋 Copier le HTML
+                        </button>
+                        <button onclick="downloadTestEmail()" class="btn btn-secondary">
+                            💾 Télécharger .html
+                        </button>
+                        <button onclick="this.closest('.modal').remove()" class="btn">
+                            ✅ Fermer
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function copyTestEmailHTML() {
+            const textarea = document.getElementById('email-html-preview');
+            textarea.select();
+            document.execCommand('copy');
+            showNotification('✅ Code HTML copié dans le presse-papiers !', 'success');
+        }
+
+        function downloadTestEmail() {
+            const html = document.getElementById('email-html-preview').value;
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `email-test-${new Date().toISOString().split('T')[0]}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('✅ Email téléchargé !', 'success');
         }
 
         function loadSettings() {
@@ -6059,6 +6433,7 @@
         function closeAddBudgetItemModal() {
             document.getElementById('add-budget-item-modal').style.display = 'none';
             document.getElementById('budget-item-form').reset();
+            clearBudgetAttachment();
         }
 
         function updateBudgetPayeurSelect() {
