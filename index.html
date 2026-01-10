@@ -4572,13 +4572,6 @@
                 showNotification('❌ Erreur lors du téléchargement', 'error');
             }
         }
-                console.error('Erreur génération email test:', error);
-                showNotification('❌ Erreur lors de la génération de l\'email de test', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-            }
-        }
 
         function generateTestEmailHTML(expenses, total, date) {
             const expensesHTML = expenses
