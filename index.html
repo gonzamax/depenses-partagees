@@ -2321,7 +2321,8 @@
                     .from('rooms')
                     .insert([{ 
                         room_id: currentRoomId,
-                        created_at: new Date().toISOString()
+                        created_at: new Date().toISOString(),
+                        budget_items: []
                     }])
                     .select();
 
@@ -2466,20 +2467,27 @@
                 recurrentExpenses = recurrentData || [];
 
                 // Charger les budget items depuis rooms
-                const { data: roomData } = await supabase
+                console.log('📥 Chargement budget items pour room:', currentRoomId);
+                const { data: roomData, error: roomError } = await supabase
                     .from('rooms')
                     .select('budget_items')
                     .eq('room_id', currentRoomId)
                     .single();
 
-                if (roomData) {
+                if (roomError) {
+                    console.error('❌ Erreur chargement room:', roomError);
+                    budgetItems = [];
+                } else if (roomData) {
+                    console.log('✅ Room data récupérée:', roomData);
                     budgetItems = roomData.budget_items || [];
+                    console.log('📊 Budget items chargés:', budgetItems.length, 'items');
                 } else {
+                    console.log('⚠️ Aucune room trouvée');
                     budgetItems = [];
                 }
 
             } catch (error) {
-                console.error('Erreur chargement données:', error);
+                console.error('❌ Erreur chargement données:', error);
             }
         }
 
@@ -6518,17 +6526,30 @@
         }
 
         async function saveBudgetItemsToSupabase() {
-            if (!currentRoomId || !supabase) return;
+            if (!currentRoomId || !supabase) {
+                console.error('❌ Impossible de sauvegarder : currentRoomId ou supabase manquant');
+                return;
+            }
             
             try {
+                console.log('💾 Sauvegarde budget items:', budgetItems.length, 'items');
+                console.log('📊 Détails:', budgetItems);
+                
                 const { error } = await supabase
                     .from('rooms')
                     .update({ budget_items: budgetItems })
                     .eq('room_id', currentRoomId);
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Erreur sauvegarde budget items:', error);
+                    showNotification('❌ Erreur lors de la sauvegarde du budget', 'error');
+                    throw error;
+                }
+                
+                console.log('✅ Budget items sauvegardés avec succès');
             } catch (error) {
-                console.error('Erreur sauvegarde budget items:', error);
+                console.error('❌ Exception sauvegarde budget items:', error);
+                showNotification('❌ Erreur lors de la sauvegarde', 'error');
             }
         }
 
