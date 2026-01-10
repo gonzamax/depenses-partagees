@@ -719,6 +719,49 @@
                 font-size: 0.9em !important;
             }
 
+            .notification-btn {
+                position: relative;
+                background: white;
+                border: 2px solid #e0e0e0;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: 1.2em;
+                transition: all 0.3s;
+            }
+
+            .notification-btn:hover {
+                background: #f0f4ff;
+                border-color: #667eea;
+                transform: scale(1.1);
+            }
+
+            .notification-badge {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                background: #ff4444;
+                color: white;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                font-size: 0.7em;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+            }
+
             .tabs {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
@@ -1289,7 +1332,11 @@
                     <span class="room-id" id="room-id-display"></span>
                     <button class="copy-btn" onclick="copyRoomId()">📋</button>
                 </div>
-                <div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button class="notification-btn" onclick="showNotificationsModal()" title="Nouvelles dépenses">
+                        🔔
+                        <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+                    </button>
                     <span class="sync-status sync-online" id="sync-status">🟢 Connecté</span>
                 </div>
             </div>
@@ -1867,6 +1914,57 @@
             </div>
 
             <div class="settings-section">
+                <h3>📧 Emails pour notifications</h3>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
+                    Recevez un email quotidien avec le résumé des dépenses ajoutées
+                </p>
+                <div class="form-group">
+                    <label for="parent1-email">Email Parent 1</label>
+                    <input type="email" id="parent1-email" placeholder="parent1@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="parent2-email">Email Parent 2</label>
+                    <input type="email" id="parent2-email" placeholder="parent2@example.com">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>🔔 Préférences de notification</h3>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="enable-push-notifications" onchange="togglePushNotifications(this.checked)">
+                            <span style="font-weight: 500;">🔔 Activer les notifications push instantanées</span>
+                        </label>
+                        <p style="font-size: 0.85em; color: #666; margin: 5px 0 0 35px;">
+                            Notification navigateur immédiate quand l'autre parent ajoute une dépense
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="enable-daily-email" checked>
+                            <span style="font-weight: 500;">📧 Recevoir un résumé quotidien par email</span>
+                        </label>
+                        <p style="font-size: 0.85em; color: #666; margin: 5px 0 0 35px;">
+                            Un email par jour avec toutes les nouvelles dépenses
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label style="font-size: 0.9em; color: #666; margin-bottom: 5px; display: block;">⏰ Heure d'envoi du résumé quotidien</label>
+                        <select id="daily-email-time" style="padding: 8px 15px; border-radius: 6px; border: 2px solid #e0e0e0; width: 200px;">
+                            <option value="08:00">08:00 (matin)</option>
+                            <option value="12:00">12:00 (midi)</option>
+                            <option value="18:00" selected>18:00 (soir)</option>
+                            <option value="20:00">20:00 (soir)</option>
+                            <option value="22:00">22:00 (nuit)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3>💶 Devise</h3>
                 <div class="form-group">
                     <label for="currency">Symbole de la devise</label>
@@ -2156,8 +2254,17 @@
             currency_symbol: '€',
             split_mode: 'equal',
             parent1_percentage: 50,
-            parent2_percentage: 50
+            parent2_percentage: 50,
+            parent1_email: '',
+            parent2_email: '',
+            enable_push_notifications: false,
+            enable_daily_email: true,
+            daily_email_time: '18:00'
         };
+
+        // Système de notifications
+        let unreadExpenses = [];
+        let lastSeenTimestamp = localStorage.getItem('lastSeenTimestamp') || new Date().toISOString();
 
         // ==========================================
         // GESTION DES TYPES ET CATÉGORIES
@@ -2486,6 +2593,9 @@
                     budgetItems = [];
                 }
 
+                // Mettre à jour le badge de notifications
+                updateNotificationBadge();
+
             } catch (error) {
                 console.error('❌ Erreur chargement données:', error);
             }
@@ -2514,7 +2624,24 @@
                         await loadFromSupabase();
                         displayExpenses();
                         displayStatistics();
-                        showNotification('Données synchronisées', 'success');
+                        
+                        // Notification push si nouvelle dépense ajoutée
+                        if (payload.eventType === 'INSERT' && payload.new) {
+                            const expense = payload.new;
+                            
+                            // Notification push navigateur (Niveau 3)
+                            if (settings.enable_push_notifications && 'Notification' in window && Notification.permission === 'granted') {
+                                new Notification('💰 Nouvelle dépense', {
+                                    body: `${expense.description} - ${expense.montant} ${settings.currency_symbol}`,
+                                    icon: '/favicon.ico',
+                                    tag: 'expense-' + expense.id
+                                });
+                            }
+                            
+                            showNotification('Nouvelle dépense ajoutée', 'success');
+                        } else {
+                            showNotification('Données synchronisées', 'success');
+                        }
                     }
                 )
                 .subscribe();
@@ -3845,10 +3972,15 @@
         async function saveSettings() {
             settings.parent1_name = document.getElementById('parent1-name').value || 'Parent 1';
             settings.parent2_name = document.getElementById('parent2-name').value || 'Parent 2';
+            settings.parent1_email = document.getElementById('parent1-email').value || '';
+            settings.parent2_email = document.getElementById('parent2-email').value || '';
             settings.currency_symbol = document.getElementById('currency').value || '€';
             settings.split_mode = document.getElementById('split-mode').value || 'equal';
             settings.parent1_percentage = parseInt(document.getElementById('parent1-percentage').value) || 50;
             settings.parent2_percentage = parseInt(document.getElementById('parent2-percentage').value) || 50;
+            settings.enable_push_notifications = document.getElementById('enable-push-notifications').checked;
+            settings.enable_daily_email = document.getElementById('enable-daily-email').checked;
+            settings.daily_email_time = document.getElementById('daily-email-time').value || '18:00';
             
             await saveSettingsToSupabase();
             updatePayeurSelects();
@@ -3863,7 +3995,12 @@
             
             document.getElementById('parent1-name').value = settings.parent1_name;
             document.getElementById('parent2-name').value = settings.parent2_name;
+            document.getElementById('parent1-email').value = settings.parent1_email || '';
+            document.getElementById('parent2-email').value = settings.parent2_email || '';
             document.getElementById('currency').value = settings.currency_symbol;
+            document.getElementById('enable-push-notifications').checked = settings.enable_push_notifications || false;
+            document.getElementById('enable-daily-email').checked = settings.enable_daily_email !== false; // true par défaut
+            document.getElementById('daily-email-time').value = settings.daily_email_time || '18:00';
             
             // Charger la répartition dans le curseur
             const parent1Percentage = settings.parent1_percentage || 50;
@@ -4078,6 +4215,158 @@
             };
 
             reader.readAsText(file);
+        }
+
+        // ==========================================
+        // SYSTÈME DE NOTIFICATIONS - NIVEAU 1
+        // ==========================================
+
+        function updateNotificationBadge() {
+            const lastSeen = new Date(lastSeenTimestamp);
+            
+            // Trouver les dépenses ajoutées depuis la dernière visite
+            unreadExpenses = expenses.filter(e => {
+                if (!e.created_at) return false;
+                const expenseDate = new Date(e.created_at);
+                return expenseDate > lastSeen;
+            });
+            
+            const badge = document.getElementById('notification-badge');
+            const count = unreadExpenses.length;
+            
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function showNotificationsModal() {
+            if (unreadExpenses.length === 0) {
+                showNotification('Aucune nouvelle dépense', 'info');
+                return;
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            
+            let itemsHTML = '';
+            // Trier par date décroissante
+            const sortedExpenses = [...unreadExpenses].sort((a, b) => 
+                new Date(b.created_at) - new Date(a.created_at)
+            );
+            
+            sortedExpenses.forEach(expense => {
+                const date = new Date(expense.date);
+                const createdDate = new Date(expense.created_at);
+                itemsHTML += `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold; color: #333; margin-bottom: 5px;">${expense.description}</div>
+                                <div style="font-size: 0.9em; color: #666; margin-bottom: 3px;">
+                                    📅 ${date.toLocaleDateString('fr-FR')} | 
+                                    📂 ${expense.type} | 
+                                    👤 ${expense.payeur}
+                                </div>
+                                <div style="font-size: 0.8em; color: #999;">
+                                    ⏰ Ajoutée ${formatTimeAgo(createdDate)}
+                                </div>
+                            </div>
+                            <div style="font-size: 1.3em; font-weight: bold; color: #667eea; margin-left: 15px;">
+                                ${expense.montant.toFixed(2)} ${settings.currency_symbol}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px;">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h2 style="color: #667eea; margin-bottom: 20px;">🔔 Nouvelles dépenses</h2>
+                    
+                    <div style="background: #e7f3ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
+                        <p style="margin: 0; color: #666;">
+                            <strong>${unreadExpenses.length} nouvelle(s) dépense(s)</strong> depuis votre dernière visite
+                        </p>
+                    </div>
+                    
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        ${itemsHTML}
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                        <button onclick="markNotificationsAsRead(); this.closest('.modal').remove();" class="btn">
+                            ✅ Marquer comme lu
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function markNotificationsAsRead() {
+            lastSeenTimestamp = new Date().toISOString();
+            localStorage.setItem('lastSeenTimestamp', lastSeenTimestamp);
+            unreadExpenses = [];
+            updateNotificationBadge();
+            showNotification('Notifications marquées comme lues', 'success');
+        }
+
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return 'à l\'instant';
+            if (minutes < 60) return `il y a ${minutes} min`;
+            if (hours < 24) return `il y a ${hours}h`;
+            if (days === 1) return 'hier';
+            if (days < 7) return `il y a ${days} jours`;
+            return date.toLocaleDateString('fr-FR');
+        }
+
+        async function togglePushNotifications(enabled) {
+            if (!enabled) {
+                settings.enable_push_notifications = false;
+                await saveSettings();
+                return;
+            }
+            
+            if (!('Notification' in window)) {
+                showNotification('⚠️ Les notifications ne sont pas supportées par ce navigateur', 'error');
+                document.getElementById('enable-push-notifications').checked = false;
+                return;
+            }
+            
+            if (Notification.permission === 'denied') {
+                showNotification('⚠️ Les notifications ont été refusées. Changez cela dans les paramètres du navigateur.', 'error');
+                document.getElementById('enable-push-notifications').checked = false;
+                return;
+            }
+            
+            try {
+                const permission = await Notification.requestPermission();
+                
+                if (permission === 'granted') {
+                    showNotification('✅ Notifications activées !', 'success');
+                    settings.enable_push_notifications = true;
+                    await saveSettings();
+                } else {
+                    showNotification('❌ Permission refusée', 'error');
+                    document.getElementById('enable-push-notifications').checked = false;
+                }
+            } catch (error) {
+                console.error('Erreur permission notifications:', error);
+                showNotification('❌ Erreur lors de l\'activation', 'error');
+                document.getElementById('enable-push-notifications').checked = false;
+            }
         }
 
         function updateSplitFromSlider(value) {
