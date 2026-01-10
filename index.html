@@ -473,6 +473,59 @@
             color: #667eea;
         }
 
+        /* Switch toggle personnalisé */
+        .custom-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .custom-switch input[type="checkbox"] {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .custom-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 28px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .custom-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .custom-switch input:checked + .custom-switch-slider {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .custom-switch input:checked + .custom-switch-slider:before {
+            transform: translateX(24px);
+        }
+
+        .custom-switch:hover .custom-switch-slider {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.15), 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
         /* Style pour les items désactivés */
         .recurrent-item.inactive {
             opacity: 0.6;
@@ -721,23 +774,31 @@
 
             .notification-btn {
                 position: relative;
-                background: white;
-                border: 2px solid #e0e0e0;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border: none;
+                border-radius: 12px;
+                width: 48px;
+                height: 48px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                font-size: 1.2em;
                 transition: all 0.3s;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            }
+
+            .notification-btn svg {
+                color: white;
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
             }
 
             .notification-btn:hover {
-                background: #f0f4ff;
-                border-color: #667eea;
-                transform: scale(1.1);
+                transform: scale(1.1) rotate(-10deg);
+                box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+            }
+
+            .notification-btn:active {
+                transform: scale(0.95);
             }
 
             .notification-badge {
@@ -747,19 +808,28 @@
                 background: #ff4444;
                 color: white;
                 border-radius: 50%;
-                width: 20px;
-                height: 20px;
-                font-size: 0.7em;
+                min-width: 22px;
+                height: 22px;
+                padding: 0 6px;
+                font-size: 0.75em;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-weight: bold;
                 animation: pulse 2s infinite;
+                box-shadow: 0 2px 8px rgba(255, 68, 68, 0.5);
+                border: 2px solid white;
             }
 
             @keyframes pulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.2); }
+                0%, 100% { 
+                    transform: scale(1);
+                    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.5);
+                }
+                50% { 
+                    transform: scale(1.15);
+                    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.8);
+                }
             }
 
             .tabs {
@@ -1333,8 +1403,11 @@
                     <button class="copy-btn" onclick="copyRoomId()">📋</button>
                 </div>
                 <div style="display: flex; align-items: center; gap: 15px;">
-                    <button class="notification-btn" onclick="showNotificationsModal()" title="Nouvelles dépenses">
-                        🔔
+                    <button class="notification-btn" onclick="showNotificationsModal()" title="Notifications">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
                         <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
                     </button>
                     <span class="sync-status sync-online" id="sync-status">🟢 Connecté</span>
@@ -1930,37 +2003,98 @@
 
             <div class="settings-section">
                 <h3>🔔 Préférences de notification</h3>
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="checkbox" id="enable-push-notifications" onchange="togglePushNotifications(this.checked)">
-                            <span style="font-weight: 500;">🔔 Activer les notifications push instantanées</span>
-                        </label>
-                        <p style="font-size: 0.85em; color: #666; margin: 5px 0 0 35px;">
-                            Notification navigateur immédiate quand l'autre parent ajoute une dépense
-                        </p>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">
+                    Choisissez comment vous souhaitez être notifié des nouvelles dépenses
+                </p>
+                
+                <!-- Badge dans l'application (toujours actif) -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 15px; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <div style="background: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1.1em; margin-bottom: 3px;">Badge dans l'application</div>
+                            <div style="font-size: 0.9em; opacity: 0.95;">Toujours actif • Aucune configuration requise</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600;">
+                            ✓ ACTIF
+                        </div>
                     </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="checkbox" id="enable-daily-email" checked>
-                            <span style="font-weight: 500;">📧 Recevoir un résumé quotidien par email</span>
-                        </label>
-                        <p style="font-size: 0.85em; color: #666; margin: 5px 0 0 35px;">
-                            Un email par jour avec toutes les nouvelles dépenses
-                        </p>
+                    <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; font-size: 0.9em; line-height: 1.5;">
+                        Recevez un compteur de notifications dans le header de l'application. Cliquez dessus pour voir le détail.
                     </div>
-                    
-                    <div>
-                        <label style="font-size: 0.9em; color: #666; margin-bottom: 5px; display: block;">⏰ Heure d'envoi du résumé quotidien</label>
-                        <select id="daily-email-time" style="padding: 8px 15px; border-radius: 6px; border: 2px solid #e0e0e0; width: 200px;">
-                            <option value="08:00">08:00 (matin)</option>
-                            <option value="12:00">12:00 (midi)</option>
-                            <option value="18:00" selected>18:00 (soir)</option>
-                            <option value="20:00">20:00 (soir)</option>
-                            <option value="22:00">22:00 (nuit)</option>
-                        </select>
-                    </div>
+                </div>
+                
+                <!-- Notifications Push -->
+                <div style="background: white; border: 2px solid #e0e0e0; padding: 20px; border-radius: 12px; margin-bottom: 15px; transition: all 0.3s;" id="push-notif-card">
+                    <label style="cursor: pointer; display: block;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 12px;">
+                            <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path>
+                                </svg>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.05em; color: #333; margin-bottom: 3px;">Notifications push instantanées</div>
+                                <div style="font-size: 0.85em; color: #666;">Alerte navigateur en temps réel</div>
+                            </div>
+                            <div class="custom-switch">
+                                <input type="checkbox" id="enable-push-notifications" onchange="togglePushNotifications(this.checked)">
+                                <span class="custom-switch-slider"></span>
+                            </div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 0.9em; color: #555; line-height: 1.5;">
+                            💡 Notification instantanée du système dès qu'une dépense est ajoutée, même si l'application est fermée (selon votre navigateur).
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Email quotidien -->
+                <div style="background: white; border: 2px solid #e0e0e0; padding: 20px; border-radius: 12px; margin-bottom: 15px; transition: all 0.3s;" id="email-notif-card">
+                    <label style="cursor: pointer; display: block;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 12px;">
+                            <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.05em; color: #333; margin-bottom: 3px;">Résumé quotidien par email</div>
+                                <div style="font-size: 0.85em; color: #666;">Un email récapitulatif chaque jour</div>
+                            </div>
+                            <div class="custom-switch">
+                                <input type="checkbox" id="enable-daily-email" checked>
+                                <span class="custom-switch-slider"></span>
+                            </div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 0.9em; color: #555; line-height: 1.5; margin-bottom: 12px;">
+                            📧 Recevez un email avec toutes les dépenses ajoutées dans la journée. Nécessite la configuration des emails ci-dessus.
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border: 1px solid #e0e0e0; border-radius: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span style="font-size: 0.9em; color: #666; font-weight: 500;">Heure d'envoi :</span>
+                            <select id="daily-email-time" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; cursor: pointer; background: white;">
+                                <option value="08:00">08:00 (matin)</option>
+                                <option value="12:00">12:00 (midi)</option>
+                                <option value="18:00" selected>18:00 (soir)</option>
+                                <option value="20:00">20:00 (soir)</option>
+                                <option value="22:00">22:00 (nuit)</option>
+                            </select>
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Info supplémentaire -->
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 8px; font-size: 0.9em; color: #856404;">
+                    <strong>💡 Bon à savoir :</strong> Les notifications push et emails nécessitent une configuration supplémentaire côté serveur. Le badge dans l'application fonctionne toujours sans configuration.
                 </div>
             </div>
 
@@ -2264,6 +2398,7 @@
 
         // Système de notifications
         let unreadExpenses = [];
+        let unreadNotifications = []; // Toutes les notifications (dépenses, budget, récurrentes)
         let lastSeenTimestamp = localStorage.getItem('lastSeenTimestamp') || new Date().toISOString();
 
         // ==========================================
@@ -4223,16 +4358,61 @@
 
         function updateNotificationBadge() {
             const lastSeen = new Date(lastSeenTimestamp);
+            unreadNotifications = [];
             
-            // Trouver les dépenses ajoutées depuis la dernière visite
-            unreadExpenses = expenses.filter(e => {
+            // 1. Trouver les dépenses ajoutées/modifiées depuis la dernière visite
+            const newExpenses = expenses.filter(e => {
                 if (!e.created_at) return false;
                 const expenseDate = new Date(e.created_at);
                 return expenseDate > lastSeen;
-            });
+            }).map(e => ({
+                type: 'expense',
+                action: 'added',
+                data: e,
+                timestamp: e.created_at,
+                icon: '💰',
+                color: '#667eea'
+            }));
+            
+            // 2. Trouver les dépenses récurrentes ajoutées/modifiées
+            const newRecurrents = recurrentExpenses.filter(r => {
+                if (!r.created_at) return false;
+                const recDate = new Date(r.created_at);
+                return recDate > lastSeen;
+            }).map(r => ({
+                type: 'recurrent',
+                action: 'added',
+                data: r,
+                timestamp: r.created_at,
+                icon: '🔄',
+                color: '#764ba2'
+            }));
+            
+            // 3. Trouver les items de budget ajoutés
+            const newBudgetItems = budgetItems.filter(b => {
+                if (!b.created_at) return false;
+                const budgetDate = new Date(b.created_at);
+                return budgetDate > lastSeen;
+            }).map(b => ({
+                type: 'budget',
+                action: 'added',
+                data: b,
+                timestamp: b.created_at,
+                icon: '💼',
+                color: '#2196F3'
+            }));
+            
+            // Combiner toutes les notifications
+            unreadNotifications = [...newExpenses, ...newRecurrents, ...newBudgetItems];
+            
+            // Trier par timestamp décroissant (plus récent en premier)
+            unreadNotifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Garder unreadExpenses pour compatibilité
+            unreadExpenses = newExpenses.map(n => n.data);
             
             const badge = document.getElementById('notification-badge');
-            const count = unreadExpenses.length;
+            const count = unreadNotifications.length;
             
             if (count > 0) {
                 badge.textContent = count > 99 ? '99+' : count;
@@ -4243,8 +4423,8 @@
         }
 
         function showNotificationsModal() {
-            if (unreadExpenses.length === 0) {
-                showNotification('Aucune nouvelle dépense', 'info');
+            if (unreadNotifications.length === 0) {
+                showNotification('Aucune nouvelle activité', 'info');
                 return;
             }
             
@@ -4253,48 +4433,105 @@
             modal.style.display = 'flex';
             
             let itemsHTML = '';
-            // Trier par date décroissante
-            const sortedExpenses = [...unreadExpenses].sort((a, b) => 
-                new Date(b.created_at) - new Date(a.created_at)
-            );
             
-            sortedExpenses.forEach(expense => {
-                const date = new Date(expense.date);
-                const createdDate = new Date(expense.created_at);
+            // Générer le HTML pour chaque notification
+            unreadNotifications.forEach(notification => {
+                const createdDate = new Date(notification.timestamp);
+                let detailsHTML = '';
+                let amountHTML = '';
+                
+                if (notification.type === 'expense') {
+                    const expense = notification.data;
+                    const date = new Date(expense.date);
+                    detailsHTML = `
+                        <div style="font-size: 0.9em; color: #666; margin-bottom: 3px;">
+                            📅 ${date.toLocaleDateString('fr-FR')} | 
+                            📂 ${expense.type} | 
+                            👤 ${expense.payeur}
+                        </div>
+                    `;
+                    amountHTML = `${expense.montant.toFixed(2)} ${settings.currency_symbol}`;
+                } else if (notification.type === 'recurrent') {
+                    const recurrent = notification.data;
+                    const frequencyText = recurrent.frequency === 'Mensuel' 
+                        ? `Mensuel le ${recurrent.day}` 
+                        : `Hebdomadaire le ${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][recurrent.weekday]}`;
+                    detailsHTML = `
+                        <div style="font-size: 0.9em; color: #666; margin-bottom: 3px;">
+                            🔄 ${frequencyText} | 
+                            📂 ${recurrent.type} | 
+                            👤 ${recurrent.payeur}
+                        </div>
+                    `;
+                    amountHTML = `${recurrent.montant.toFixed(2)} ${settings.currency_symbol}`;
+                } else if (notification.type === 'budget') {
+                    const budget = notification.data;
+                    const frequencyText = budget.frequency === 'Ponctuelle' 
+                        ? `Le ${new Date(budget.date).toLocaleDateString('fr-FR')}`
+                        : budget.frequency === 'Mensuel'
+                        ? `Mensuel le ${budget.day}`
+                        : `Hebdomadaire le ${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][budget.weekday]}`;
+                    detailsHTML = `
+                        <div style="font-size: 0.9em; color: #666; margin-bottom: 3px;">
+                            💼 ${frequencyText} | 
+                            📂 ${budget.type} | 
+                            👤 ${budget.payeur}
+                        </div>
+                    `;
+                    amountHTML = `${budget.montant.toFixed(2)} ${settings.currency_symbol}`;
+                }
+                
+                const actionText = notification.action === 'added' ? 'Ajouté' : 'Modifié';
+                
                 itemsHTML += `
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${notification.color};">
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div style="flex: 1;">
-                                <div style="font-weight: bold; color: #333; margin-bottom: 5px;">${expense.description}</div>
-                                <div style="font-size: 0.9em; color: #666; margin-bottom: 3px;">
-                                    📅 ${date.toLocaleDateString('fr-FR')} | 
-                                    📂 ${expense.type} | 
-                                    👤 ${expense.payeur}
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                                    <span style="font-size: 1.3em;">${notification.icon}</span>
+                                    <span style="font-weight: bold; color: #333;">${notification.data.description}</span>
                                 </div>
+                                ${detailsHTML}
                                 <div style="font-size: 0.8em; color: #999;">
-                                    ⏰ Ajoutée ${formatTimeAgo(createdDate)}
+                                    ⏰ ${actionText} ${formatTimeAgo(createdDate)}
                                 </div>
                             </div>
-                            <div style="font-size: 1.3em; font-weight: bold; color: #667eea; margin-left: 15px;">
-                                ${expense.montant.toFixed(2)} ${settings.currency_symbol}
+                            <div style="font-size: 1.3em; font-weight: bold; color: ${notification.color}; margin-left: 15px;">
+                                ${amountHTML}
                             </div>
                         </div>
                     </div>
                 `;
             });
             
+            // Compter par type
+            const expenseCount = unreadNotifications.filter(n => n.type === 'expense').length;
+            const recurrentCount = unreadNotifications.filter(n => n.type === 'recurrent').length;
+            const budgetCount = unreadNotifications.filter(n => n.type === 'budget').length;
+            
+            let summaryParts = [];
+            if (expenseCount > 0) summaryParts.push(`<strong>${expenseCount} dépense(s)</strong>`);
+            if (recurrentCount > 0) summaryParts.push(`<strong>${recurrentCount} récurrente(s)</strong>`);
+            if (budgetCount > 0) summaryParts.push(`<strong>${budgetCount} budget(s)</strong>`);
+            
             modal.innerHTML = `
                 <div class="modal-content" style="max-width: 700px;">
                     <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <h2 style="color: #667eea; margin-bottom: 20px;">🔔 Nouvelles dépenses</h2>
+                    <h2 style="color: #667eea; margin-bottom: 20px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        Notifications
+                    </h2>
                     
                     <div style="background: #e7f3ff; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #2196F3;">
                         <p style="margin: 0; color: #666;">
-                            <strong>${unreadExpenses.length} nouvelle(s) dépense(s)</strong> depuis votre dernière visite
+                            ${summaryParts.join(' • ')} depuis votre dernière visite
                         </p>
                     </div>
                     
-                    <div style="max-height: 400px; overflow-y: auto;">
+                    <div style="max-height: 450px; overflow-y: auto;">
                         ${itemsHTML}
                     </div>
                     
@@ -4313,6 +4550,7 @@
             lastSeenTimestamp = new Date().toISOString();
             localStorage.setItem('lastSeenTimestamp', lastSeenTimestamp);
             unreadExpenses = [];
+            unreadNotifications = [];
             updateNotificationBadge();
             showNotification('Notifications marquées comme lues', 'success');
         }
@@ -5895,7 +6133,8 @@
                 frequency: frequency,
                 notes: document.getElementById('budget-notes').value,
                 attachment_name: attachmentName,
-                attachment_data: attachmentData
+                attachment_data: attachmentData,
+                created_at: new Date().toISOString()
             };
             
             if (frequency === 'Ponctuelle') {
