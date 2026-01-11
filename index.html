@@ -2101,7 +2101,7 @@
                     </label>
                 </div>
                 
-                <!-- Email quotidien -->
+                <!-- Email quotidien/hebdomadaire -->
                 <div style="background: white; border: 2px solid #e0e0e0; padding: 20px; border-radius: 12px; margin-bottom: 15px; transition: all 0.3s;" id="email-notif-card">
                     <label style="cursor: pointer; display: block;">
                         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 12px;">
@@ -2112,8 +2112,8 @@
                                 </svg>
                             </div>
                             <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 1.05em; color: #333; margin-bottom: 3px;">Résumé quotidien par email</div>
-                                <div style="font-size: 0.85em; color: #666;">Un email récapitulatif chaque jour</div>
+                                <div style="font-weight: 600; font-size: 1.05em; color: #333; margin-bottom: 3px;">Résumé par email</div>
+                                <div style="font-size: 0.85em; color: #666;">Email récapitulatif automatique</div>
                             </div>
                             <div class="custom-switch">
                                 <input type="checkbox" id="enable-daily-email" checked>
@@ -2121,8 +2121,50 @@
                             </div>
                         </div>
                         <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 0.9em; color: #555; line-height: 1.5; margin-bottom: 12px;">
-                            📧 Recevez un email avec toutes les dépenses ajoutées dans la journée. Nécessite la configuration des emails ci-dessus.
+                            📧 Recevez un email avec toutes les <strong>dépenses</strong>, <strong>récurrentes</strong>, <strong>prévisionnelles</strong> et <strong>budget</strong> ajoutés. Nécessite la configuration des emails ci-dessus.
                         </div>
+                        
+                        <!-- Fréquence -->
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span style="font-size: 0.9em; color: #666; font-weight: 500;">Fréquence :</span>
+                            <select id="email-frequency" onchange="toggleWeeklyOptions()" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; cursor: pointer; background: white;">
+                                <option value="daily" selected>📅 Quotidien</option>
+                                <option value="weekly">📆 Hebdomadaire</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Jour de la semaine (si hebdomadaire) -->
+                        <div id="weekly-day-selector" style="display: none; gap: 10px; padding: 10px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                <span style="font-size: 0.9em; color: #666; font-weight: 500;">Jour d'envoi :</span>
+                                <select id="email-weekly-day" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9em; cursor: pointer; background: white;">
+                                    <option value="1" selected>Lundi</option>
+                                    <option value="2">Mardi</option>
+                                    <option value="3">Mercredi</option>
+                                    <option value="4">Jeudi</option>
+                                    <option value="5">Vendredi</option>
+                                    <option value="6">Samedi</option>
+                                    <option value="0">Dimanche</option>
+                                </select>
+                            </div>
+                            <div style="background: #e7f3ff; padding: 8px; border-radius: 6px; font-size: 0.8em; color: #1976D2; margin-top: 8px;">
+                                💡 Vous recevrez un email avec toutes les dépenses de la semaine précédente (du lundi au dimanche)
+                            </div>
+                        </div>
+                        
+                        <!-- Heure d'envoi -->
                         <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border: 1px solid #e0e0e0; border-radius: 8px;">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"></circle>
@@ -4252,6 +4294,8 @@
             settings.enable_push_notifications = document.getElementById('enable-push-notifications').checked;
             settings.enable_daily_email = document.getElementById('enable-daily-email').checked;
             settings.daily_email_time = document.getElementById('daily-email-time').value || '18:00';
+            settings.email_frequency = document.getElementById('email-frequency').value || 'daily';
+            settings.email_weekly_day = parseInt(document.getElementById('email-weekly-day').value) || 1;
             
             await saveSettingsToSupabase();
             updatePayeurSelects();
@@ -4259,6 +4303,17 @@
             displayExpenses();
             displayStatistics();
             showNotification('Paramètres sauvegardés !', 'success');
+        }
+
+        function toggleWeeklyOptions() {
+            const frequency = document.getElementById('email-frequency').value;
+            const weeklyDiv = document.getElementById('weekly-day-selector');
+            
+            if (frequency === 'weekly') {
+                weeklyDiv.style.display = 'block';
+            } else {
+                weeklyDiv.style.display = 'none';
+            }
         }
 
         async function sendTestEmail() {
@@ -4464,6 +4519,46 @@
                 instructions = `
                     <p>L'application n'est pas connectée à Supabase ou l'URL est invalide.</p>
                     <p><strong>Solution :</strong> Vérifiez votre connexion à Supabase dans la console.</p>
+                `;
+            } else if (errorMessage.includes('validation_error') || errorMessage.includes('testing emails') || errorMessage.includes('verify a domain')) {
+                helpTitle = '📧 Resend en mode test - Domaine non vérifié';
+                
+                // Extraire l'email du compte Resend si présent dans le message
+                const accountEmailMatch = errorMessage.match(/\((.*?@.*?)\)/);
+                const accountEmail = accountEmailMatch ? accountEmailMatch[1] : 'votre email de compte Resend';
+                
+                instructions = `
+                    <p>Resend est en <strong>mode test</strong> et ne peut envoyer qu'à l'email du compte créateur.</p>
+                    <p style="background: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107; margin: 15px 0;">
+                        <strong>🔑 Email autorisé :</strong> <code>${accountEmail}</code>
+                    </p>
+                    
+                    <h4 style="margin: 20px 0 10px 0; color: #667eea;">✅ Solution rapide (Test immédiat)</h4>
+                    <ol style="margin: 10px 0; padding-left: 20px; text-align: left;">
+                        <li>Dans les Paramètres ci-dessus</li>
+                        <li>Changez l'email pour : <code>${accountEmail}</code></li>
+                        <li>Cliquez "Sauvegarder"</li>
+                        <li>Réessayez l'envoi de test</li>
+                    </ol>
+                    
+                    <h4 style="margin: 20px 0 10px 0; color: #667eea;">🌐 Solution complète (Pour tous les emails)</h4>
+                    <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+                        Pour envoyer à n'importe quelle adresse, vous devez vérifier un domaine :
+                    </p>
+                    <ol style="margin: 10px 0; padding-left: 20px; text-align: left;">
+                        <li>Aller sur <a href="https://resend.com/domains" target="_blank"><strong>resend.com/domains</strong></a></li>
+                        <li>Cliquer "Add Domain"</li>
+                        <li>Entrer votre domaine (ex: <code>losgonza.fr</code>)</li>
+                        <li>Ajouter les enregistrements DNS requis</li>
+                        <li>Attendre la vérification (~10 minutes)</li>
+                        <li>Modifier l'Edge Function pour utiliser : <code>from: "Notifications &lt;noreply@losgonza.fr&gt;"</code></li>
+                    </ol>
+                    
+                    <div style="background: #e7f3ff; padding: 12px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2196F3;">
+                        <p style="margin: 0; color: #1976D2; font-size: 0.9em;">
+                            💡 <strong>Sans domaine :</strong> Vous pouvez toujours tester en utilisant ${accountEmail}
+                        </p>
+                    </div>
                 `;
             } else if (errorMessage.includes('404') || errorMessage.includes('NetworkError') || errorMessage.includes('Function not found')) {
                 helpTitle = '📦 Edge Function non déployée';
@@ -4716,6 +4811,11 @@
             document.getElementById('enable-push-notifications').checked = settings.enable_push_notifications || false;
             document.getElementById('enable-daily-email').checked = settings.enable_daily_email !== false; // true par défaut
             document.getElementById('daily-email-time').value = settings.daily_email_time || '18:00';
+            document.getElementById('email-frequency').value = settings.email_frequency || 'daily';
+            document.getElementById('email-weekly-day').value = settings.email_weekly_day || 1;
+            
+            // Afficher/masquer le sélecteur de jour selon la fréquence
+            toggleWeeklyOptions();
             
             // Charger la répartition dans le curseur
             const parent1Percentage = settings.parent1_percentage || 50;
