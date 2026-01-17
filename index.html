@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Dépenses">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
     <title>💰 Gestion des Dépenses Partagées</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='48' fill='%23667eea'/%3E%3Cpath d='M96 45c-28 0-51 23-51 51s23 51 51 51 51-23 51-51-23-51-51-51zm0 90c-21 0-39-18-39-39s18-39 39-39 39 18 39 39-18 39-39 39z' fill='%23fff'/%3E%3Cpath d='M96 67v58m-29-29h58' stroke='%23fff' stroke-width='9' stroke-linecap='round'/%3E%3C/svg%3E">
     
     <!-- Chart.js pour les graphiques -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -5100,6 +5109,11 @@
             } else {
                 badge.style.display = 'none';
             }
+            
+            // Mettre à jour le badge de l'icône iOS/PWA
+            updateAppBadge(count).catch(err => {
+                console.log('⚠️ Badge app non mis à jour:', err.message);
+            });
         }
 
         function showNotificationsModal() {
@@ -8017,11 +8031,93 @@
         }
 
         // ==========================================
+        // SERVICE WORKER ET BADGES
+        // ==========================================
+        
+        let serviceWorkerRegistration = null;
+        
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                console.log('⚠️ Service Worker non supporté');
+                return;
+            }
+            
+            try {
+                serviceWorkerRegistration = await navigator.serviceWorker.register('/service-worker.js');
+                console.log('✅ Service Worker enregistré');
+                
+                // Attendre que le SW soit actif
+                await navigator.serviceWorker.ready;
+                console.log('✅ Service Worker prêt');
+                
+            } catch (error) {
+                console.error('❌ Erreur enregistrement Service Worker:', error);
+            }
+        }
+        
+        async function updateAppBadge(count) {
+            console.log(`📛 Mise à jour badge: ${count}`);
+            
+            // Méthode 1 : API Badge directe (Android Chrome, certains navigateurs)
+            if ('setAppBadge' in navigator) {
+                try {
+                    if (count > 0) {
+                        await navigator.setAppBadge(count);
+                        console.log(`✅ Badge mis à jour (API directe): ${count}`);
+                    } else {
+                        await navigator.clearAppBadge();
+                        console.log('✅ Badge effacé (API directe)');
+                    }
+                    return;
+                } catch (error) {
+                    console.log('⚠️ API Badge directe échouée:', error.message);
+                }
+            }
+            
+            // Méthode 2 : Via Service Worker (iOS, Safari)
+            if (serviceWorkerRegistration && serviceWorkerRegistration.active) {
+                try {
+                    const messageChannel = new MessageChannel();
+                    
+                    // Créer une promesse pour attendre la réponse
+                    const response = await new Promise((resolve, reject) => {
+                        messageChannel.port1.onmessage = (event) => {
+                            if (event.data.success) {
+                                resolve(event.data);
+                            } else {
+                                reject(new Error(event.data.error));
+                            }
+                        };
+                        
+                        // Timeout après 3 secondes
+                        setTimeout(() => reject(new Error('Timeout')), 3000);
+                        
+                        // Envoyer le message au SW
+                        serviceWorkerRegistration.active.postMessage({
+                            type: 'UPDATE_BADGE',
+                            count: count
+                        }, [messageChannel.port2]);
+                    });
+                    
+                    console.log(`✅ Badge mis à jour (via SW): ${count}`);
+                    return;
+                } catch (error) {
+                    console.log('⚠️ Badge via SW échoué:', error.message);
+                }
+            }
+            
+            console.log('⚠️ Aucune méthode de badge disponible');
+        }
+        
+        // ==========================================
         // INITIALISATION
         // ==========================================
 
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 === APPLICATION DÉMARRÉE ===');
+            
+            // Enregistrer le Service Worker pour les badges
+            await registerServiceWorker();
             
             // Initialiser Supabase (avec chargement dynamique)
             try {
