@@ -61,15 +61,15 @@
         }
 
         .share-info {
-            background: #e8f5e9;
-            border-radius: 8px;
-            padding: 10px 15px;
-            margin-top: 12px;
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            margin-top: 15px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-wrap: nowrap;
+            gap: 15px;
         }
 
         .share-info .room-id {
@@ -758,27 +758,23 @@
             }
 
             .share-info {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 6px;
-                margin-top: 8px;
-                padding: 8px 10px;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                margin-top: 12px;
+                padding: 0;
+                flex-wrap: nowrap;
             }
 
             .share-info > div {
-                width: 100%;
-                text-align: center;
-                font-size: 0.8em;
+                display: flex;
+                align-items: center;
+                gap: 10px;
             }
 
-            .room-id {
-                font-size: 0.85em !important;
-                word-break: break-all;
-            }
-            
-            .copy-btn {
-                padding: 4px 8px !important;
-                font-size: 0.9em !important;
+            .sync-status {
+                font-size: 0.8em !important;
             }
 
             .notification-btn {
@@ -1406,10 +1402,8 @@
             <h1>💰 Gestion des Dépenses Partagées</h1>
             <p>Synchronisation en temps réel</p>
             <div class="share-info">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 0.9em; color: #666;">🔗</span>
-                    <span class="room-id" id="room-id-display"></span>
-                    <button class="copy-btn" onclick="copyRoomId()">📋</button>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="sync-status sync-online" id="sync-status">🟢 Connecté</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <button class="notification-btn" onclick="showNotificationsModal()" title="Notifications">
@@ -1419,7 +1413,6 @@
                         </svg>
                         <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
                     </button>
-                    <span class="sync-status sync-online" id="sync-status">🟢 Connecté</span>
                 </div>
             </div>
         </div>
@@ -2015,6 +2008,24 @@
         <!-- Onglet Paramètres -->
         <div id="tab-parametres" class="tab-content">
             <h2 style="color: #667eea; margin-bottom: 20px;">⚙️ Paramètres</h2>
+            
+            <div class="settings-section">
+                <h3>🔗 Code d'appairage</h3>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
+                    Partagez ce code avec vos proches pour synchroniser vos dépenses
+                </p>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="font-size: 0.85em; opacity: 0.9; margin-bottom: 5px;">Votre code d'appairage :</div>
+                            <div style="font-family: 'Courier New', monospace; font-size: 1.2em; font-weight: 700; letter-spacing: 2px; word-break: break-all;" id="room-id-display-settings"></div>
+                        </div>
+                        <button onclick="copyRoomIdFromSettings()" class="btn" style="background: white; color: #667eea; border: none; min-width: 120px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                            📋 Copier
+                        </button>
+                    </div>
+                </div>
+            </div>
             
             <div class="settings-section">
                 <h3>👥 Noms des parents</h3>
@@ -5806,7 +5817,7 @@
             
             document.getElementById('welcome-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            document.getElementById('room-id-display').textContent = currentRoomId;
+            document.getElementById('room-id-display-settings').textContent = currentRoomId;
             document.getElementById('room-code-display').value = currentRoomId;
             
             console.log('CATEGORIES au démarrage:', CATEGORIES);
@@ -5831,6 +5842,12 @@
         function copyRoomId() {
             navigator.clipboard.writeText(currentRoomId).then(() => {
                 showNotification('Code copié ! Partagez-le avec l\'autre parent.', 'success');
+            });
+        }
+        
+        function copyRoomIdFromSettings() {
+            navigator.clipboard.writeText(currentRoomId).then(() => {
+                showNotification('Code d\'appairage copié ! 📋', 'success');
             });
         }
 
