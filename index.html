@@ -8709,6 +8709,229 @@
                 font-size: 0.8em;
             }
         }
+        
+        /* ==========================================
+           OPTIMISATIONS MOBILE COMPLÈTES
+           ========================================== */
+        
+        @media (max-width: 768px) {
+            /* PARTIE 1 : Éviter débordements horizontaux */
+            *, *::before, *::after {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            
+            /* Textes longs qui wrappe */
+            .room-id, .expense-description, .notes, td, th {
+                word-wrap: break-word;
+                word-break: break-word;
+                overflow-wrap: break-word;
+            }
+            
+            /* PARTIE 2 : Formulaires iOS optimisés */
+            input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+            select,
+            textarea {
+                font-size: 16px !important; /* Éviter zoom iOS */
+                min-height: 44px; /* Taille minimum tactile iOS */
+                width: 100%;
+            }
+            
+            button, .btn, a.button, .tab {
+                min-height: 44px; /* Accessibilité tactile */
+                min-width: 44px;
+                -webkit-tap-highlight-color: transparent;
+                -webkit-user-select: none;
+                user-select: none;
+            }
+            
+            /* PARTIE 3 : Modales responsive */
+            .modal-content {
+                width: 95vw !important;
+                max-width: 95vw !important;
+                max-height: 85vh !important;
+                padding: 20px 15px !important;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .modal h2 {
+                position: sticky;
+                top: -20px;
+                background: white;
+                padding: 10px 0 15px 0;
+                margin: -20px -15px 15px -15px;
+                padding-left: 15px;
+                padding-right: 15px;
+                z-index: 10;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .modal form, .modal-body {
+                margin-bottom: 20px;
+            }
+            
+            .modal .modal-buttons,
+            .modal .button-group {
+                position: sticky;
+                bottom: -20px;
+                background: white;
+                padding: 15px 0 10px 0;
+                margin: 20px -15px -20px -15px;
+                padding-left: 15px;
+                padding-right: 15px;
+                border-top: 1px solid #e0e0e0;
+                display: flex;
+                gap: 10px;
+            }
+            
+            .modal .modal-buttons button,
+            .modal .button-group button {
+                flex: 1;
+                margin: 0 !important;
+            }
+            
+            /* PARTIE 4 : Grilles en colonne unique */
+            div[style*="display: grid"],
+            div[style*="display:grid"],
+            .grid {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            
+            /* PARTIE 5 : Conteneurs */
+            .container {
+                padding: 10px;
+            }
+            
+            .header, .card, .section, .settings-section {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            /* PARTIE 6 : Navigation tabs scrollable */
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x mandatory;
+                scrollbar-width: thin;
+                padding-bottom: 5px;
+            }
+            
+            .tabs button {
+                flex-shrink: 0;
+                scroll-snap-align: start;
+                white-space: nowrap;
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+            
+            /* PARTIE 7 : Liste dépenses optimisée */
+            .expense-item {
+                padding: 12px;
+            }
+            
+            .expense-item > div:first-child {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .expense-item .expense-amount {
+                width: 100%;
+                text-align: right;
+                font-size: 1.3em;
+            }
+            
+            .expense-item .expense-actions {
+                width: 100%;
+                display: flex;
+                gap: 8px;
+                margin-top: 10px;
+            }
+            
+            .expense-item .expense-actions button {
+                flex: 1;
+                font-size: 0.85em;
+                padding: 8px;
+            }
+            
+            /* PARTIE 8 : Statistiques */
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+            
+            /* PARTIE 9 : Upload fichiers */
+            .file-upload-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .file-upload-btn {
+                width: 100% !important;
+                min-height: 44px;
+            }
+            
+            .file-preview img {
+                max-width: 100%;
+                max-height: 200px;
+                object-fit: contain;
+            }
+            
+            /* PARTIE 10 : Notifications */
+            .notification-item {
+                padding: 12px;
+                margin-bottom: 8px;
+            }
+            
+            .notification-item-content {
+                font-size: 0.9em;
+            }
+            
+            /* PARTIE 11 : FAB positionnement */
+            .fab-button {
+                width: 56px;
+                height: 56px;
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            /* PARTIE 12 : Corrections spécifiques iOS/Safari */
+            @supports (-webkit-touch-callout: none) {
+                body {
+                    overscroll-behavior-y: none;
+                    -webkit-text-size-adjust: 100%;
+                }
+                
+                .modal-content {
+                    -webkit-overflow-scrolling: touch;
+                }
+                
+                * {
+                    -webkit-backface-visibility: hidden;
+                    -webkit-transform: translate3d(0, 0, 0);
+                }
+            }
+            
+            /* PARTIE 13 : Safe area iOS (notch) */
+            @supports (padding: max(0px)) {
+                body {
+                    padding-left: max(10px, env(safe-area-inset-left));
+                    padding-right: max(10px, env(safe-area-inset-right));
+                    padding-top: max(10px, env(safe-area-inset-top));
+                    padding-bottom: max(10px, env(safe-area-inset-bottom));
+                }
+            }
+        }
     </style>
 </body>
 </html>
