@@ -198,6 +198,10 @@
 
         .expense-list {
             margin-top: 30px;
+            max-height: 600px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 4px;
         }
 
         .expense-item {
@@ -595,6 +599,11 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
+            }
+            
+            /* Liste des dépenses avec hauteur limitée sur mobile */
+            .expense-list {
+                max-height: 400px;
             }
             
             /* Optimisation modale budget sur mobile */
@@ -8819,6 +8828,7 @@
             /* PARTIE 5 : Conteneurs */
             .container {
                 padding: 10px;
+                padding-bottom: 40px;
             }
             
             .header, .card, .section, .settings-section {
