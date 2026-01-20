@@ -6086,6 +6086,8 @@
                 displayBudget();
             } else if (tabName === 'recurrentes') {
                 displayRecurrentExpenses();
+            } else if (tabName === 'versements') {
+                displayContributions();
             } else if (tabName === 'parametres') {
                 // Recharger l'affichage des types et catégories
                 displayTypesList();
@@ -6356,8 +6358,11 @@
             // Graphique : Comparaison payeurs
             createPayersChart(filtered);
 
+            // Filtrer les contributions par la même période
+            const filteredContributions = period === 'all' ? contributions : filterContributionsByPeriod(contributions, period);
+
             // Équilibre des comptes
-            displayBalance(filtered, totalParent1, totalParent2, total);
+            displayBalance(filtered, totalParent1, totalParent2, total, filteredContributions);
 
             // Statistiques détaillées
             displayDetailedStats(filtered);
@@ -6414,6 +6419,59 @@
                 });
             } else {
                 return expenses.filter(e => new Date(e.date) >= startDate);
+            }
+        }
+
+        function filterContributionsByPeriod(contribs, period) {
+            const now = new Date();
+            let startDate, endDate;
+
+            switch(period) {
+                case 'month':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                    break;
+                case 'lastMonth':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+                    break;
+                case '3months':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                    endDate = now;
+                    break;
+                case '6months':
+                    startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+                    endDate = now;
+                    break;
+                case 'year':
+                    startDate = new Date(now.getFullYear(), 0, 1);
+                    endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+                    break;
+                case 'lastYear':
+                    startDate = new Date(now.getFullYear() - 1, 0, 1);
+                    endDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+                    break;
+                case 'custom':
+                    if (window.customStartDate && window.customEndDate) {
+                        startDate = new Date(window.customStartDate);
+                        endDate = new Date(window.customEndDate);
+                        endDate.setHours(23, 59, 59);
+                    } else {
+                        return contribs;
+                    }
+                    break;
+                case 'all':
+                default:
+                    return contribs;
+            }
+
+            if (endDate) {
+                return contribs.filter(c => {
+                    const date = new Date(c.date);
+                    return date >= startDate && date <= endDate;
+                });
+            } else {
+                return contribs.filter(c => new Date(c.date) >= startDate);
             }
         }
 
@@ -6749,15 +6807,15 @@
             });
         }
 
-        function displayBalance(filtered, totalParent1, totalParent2, total) {
+        function displayBalance(filtered, totalParent1, totalParent2, total, filteredContributions = []) {
             const balanceCard = document.getElementById('balance-card');
             
-            // Calculer les contributions
-            const parent1Contributions = contributions
+            // Calculer les contributions filtrées par période
+            const parent1Contributions = filteredContributions
                 .filter(c => c.parent === 'Parent 1' || c.parent === settings.parent1_name)
                 .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
             
-            const parent2Contributions = contributions
+            const parent2Contributions = filteredContributions
                 .filter(c => c.parent === 'Parent 2' || c.parent === settings.parent2_name)
                 .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
             
