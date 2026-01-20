@@ -6851,20 +6851,35 @@
             // Déterminer qui doit à qui en comparant les deux différences
             let debtor, creditor, amountOwed;
             
-            // Comparer les deux différences
-            const netDifference = parent1Difference - parent2Difference;
-            
-            if (Math.abs(netDifference) > 1) {
-                if (netDifference > 0) {
+            // Si les deux sont créditeurs ou débiteurs, comparer qui a le plus contribué
+            if (Math.abs(parent1Difference) > 1 || Math.abs(parent2Difference) > 1) {
+                if (parent1Difference > parent2Difference) {
                     // Parent1 a plus contribué que Parent2
-                    debtor = settings.parent2_name;
-                    creditor = settings.parent1_name;
-                    amountOwed = Math.abs(netDifference);
+                    // Parent2 doit rembourser Parent1 (sauf si Parent2 est aussi créditeur)
+                    if (parent2Difference < 0) {
+                        // Parent2 est débiteur, doit rembourser
+                        debtor = settings.parent2_name;
+                        creditor = settings.parent1_name;
+                        amountOwed = Math.abs(parent1Difference - parent2Difference);
+                    } else {
+                        // Les deux sont créditeurs, Parent1 doit rembourser la différence
+                        debtor = settings.parent1_name;
+                        creditor = settings.parent2_name;
+                        amountOwed = Math.abs(parent1Difference - parent2Difference);
+                    }
                 } else {
                     // Parent2 a plus contribué que Parent1
-                    debtor = settings.parent1_name;
-                    creditor = settings.parent2_name;
-                    amountOwed = Math.abs(netDifference);
+                    if (parent1Difference < 0) {
+                        // Parent1 est débiteur, doit rembourser
+                        debtor = settings.parent1_name;
+                        creditor = settings.parent2_name;
+                        amountOwed = Math.abs(parent1Difference - parent2Difference);
+                    } else {
+                        // Les deux sont créditeurs, Parent2 doit rembourser la différence
+                        debtor = settings.parent2_name;
+                        creditor = settings.parent1_name;
+                        amountOwed = Math.abs(parent1Difference - parent2Difference);
+                    }
                 }
             } else {
                 amountOwed = 0;
