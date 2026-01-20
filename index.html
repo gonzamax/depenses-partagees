@@ -6844,6 +6844,10 @@
             const parent1Difference = parent1Total - parent1ShouldPay;
             const parent2Difference = parent2Total - parent2ShouldPay;
             
+            console.log('Calcul déséquilibre:');
+            console.log('- parent1Total:', parent1Total, '- parent1ShouldPay:', parent1ShouldPay, '= parent1Difference:', parent1Difference);
+            console.log('- parent2Total:', parent2Total, '- parent2ShouldPay:', parent2ShouldPay, '= parent2Difference:', parent2Difference);
+            
             // Déterminer qui doit à qui
             let debtor, creditor, amountOwed;
             
@@ -6860,6 +6864,11 @@
             } else {
                 amountOwed = 0;
             }
+            
+            console.log('Résultat final:');
+            console.log('- debtor:', debtor);
+            console.log('- creditor:', creditor);
+            console.log('- amountOwed:', amountOwed);
 
             balanceCard.innerHTML = `
                 <h2 style="color: #667eea; margin-bottom: 20px;">💰 Équilibre des comptes</h2>
