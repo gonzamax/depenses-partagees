@@ -6848,24 +6848,30 @@
             console.log('- parent1Total:', parent1Total, '- parent1ShouldPay:', parent1ShouldPay, '= parent1Difference:', parent1Difference);
             console.log('- parent2Total:', parent2Total, '- parent2ShouldPay:', parent2ShouldPay, '= parent2Difference:', parent2Difference);
             
-            // Déterminer qui doit à qui
+            // Déterminer qui doit à qui en comparant les deux différences
             let debtor, creditor, amountOwed;
             
-            if (Math.abs(parent1Difference) > 1) {
-                if (parent1Difference > 0) {
+            // Comparer les deux différences
+            const netDifference = parent1Difference - parent2Difference;
+            
+            if (Math.abs(netDifference) > 1) {
+                if (netDifference > 0) {
+                    // Parent1 a plus contribué que Parent2
                     debtor = settings.parent2_name;
                     creditor = settings.parent1_name;
-                    amountOwed = parent1Difference;
+                    amountOwed = Math.abs(netDifference);
                 } else {
+                    // Parent2 a plus contribué que Parent1
                     debtor = settings.parent1_name;
                     creditor = settings.parent2_name;
-                    amountOwed = Math.abs(parent1Difference);
+                    amountOwed = Math.abs(netDifference);
                 }
             } else {
                 amountOwed = 0;
             }
             
             console.log('Résultat final:');
+            console.log('- netDifference:', netDifference);
             console.log('- debtor:', debtor);
             console.log('- creditor:', creditor);
             console.log('- amountOwed:', amountOwed);
