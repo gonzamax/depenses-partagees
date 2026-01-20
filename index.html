@@ -6360,6 +6360,12 @@
 
             // Filtrer les contributions par la même période
             const filteredContributions = period === 'all' ? contributions : filterContributionsByPeriod(contributions, period);
+            
+            console.log('DEBUG Équilibre:');
+            console.log('- Période:', period);
+            console.log('- Contributions totales:', contributions.length);
+            console.log('- Contributions filtrées:', filteredContributions.length);
+            console.log('- Contributions:', filteredContributions);
 
             // Équilibre des comptes
             displayBalance(filtered, totalParent1, totalParent2, total, filteredContributions);
@@ -6810,6 +6816,10 @@
         function displayBalance(filtered, totalParent1, totalParent2, total, filteredContributions = []) {
             const balanceCard = document.getElementById('balance-card');
             
+            console.log('displayBalance appelé avec:');
+            console.log('- filteredContributions:', filteredContributions);
+            console.log('- filteredContributions.length:', filteredContributions.length);
+            
             // Calculer les contributions filtrées par période
             const parent1Contributions = filteredContributions
                 .filter(c => c.parent === 'Parent 1' || c.parent === settings.parent1_name)
@@ -6818,6 +6828,9 @@
             const parent2Contributions = filteredContributions
                 .filter(c => c.parent === 'Parent 2' || c.parent === settings.parent2_name)
                 .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
+            
+            console.log('- Parent1 contributions:', parent1Contributions);
+            console.log('- Parent2 contributions:', parent2Contributions);
             
             // Calculer ce que chaque parent DEVRAIT payer selon la répartition configurée
             const parent1ShouldPay = (total * settings.parent1_percentage) / 100;
