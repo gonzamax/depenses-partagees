@@ -1592,14 +1592,9 @@
         <!-- Onglet Statistiques -->
         <div id="tab-statistiques" class="tab-content">
             <h2 style="color: #667eea; margin-bottom: 20px;">📊 Statistiques et Analyses</h2>
-
             <div id="treasury-dashboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:30px"></div>
-            <div class="card" style="margin-bottom:30px">
-                <h3 style="color:#667eea;margin-bottom:20px">📈 Évolution</h3>
-                <div style="position:relative;height:350px"><canvas id="contributions-chart"></canvas></div>
-            </div>
+            <div class="card" style="margin-bottom:30px"><h3 style="color:#667eea;margin-bottom:20px">📈 Évolution</h3><div style="position:relative;height:350px"><canvas id="contributions-chart"></canvas></div></div>
             
-
             
             <!-- Filtres de période -->
             <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
@@ -1903,41 +1898,23 @@
         </div>
         <div id="tab-versements" class="tab-content">
             <h2 style="color: #667eea; margin-bottom: 20px;">💰 Versements</h2>
-            <div class="card" style="margin-bottom: 30px;background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
-                <h3 style="color: #667eea; margin-bottom: 20px;">➕ Ajouter</h3>
+            <div class="card" style="margin-bottom:30px;background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
+                <h3 style="color: #667eea; margin-bottom: 20px;">➕ Nouveau versement</h3>
                 <form id="contribution-form" onsubmit="addContribution(event)">
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px">
-                        <div class="form-group">
-                            <label for="contribution-date">📅 Date</label>
-                            <input type="date" id="contribution-date" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="contribution-parent">👤 Parent</label>
-                            <select id="contribution-parent" required><option value="">Sélectionner</option></select>
-                        </div>
-                        <div class="form-group">
-                            <label for="contribution-amount">💵 Montant</label>
-                            <input type="number" id="contribution-amount" step="0.01" min="0.01" placeholder="0.00" required>
-                        </div>
+                        <div class="form-group"><label for="contribution-date">📅 Date</label><input type="date" id="contribution-date" required></div>
+                        <div class="form-group"><label for="contribution-parent">👤 Parent</label><select id="contribution-parent" required><option value="">Sélectionner</option></select></div>
+                        <div class="form-group"><label for="contribution-amount">💵 Montant</label><input type="number" id="contribution-amount" step="0.01" min="0.01" placeholder="0.00" required></div>
                     </div>
-                    <div class="form-group" style="margin-top:15px">
-                        <label for="contribution-notes">📝 Note</label>
-                        <textarea id="contribution-notes" rows="2"></textarea>
-                    </div>
+                    <div class="form-group" style="margin-top:15px"><label for="contribution-notes">📝 Note</label><textarea id="contribution-notes" rows="2"></textarea></div>
                     <button type="submit" class="btn" style="width:100%;margin-top:10px">💾 Enregistrer</button>
                 </form>
             </div>
             <div class="card" style="margin-bottom:20px;background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
                 <h3 style="color: #667eea; margin-bottom: 15px;">🔍 Filtres</h3>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px">
-                    <div class="form-group" style="margin-bottom:0">
-                        <label>Mois</label>
-                        <select id="contributions-filter-month" onchange="displayContributions()"><option value="">Tous</option></select>
-                    </div>
-                    <div class="form-group" style="margin-bottom:0">
-                        <label>Parent</label>
-                        <select id="contributions-filter-parent" onchange="displayContributions()"><option value="">Tous</option></select>
-                    </div>
+                    <div class="form-group" style="margin-bottom:0"><label>Mois</label><select id="contributions-filter-month" onchange="displayContributions()"><option value="">Tous</option></select></div>
+                    <div class="form-group" style="margin-bottom:0"><label>Parent</label><select id="contributions-filter-parent" onchange="displayContributions()"><option value="">Tous</option></select></div>
                 </div>
             </div>
             <div class="card" style="background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
@@ -1945,8 +1922,6 @@
                 <div id="contributions-list"></div>
             </div>
         </div>
-
-
 
         <!-- Onglet Dépenses Récurrentes -->
         <div id="tab-recurrentes" class="tab-content">
@@ -2994,11 +2969,7 @@
                 .subscribe();
 
             subscriptions.push(settingsChannel);
-            const cc=supabase.channel('contributions_changes').on('postgres_changes',{event:'*',schema:'public',table:'contributions',filter:`room_id=eq.${currentRoomId}`},async(p)=>{
-                await loadFromSupabase();
-                if(document.querySelector('[data-tab="versements"]')?.classList.contains('active'))displayContributions();
-                if(document.querySelector('[data-tab="statistiques"]')?.classList.contains('active'))displayStats();
-            }).subscribe();
+            const cc=supabase.channel('contributions_changes').on('postgres_changes',{event:'*',schema:'public',table:'contributions',filter:`room_id=eq.${currentRoomId}`},async(p)=>{await loadFromSupabase();if(document.querySelector('[data-tab="versements"]')?.classList.contains('active'))displayContributions();if(document.querySelector('[data-tab="statistiques"]')?.classList.contains('active'))displayStats();}).subscribe();
             subscriptions.push(cc);
 
             // S'abonner aux changements des récurrentes
@@ -8438,15 +8409,8 @@
             event.target.classList.add('active');
         }
     
-/**
- * 💰 MODULE VERSEMENTS / CONTRIBUTIONS
- * Version 2.0 - 21/01/2026
- * 
- * Ce module ajoute la gestion des versements (contributions) de chaque parent
- * à l'application de gestion des dépenses partagées.
- * 
- * À intégrer dans le fichier HTML principal avant la balise </script> finale
- */
+// MODULE VERSEMENTS / CONTRIBUTIONS
+// Version 2.0 - 21/01/2026
 
 // ==========================================
 // VARIABLES GLOBALES
