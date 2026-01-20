@@ -1353,12 +1353,7 @@
             border-radius: 4px;
             font-family: monospace;
         }
-        #tab-versements .card{background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)}
-        #tab-versements .form-group{margin-bottom:15px}
-        #tab-versements .form-group label{display:block;margin-bottom:8px;font-weight:600;color:#333}
-        #tab-versements input,#tab-versements select,#tab-versements textarea{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:1em}
-        #tab-versements input:focus,#tab-versements select:focus,#tab-versements textarea:focus{border-color:#667eea;outline:none}
-        .stat-card{background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)}
+            .stat-card{background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)}
     </style>
 </head>
 <body>
@@ -1596,13 +1591,15 @@
 
         <!-- Onglet Statistiques -->
         <div id="tab-statistiques" class="tab-content">
-            <h2 style="color: #667eea; margin-bottom: 20px;">📊 Statistiques et Analyse</h2>
-            
-            <div id="treasury-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;"></div>
-            <div class="card" style="margin-bottom: 30px;">
-                <h3 style="color: #667eea; margin-bottom: 20px;">📈 Évolution des versements</h3>
-                <div style="position: relative; height: 350px;"><canvas id="contributions-chart"></canvas></div>
+            <h2 style="color: #667eea; margin-bottom: 20px;">📊 Statistiques et Analyses</h2>
+
+            <div id="treasury-dashboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:30px"></div>
+            <div class="card" style="margin-bottom:30px">
+                <h3 style="color:#667eea;margin-bottom:20px">📈 Évolution</h3>
+                <div style="position:relative;height:350px"><canvas id="contributions-chart"></canvas></div>
             </div>
+            
+
             
             <!-- Filtres de période -->
             <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
@@ -1904,14 +1901,12 @@
                 </form>
             </div>
         </div>
-
-        <!-- Onglet Versements -->
         <div id="tab-versements" class="tab-content">
             <h2 style="color: #667eea; margin-bottom: 20px;">💰 Versements</h2>
-            <div class="card" style="margin-bottom: 30px;">
-                <h3 style="color: #667eea; margin-bottom: 20px;">➕ Ajouter un versement</h3>
+            <div class="card" style="margin-bottom: 30px;background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
+                <h3 style="color: #667eea; margin-bottom: 20px;">➕ Ajouter</h3>
                 <form id="contribution-form" onsubmit="addContribution(event)">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px">
                         <div class="form-group">
                             <label for="contribution-date">📅 Date</label>
                             <input type="date" id="contribution-date" required>
@@ -1921,35 +1916,37 @@
                             <select id="contribution-parent" required><option value="">Sélectionner</option></select>
                         </div>
                         <div class="form-group">
-                            <label for="contribution-amount">💵 Montant (€)</label>
+                            <label for="contribution-amount">💵 Montant</label>
                             <input type="number" id="contribution-amount" step="0.01" min="0.01" placeholder="0.00" required>
                         </div>
                     </div>
-                    <div class="form-group" style="margin-top: 15px;">
+                    <div class="form-group" style="margin-top:15px">
                         <label for="contribution-notes">📝 Note</label>
-                        <textarea id="contribution-notes" placeholder="Virement..." rows="2"></textarea>
+                        <textarea id="contribution-notes" rows="2"></textarea>
                     </div>
-                    <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">💾 Enregistrer</button>
+                    <button type="submit" class="btn" style="width:100%;margin-top:10px">💾 Enregistrer</button>
                 </form>
             </div>
-            <div class="card" style="margin-bottom: 20px;">
+            <div class="card" style="margin-bottom:20px;background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
                 <h3 style="color: #667eea; margin-bottom: 15px;">🔍 Filtres</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <div class="form-group" style="margin-bottom: 0;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px">
+                    <div class="form-group" style="margin-bottom:0">
                         <label>Mois</label>
                         <select id="contributions-filter-month" onchange="displayContributions()"><option value="">Tous</option></select>
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom:0">
                         <label>Parent</label>
                         <select id="contributions-filter-parent" onchange="displayContributions()"><option value="">Tous</option></select>
                     </div>
                 </div>
             </div>
-            <div class="card">
+            <div class="card" style="background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
                 <h3 style="color: #667eea; margin-bottom: 20px;">📜 Historique</h3>
                 <div id="contributions-list"></div>
             </div>
         </div>
+
+
 
         <!-- Onglet Dépenses Récurrentes -->
         <div id="tab-recurrentes" class="tab-content">
@@ -2327,7 +2324,8 @@
                                 border: 3px solid #667eea;
                                 box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                             }
-                        </style>
+                                .stat-card{background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)}
+    </style>
                     </div>
                     
                     <!-- Champs cachés pour garder la compatibilité -->
@@ -2997,7 +2995,7 @@
 
             subscriptions.push(settingsChannel);
             const cc=supabase.channel('contributions_changes').on('postgres_changes',{event:'*',schema:'public',table:'contributions',filter:`room_id=eq.${currentRoomId}`},async(p)=>{
-                console.log('🔄 Contrib:',p);await loadFromSupabase();
+                await loadFromSupabase();
                 if(document.querySelector('[data-tab="versements"]')?.classList.contains('active'))displayContributions();
                 if(document.querySelector('[data-tab="statistiques"]')?.classList.contains('active'))displayStats();
             }).subscribe();
@@ -8439,15 +8437,7 @@
             // Activer le bouton correspondant
             event.target.classList.add('active');
         }
-    </script>
-/**
- * 💰 MODULE VERSEMENTS / CONTRIBUTIONS
- * Version 2.0 - 21/01/2026
- * 
- * Ce module ajoute la gestion des versements (contributions) de chaque parent
- * à l'application de gestion des dépenses partagées.
- * 
- * À intégrer dans le fichier HTML principal avant la balise 
+    
 /**
  * 💰 MODULE VERSEMENTS / CONTRIBUTIONS
  * Version 2.0 - 21/01/2026
@@ -9192,742 +9182,7 @@ async function initContributionsModule() {
 // Ces fonctions sont ajoutées au scope global et seront disponibles partout
 console.log('📦 Module versements chargé');
 
-</script> finale
- */
-
-// ==========================================
-// VARIABLES GLOBALES
-// ==========================================
-// contributions est déjà déclaré dans le scope global
-
-// ==========================================
-// FONCTIONS SUPABASE - CONTRIBUTIONS
-// ==========================================
-
-/**
- * Charger les contributions depuis Supabase
- */
-async function loadContributions() {
-    if (!supabase || !currentRoomId) {
-        console.warn('Supabase ou room_id non disponible');
-        return;
-    }
-
-    try {
-        const { data, error } = await supabase
-            .from('contributions')
-            .select('*')
-            .eq('room_id', currentRoomId)
-            .order('date', { ascending: false });
-
-        if (error) {
-            console.error('Erreur chargement contributions:', error);
-            return;
-        }
-
-        contributions = data.map(c => ({
-            ...c,
-            montant: parseFloat(c.montant)
-        }));
-
-        console.log(`✅ ${contributions.length} versements chargés`);
-        
-    } catch (error) {
-        console.error('Erreur loadContributions:', error);
-    }
-}
-
-/**
- * Sauvegarder une contribution dans Supabase
- */
-async function saveContributionToSupabase(contribution) {
-    if (!supabase || !currentRoomId) {
-        throw new Error('Supabase non initialisé');
-    }
-
-    try {
-        const { data, error } = await supabase
-            .from('contributions')
-            .insert([{
-                room_id: currentRoomId,
-                date: contribution.date,
-                parent: contribution.parent,
-                montant: contribution.montant,
-                notes: contribution.notes || null
-            }])
-            .select();
-
-        if (error) throw error;
-
-        return data[0];
-        
-    } catch (error) {
-        console.error('Erreur saveContribution:', error);
-        throw error;
-    }
-}
-
-/**
- * Mettre à jour une contribution
- */
-async function updateContributionInSupabase(id, updates) {
-    if (!supabase) throw new Error('Supabase non initialisé');
-
-    try {
-        const { data, error } = await supabase
-            .from('contributions')
-            .update(updates)
-            .eq('id', id)
-            .select();
-
-        if (error) throw error;
-        return data[0];
-        
-    } catch (error) {
-        console.error('Erreur updateContribution:', error);
-        throw error;
-    }
-}
-
-/**
- * Supprimer une contribution
- */
-async function deleteContributionFromSupabase(id) {
-    if (!supabase) throw new Error('Supabase non initialisé');
-
-    try {
-        const { error } = await supabase
-            .from('contributions')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-        
-    } catch (error) {
-        console.error('Erreur deleteContribution:', error);
-        throw error;
-    }
-}
-
-// ==========================================
-// GESTION DES VERSEMENTS (UI)
-// ==========================================
-
-/**
- * Ajouter un versement
- */
-async function addContribution(event) {
-    event.preventDefault();
-
-    const contribution = {
-        date: document.getElementById('contribution-date').value,
-        parent: document.getElementById('contribution-parent').value,
-        montant: parseFloat(document.getElementById('contribution-amount').value),
-        notes: document.getElementById('contribution-notes').value
-    };
-
-    try {
-        const saved = await saveContributionToSupabase(contribution);
-        contributions.push({
-            ...saved,
-            montant: parseFloat(saved.montant)
-        });
-
-        showNotification('💰 Versement enregistré !', 'success');
-        document.getElementById('contribution-form').reset();
-        
-        // Mettre la date du jour par défaut
-        document.getElementById('contribution-date').valueAsDate = new Date();
-        
-        displayContributions();
-        
-        // Mettre à jour le dashboard si on est dans l'onglet stats
-        if (document.querySelector('[data-tab="statistiques"]').classList.contains('active')) {
-            displayStats();
-        }
-        
-    } catch (error) {
-        console.error('Erreur ajout versement:', error);
-        showNotification('❌ Erreur lors de l\'enregistrement', 'error');
-    }
-}
-
-/**
- * Afficher la liste des versements
- */
-function displayContributions() {
-    const container = document.getElementById('contributions-list');
-    if (!container) return;
-
-    // Filtres
-    const filterMonth = document.getElementById('contributions-filter-month')?.value || '';
-    const filterParent = document.getElementById('contributions-filter-parent')?.value || '';
-
-    let filtered = [...contributions];
-
-    // Filtre par mois
-    if (filterMonth) {
-        const [year, month] = filterMonth.split('-').map(Number);
-        filtered = filtered.filter(c => {
-            const date = new Date(c.date);
-            return date.getFullYear() === year && date.getMonth() + 1 === month;
-        });
-    }
-
-    // Filtre par parent
-    if (filterParent) {
-        filtered = filtered.filter(c => c.parent === filterParent);
-    }
-
-    // Calculer les totaux
-    const totalP1 = filtered
-        .filter(c => c.parent === settings.parent1_name)
-        .reduce((sum, c) => sum + c.montant, 0);
-    
-    const totalP2 = filtered
-        .filter(c => c.parent === settings.parent2_name)
-        .reduce((sum, c) => sum + c.montant, 0);
-
-    if (filtered.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: #999;">
-                <div style="font-size: 3em; margin-bottom: 15px;">💰</div>
-                <p>Aucun versement enregistré</p>
-                <p style="font-size: 0.9em; margin-top: 10px;">
-                    Ajoutez un versement ci-dessus pour commencer à suivre les contributions
-                </p>
-            </div>
-        `;
-        return;
-    }
-
-    let html = `
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 15px 0; font-size: 1.2em;">📊 Totaux ${filterMonth ? 'du mois' : ''}</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
-                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 5px;">${settings.parent1_name}</div>
-                    <div style="font-size: 1.5em; font-weight: bold;">${totalP1.toFixed(2)} ${settings.currency_symbol}</div>
-                </div>
-                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 5px;">${settings.parent2_name}</div>
-                    <div style="font-size: 1.5em; font-weight: bold;">${totalP2.toFixed(2)} ${settings.currency_symbol}</div>
-                </div>
-                <div style="background: rgba(255,255,255,0.3); padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 5px;">Total</div>
-                    <div style="font-size: 1.5em; font-weight: bold;">${(totalP1 + totalP2).toFixed(2)} ${settings.currency_symbol}</div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    html += '<div class="expense-list">';
-    
-    filtered.forEach(contribution => {
-        const date = new Date(contribution.date);
-        const dateStr = date.toLocaleDateString('fr-FR');
-        
-        html += `
-            <div class="expense-item" style="border-left: 4px solid ${contribution.parent === settings.parent1_name ? '#667eea' : '#764ba2'};">
-                <div class="expense-header">
-                    <div>
-                        <div style="font-weight: bold; color: #333; margin-bottom: 5px;">
-                            ${contribution.parent}
-                        </div>
-                        <div style="font-size: 0.85em; color: #999;">
-                            📅 ${dateStr}
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div class="expense-amount" style="font-size: 1.3em; color: #28a745; font-weight: bold;">
-                            +${contribution.montant.toFixed(2)} ${settings.currency_symbol}
-                        </div>
-                    </div>
-                </div>
-                ${contribution.notes ? `
-                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.9em; color: #666;">
-                        📝 ${contribution.notes}
-                    </div>
-                ` : ''}
-                <div class="expense-actions" style="margin-top: 10px;">
-                    <button onclick="editContribution(${contribution.id})" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">
-                        ✏️ Modifier
-                    </button>
-                    <button onclick="deleteContribution(${contribution.id})" class="btn btn-danger" style="padding: 8px 15px; font-size: 0.9em;">
-                        🗑️ Supprimer
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-
-    html += '</div>';
-    container.innerHTML = html;
-}
-
-/**
- * Modifier un versement
- */
-async function editContribution(id) {
-    const contribution = contributions.find(c => c.id === id);
-    if (!contribution) return;
-
-    const newAmount = prompt(`Nouveau montant pour le versement de ${contribution.parent} :`, contribution.montant);
-    if (newAmount === null) return;
-
-    const amount = parseFloat(newAmount);
-    if (isNaN(amount) || amount <= 0) {
-        showNotification('❌ Montant invalide', 'error');
-        return;
-    }
-
-    const newNotes = prompt('Notes (optionnel) :', contribution.notes || '');
-    if (newNotes === null) return;
-
-    try {
-        await updateContributionInSupabase(id, {
-            montant: amount,
-            notes: newNotes
-        });
-
-        contribution.montant = amount;
-        contribution.notes = newNotes;
-
-        showNotification('✅ Versement modifié', 'success');
-        displayContributions();
-        
-        if (document.querySelector('[data-tab="statistiques"]').classList.contains('active')) {
-            displayStats();
-        }
-        
-    } catch (error) {
-        console.error('Erreur modification versement:', error);
-        showNotification('❌ Erreur lors de la modification', 'error');
-    }
-}
-
-/**
- * Supprimer un versement
- */
-async function deleteContribution(id) {
-    const confirmed = await showConfirm(
-        'Supprimer ce versement ?',
-        'Cette action est irréversible.'
-    );
-    
-    if (!confirmed) return;
-
-    try {
-        await deleteContributionFromSupabase(id);
-        contributions = contributions.filter(c => c.id !== id);
-
-        showNotification('🗑️ Versement supprimé', 'success');
-        displayContributions();
-        
-        if (document.querySelector('[data-tab="statistiques"]').classList.contains('active')) {
-            displayStats();
-        }
-        
-    } catch (error) {
-        console.error('Erreur suppression versement:', error);
-        showNotification('❌ Erreur lors de la suppression', 'error');
-    }
-}
-
-/**
- * Mettre à jour les filtres de versements
- */
-function updateContributionsFilters() {
-    // Remplir le select des parents
-    const parentSelect = document.getElementById('contributions-filter-parent');
-    if (parentSelect) {
-        parentSelect.innerHTML = `
-            <option value="">Tous les parents</option>
-            <option value="${settings.parent1_name}">${settings.parent1_name}</option>
-            <option value="${settings.parent2_name}">${settings.parent2_name}</option>
-        `;
-    }
-
-    // Remplir le select des mois (12 derniers mois)
-    const monthSelect = document.getElementById('contributions-filter-month');
-    if (monthSelect) {
-        monthSelect.innerHTML = '<option value="">Tous les mois</option>';
-        
-        const now = new Date();
-        for (let i = 0; i < 12; i++) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const label = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-            monthSelect.innerHTML += `<option value="${value}">${label}</option>`;
-        }
-    }
-}
-
-// ==========================================
-// CALCULS AVEC VERSEMENTS
-// ==========================================
-
-/**
- * Calculer la trésorerie et les soldes avec versements
- */
-function calculateTreasuryWithContributions(filtered) {
-    const totalDepenses = filtered.reduce((sum, e) => sum + e.montant, 0);
-    
-    // Dépenses payées par chaque parent
-    const depensesP1 = filtered
-        .filter(e => e.payeur === settings.parent1_name)
-        .reduce((sum, e) => sum + e.montant, 0);
-    
-    const depensesP2 = filtered
-        .filter(e => e.payeur === settings.parent2_name)
-        .reduce((sum, e) => sum + e.montant, 0);
-
-    // Filtrer les contributions pour la même période que les dépenses
-    let contributionsFiltered = contributions;
-    if (filtered.length > 0) {
-        const dates = filtered.map(e => new Date(e.date));
-        const minDate = new Date(Math.min(...dates));
-        const maxDate = new Date(Math.max(...dates));
-        
-        contributionsFiltered = contributions.filter(c => {
-            const date = new Date(c.date);
-            return date >= minDate && date <= maxDate;
-        });
-    }
-
-    // Versements de chaque parent
-    const versmentsP1 = contributionsFiltered
-        .filter(c => c.parent === settings.parent1_name)
-        .reduce((sum, c) => sum + c.montant, 0);
-    
-    const versmentsP2 = contributionsFiltered
-        .filter(c => c.parent === settings.parent2_name)
-        .reduce((sum, c) => sum + c.montant, 0);
-
-    const totalVersements = versmentsP1 + versmentsP2;
-
-    // Calcul des parts théoriques selon la répartition
-    const partP1 = (totalDepenses * settings.split_percentage) / 100;
-    const partP2 = (totalDepenses * (100 - settings.split_percentage)) / 100;
-
-    // Calcul des soldes
-    // Solde = Versements - Dépenses payées - Part théorique
-    const soldeP1 = versmentsP1 - depensesP1 - partP1;
-    const soldeP2 = versmentsP2 - depensesP2 - partP2;
-
-    // Reste disponible en trésorerie
-    const resteDisponible = totalVersements - totalDepenses;
-
-    return {
-        // Versements
-        versmentsP1,
-        versmentsP2,
-        totalVersements,
-        
-        // Dépenses
-        depensesP1,
-        depensesP2,
-        totalDepenses,
-        
-        // Parts théoriques
-        partP1,
-        partP2,
-        
-        // Soldes
-        soldeP1,
-        soldeP2,
-        
-        // Trésorerie
-        resteDisponible
-    };
-}
-
-/**
- * Afficher le dashboard de trésorerie dans les stats
- */
-function displayTreasuryDashboard(filtered) {
-    const treasury = calculateTreasuryWithContributions(filtered);
-    
-    const container = document.getElementById('treasury-dashboard');
-    if (!container) return;
-
-    let html = '';
-
-    // Panneau Trésorerie
-    html += `
-        <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
-            <h3 style="margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.5em;">💰</span>
-                <span>Trésorerie</span>
-            </h3>
-            
-            <div style="display: grid; gap: 15px;">
-                <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px;">
-                    <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 5px;">Versements ${settings.parent1_name}</div>
-                    <div style="font-size: 1.5em; font-weight: bold;">${treasury.versmentsP1.toFixed(2)} ${settings.currency_symbol}</div>
-                </div>
-                
-                <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px;">
-                    <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 5px;">Versements ${settings.parent2_name}</div>
-                    <div style="font-size: 1.5em; font-weight: bold;">${treasury.versmentsP2.toFixed(2)} ${settings.currency_symbol}</div>
-                </div>
-                
-                <div style="border-top: 2px solid rgba(255,255,255,0.3); padding-top: 15px;">
-                    <div style="font-size: 0.95em; opacity: 0.9; margin-bottom: 5px;">Total en caisse</div>
-                    <div style="font-size: 1.8em; font-weight: bold;">${treasury.totalVersements.toFixed(2)} ${settings.currency_symbol}</div>
-                </div>
-                
-                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px;">
-                    <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 5px;">Dépenses réelles</div>
-                    <div style="font-size: 1.3em; font-weight: bold;">${treasury.totalDepenses.toFixed(2)} ${settings.currency_symbol}</div>
-                </div>
-                
-                <div style="border-top: 2px solid rgba(255,255,255,0.3); padding-top: 15px;">
-                    <div style="font-size: 0.95em; opacity: 0.9; margin-bottom: 5px;">
-                        ${treasury.resteDisponible >= 0 ? '✅ Reste disponible' : '⚠️ Découvert'}
-                    </div>
-                    <div style="font-size: 1.8em; font-weight: bold; color: ${treasury.resteDisponible >= 0 ? '#fff' : '#ffeb3b'};">
-                        ${treasury.resteDisponible.toFixed(2)} ${settings.currency_symbol}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Panneau Répartition enrichi
-    const whoOwes = treasury.soldeP1 > 0 ? settings.parent2_name : settings.parent1_name;
-    const whoHasCredit = treasury.soldeP1 > 0 ? settings.parent1_name : settings.parent2_name;
-    const amountOwed = Math.abs(Math.max(treasury.soldeP1, treasury.soldeP2));
-
-    html += `
-        <div class="stat-card">
-            <h3 style="color: #667eea; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.5em;">📊</span>
-                <span>Répartition (${settings.split_percentage}/${100-settings.split_percentage})</span>
-            </h3>
-            
-            <!-- Parent 1 -->
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #667eea;">
-                <h4 style="color: #667eea; margin: 0 0 15px 0;">👤 ${settings.parent1_name}</h4>
-                <div style="display: grid; gap: 8px; font-size: 0.95em; color: #666;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Versé :</span>
-                        <strong style="color: #28a745;">${treasury.versmentsP1.toFixed(2)} ${settings.currency_symbol}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Payé directement :</span>
-                        <strong style="color: #dc3545;">${treasury.depensesP1.toFixed(2)} ${settings.currency_symbol}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #dee2e6;">
-                        <span>Part théorique (${settings.split_percentage}%) :</span>
-                        <strong>${treasury.partP1.toFixed(2)} ${settings.currency_symbol}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 2px solid #dee2e6; font-size: 1.1em;">
-                        <span style="font-weight: bold;">${treasury.soldeP1 > 0 ? '💰 Crédit' : treasury.soldeP1 < 0 ? '⚠️ Doit' : '✅ Équilibré'} :</span>
-                        <strong style="color: ${treasury.soldeP1 > 0 ? '#28a745' : treasury.soldeP1 < 0 ? '#dc3545' : '#6c757d'};">
-                            ${Math.abs(treasury.soldeP1).toFixed(2)} ${settings.currency_symbol}
-                        </strong>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Parent 2 -->
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #764ba2;">
-                <h4 style="color: #764ba2; margin: 0 0 15px 0;">👤 ${settings.parent2_name}</h4>
-                <div style="display: grid; gap: 8px; font-size: 0.95em; color: #666;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Versé :</span>
-                        <strong style="color: #28a745;">${treasury.versmentsP2.toFixed(2)} ${settings.currency_symbol}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Payé directement :</span>
-                        <strong style="color: #dc3545;">${treasury.depensesP2.toFixed(2)} ${settings.currency_symbol}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #dee2e6;">
-                        <span>Part théorique (${100-settings.split_percentage}%) :</span>
-                        <strong>${treasury.partP2.toFixed(2)} ${settings.currency_symbol}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 2px solid #dee2e6; font-size: 1.1em;">
-                        <span style="font-weight: bold;">${treasury.soldeP2 > 0 ? '💰 Crédit' : treasury.soldeP2 < 0 ? '⚠️ Doit' : '✅ Équilibré'} :</span>
-                        <strong style="color: ${treasury.soldeP2 > 0 ? '#28a745' : treasury.soldeP2 < 0 ? '#dc3545' : '#6c757d'};">
-                            ${Math.abs(treasury.soldeP2).toFixed(2)} ${settings.currency_symbol}
-                        </strong>
-                    </div>
-                </div>
-            </div>
-            
-            ${amountOwed > 0.01 ? `
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 1em; opacity: 0.9; margin-bottom: 8px;">Régularisation</div>
-                    <div style="font-size: 1.3em; font-weight: bold;">
-                        ${whoOwes} doit ${amountOwed.toFixed(2)} ${settings.currency_symbol} à ${whoHasCredit}
-                    </div>
-                </div>
-            ` : `
-                <div style="background: #28a745; color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 1.2em; font-weight: bold;">
-                        ✅ Comptes équilibrés !
-                    </div>
-                </div>
-            `}
-        </div>
-    `;
-
-    container.innerHTML = html;
-}
-
-/**
- * Afficher le graphique d'évolution des versements
- */
-function displayContributionsChart() {
-    const canvas = document.getElementById('contributions-chart');
-    if (!canvas) return;
-
-    // Regrouper par mois sur les 12 derniers mois
-    const now = new Date();
-    const monthlyData = [];
-    
-    for (let i = 11; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const month = date.getMonth() + 1;
-        const year = date.getFullYear();
-        
-        const monthContributions = contributions.filter(c => {
-            const cDate = new Date(c.date);
-            return cDate.getMonth() + 1 === month && cDate.getFullYear() === year;
-        });
-        
-        const monthExpenses = expenses.filter(e => {
-            const eDate = new Date(e.date);
-            return eDate.getMonth() + 1 === month && eDate.getFullYear() === year;
-        });
-        
-        const p1Contributions = monthContributions
-            .filter(c => c.parent === settings.parent1_name)
-            .reduce((sum, c) => sum + c.montant, 0);
-        
-        const p2Contributions = monthContributions
-            .filter(c => c.parent === settings.parent2_name)
-            .reduce((sum, c) => sum + c.montant, 0);
-        
-        const totalExpenses = monthExpenses.reduce((sum, e) => sum + e.montant, 0);
-        
-        monthlyData.push({
-            label: date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
-            p1: p1Contributions,
-            p2: p2Contributions,
-            total: p1Contributions + p2Contributions,
-            expenses: totalExpenses
-        });
-    }
-
-    // Détruire le graphique existant
-    if (window.contributionsChart) {
-        window.contributionsChart.destroy();
-    }
-
-    // Créer le nouveau graphique
-    const ctx = canvas.getContext('2d');
-    window.contributionsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: monthlyData.map(d => d.label),
-            datasets: [
-                {
-                    label: `Versements ${settings.parent1_name}`,
-                    data: monthlyData.map(d => d.p1),
-                    backgroundColor: 'rgba(102, 126, 234, 0.7)',
-                    borderColor: 'rgba(102, 126, 234, 1)',
-                    borderWidth: 2
-                },
-                {
-                    label: `Versements ${settings.parent2_name}`,
-                    data: monthlyData.map(d => d.p2),
-                    backgroundColor: 'rgba(118, 75, 162, 0.7)',
-                    borderColor: 'rgba(118, 75, 162, 1)',
-                    borderWidth: 2
-                },
-                {
-                    label: 'Dépenses réelles',
-                    data: monthlyData.map(d => d.expenses),
-                    type: 'line',
-                    borderColor: 'rgba(220, 53, 69, 1)',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
-                },
-                title: {
-                    display: true,
-                    text: 'Évolution des versements vs dépenses (12 derniers mois)',
-                    font: {
-                        size: 16
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} ${settings.currency_symbol}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value + ' ' + settings.currency_symbol;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-// ==========================================
-// INITIALISATION DU MODULE VERSEMENTS
-// ==========================================
-
-/**
- * Initialiser le module versements
- * À appeler après le chargement initial de l'app
- */
-async function initContributionsModule() {
-    console.log('🚀 Initialisation du module versements...');
-    
-    // Charger les contributions
-    await loadContributions();
-    
-    // Mettre à jour les filtres
-    updateContributionsFilters();
-    
-    // Afficher si on est dans l'onglet versements
-    if (document.getElementById('tab-versements')?.classList.contains('active')) {
-        displayContributions();
-    }
-    
-    console.log('✅ Module versements initialisé');
-}
-
-// ==========================================
-// EXPORTS (si besoin)
-// ==========================================
-
-// Ces fonctions sont ajoutées au scope global et seront disponibles partout
-console.log('📦 Module versements chargé');
+    </script>
 
     <!-- Modale d'aide -->
     <div id="help-modal" class="modal" style="display: none;">
@@ -10588,6 +9843,7 @@ console.log('📦 Module versements chargé');
                 }
             }
         }
+            .stat-card{background:white;border-radius:12px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,0.1)}
     </style>
 </body>
 </html>
