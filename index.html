@@ -198,6 +198,10 @@
 
         .expense-list {
             margin-top: 30px;
+            max-height: 600px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 4px;
         }
 
         .expense-item {
@@ -597,6 +601,11 @@
                 justify-content: center;
             }
             
+            /* Liste des dépenses avec hauteur limitée sur mobile */
+            .expense-list {
+                max-height: 400px;
+            }
+            
             /* Optimisation modale budget sur mobile */
             #add-budget-item-modal .modal-content {
                 padding: 20px;
@@ -623,6 +632,42 @@
             #add-budget-item-modal form > div[style*="grid"] {
                 grid-template-columns: 1fr !important;
                 gap: 10px !important;
+            }
+            
+            /* Optimisation modale filtres sur mobile */
+            #filter-modal .modal-content {
+                padding: 15px;
+                max-height: 90vh;
+                width: 95%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            #filter-modal h2 {
+                font-size: 1.2em;
+                margin-bottom: 15px;
+            }
+            
+            #filter-modal .form-group label {
+                font-size: 0.85em;
+                margin-bottom: 5px;
+            }
+            
+            #filter-modal input,
+            #filter-modal select {
+                font-size: 16px; /* Évite le zoom automatique sur iOS */
+                padding: 8px !important;
+            }
+            
+            /* Force la grille de filtres en colonne unique sur mobile */
+            #filter-modal div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            
+            /* Boutons d'action en pleine largeur */
+            #filter-modal div[style*="display: flex"] button {
+                min-width: 100px !important;
             }
         }
 
@@ -3823,8 +3868,12 @@
                 showNotification('Dépense confirmée et ajoutée !', 'success');
             }
             
-            // Marquer comme confirmé ou supprimer selon les préférences
-            budgetItems = budgetItems.filter(i => i.id !== id);
+            // Marquer comme confirmé (ne pas supprimer)
+            const itemToUpdate = budgetItems.find(i => i.id === id);
+            if (itemToUpdate) {
+                itemToUpdate.confirmed = true;
+                itemToUpdate.confirmed_date = new Date().toISOString();
+            }
             await saveBudgetItemsToSupabase();
             
             // Recharger l'affichage
@@ -7326,19 +7375,31 @@
                     dateDisplay = `📅 Chaque ${days[item.weekday]}`;
                 }
                 
+                // Badge de confirmation
+                const confirmedBadge = item.confirmed ? 
+                    `<span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.7em;">✅ Confirmée</span>` : '';
+                
+                // Style différent si confirmée
+                const bgColor = item.confirmed ? 
+                    'background: linear-gradient(135deg, #d4edda 0%, #f8f9fa 100%);' : 
+                    'background: linear-gradient(135deg, #e7f3ff 0%, #f8f9fa 100%);';
+                const borderColor = item.confirmed ? '#28a745' : '#667eea';
+                
                 html += `
-                    <div style="background: linear-gradient(135deg, #e7f3ff 0%, #f8f9fa 100%); padding: 15px; border-radius: 10px; border-left: 4px solid #667eea;">
+                    <div style="${bgColor} padding: 15px; border-radius: 10px; border-left: 4px solid ${borderColor};">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                             <div style="flex: 1;">
                                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
                                     <div style="font-weight: bold; color: #333; font-size: 1.1em;">${item.description}</div>
                                     <span style="background: #667eea; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.7em;">${item.frequency}</span>
+                                    ${confirmedBadge}
                                 </div>
                                 <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">${dateDisplay}</div>
                                 <div style="font-size: 0.85em; color: #666;">📂 ${item.type} | 🏷️ ${item.category} | 👤 ${item.payeur}</div>
+                                ${item.confirmed ? `<div style="font-size: 0.8em; color: #28a745; margin-top: 5px;">✅ Confirmée le ${new Date(item.confirmed_date).toLocaleDateString()}</div>` : ''}
                             </div>
                             <div style="text-align: right; margin-left: 20px;">
-                                <div style="font-size: 1.4em; font-weight: bold; color: #667eea; margin-bottom: 5px;">${item.montant.toFixed(2)} ${settings.currency_symbol}</div>
+                                <div style="font-size: 1.4em; font-weight: bold; color: ${item.confirmed ? '#28a745' : '#667eea'}; margin-bottom: 5px;">${item.montant.toFixed(2)} ${settings.currency_symbol}</div>
                                 <div style="font-size: 0.8em; color: #666;">
                                     ${settings.parent1_name}: ${parent1Amount.toFixed(2)} ${settings.currency_symbol}<br>
                                     ${settings.parent2_name}: ${parent2Amount.toFixed(2)} ${settings.currency_symbol}
@@ -8819,6 +8880,7 @@
             /* PARTIE 5 : Conteneurs */
             .container {
                 padding: 10px;
+                padding-bottom: 40px;
             }
             
             .header, .card, .section, .settings-section {
