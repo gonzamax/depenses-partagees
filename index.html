@@ -550,29 +550,6 @@
             border-left-color: #999;
         }
 
-        /* Bouton d'action flottant (FAB) pour mobile */
-        .fab-button {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            font-size: 2em;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6);
-            cursor: pointer;
-            z-index: 999;
-            transition: all 0.3s;
-        }
-
-        .fab-button:active {
-            transform: scale(0.95);
-        }
-
         .help-button {
             position: fixed;
             bottom: 20px;
@@ -628,11 +605,6 @@
                 max-width: 100% !important;
             }
             
-            .fab-button {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
             
             /* Liste des dépenses avec hauteur limitée sur mobile */
             .expense-list {
@@ -1229,15 +1201,6 @@
                 -moz-box-sizing: border-box;
                 box-sizing: border-box;
             }
-
-            /* Ajuster le bouton FAB pour qu'il ne gêne pas */
-            .fab-button {
-                bottom: 15px;
-                right: 15px;
-                width: 56px;
-                height: 56px;
-                font-size: 1.8em;
-            }
         }
 
         .settings-section {
@@ -1475,7 +1438,6 @@
     <!-- Application principale -->
     <div id="main-app" class="container" style="display: none;">
         <!-- Bouton flottant pour accès rapide au formulaire (mobile) -->
-        <button class="fab-button" id="fab-add-expense" title="Ajouter une dépense">➕</button>
         
         <!-- Bouton flottant pour l'aide -->
         <button class="help-button" id="help-button" onclick="openHelpModal()" title="Aide">❓</button>
@@ -6105,16 +6067,6 @@
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById('tab-' + tabName).classList.add('active');
 
-            // Cacher le FAB sur l'onglet "Ajouter"
-            const fabButton = document.getElementById('fab-add-expense');
-            if (fabButton) {
-                if (tabName === 'ajouter') {
-                    fabButton.style.display = 'none';
-                } else {
-                    fabButton.style.display = 'flex';
-                }
-            }
-
             if (tabName === 'liste') {
                 displayExpenses();
             } else if (tabName === 'statistiques') {
@@ -8490,25 +8442,6 @@
                 });
             }
             
-            // Gérer le bouton FAB (Floating Action Button) sur mobile
-            const fabButton = document.getElementById('fab-add-expense');
-            if (fabButton) {
-                fabButton.addEventListener('click', () => {
-                    // Basculer vers l'onglet "Ajouter"
-                    switchTab('ajouter');
-                    
-                    // Faire défiler vers le haut
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    
-                    // Focus sur le premier champ
-                    setTimeout(() => {
-                        const dateInput = document.getElementById('date');
-                        if (dateInput) {
-                            dateInput.focus();
-                        }
-                    }, 300);
-                });
-            }
             
             // Attacher les event listeners aux onglets
             document.querySelectorAll('.tab').forEach(tab => {
@@ -9404,14 +9337,6 @@
             
             .notification-item-content {
                 font-size: 0.9em;
-            }
-            
-            /* PARTIE 11 : FAB positionnement */
-            .fab-button {
-                width: 56px;
-                height: 56px;
-                bottom: 20px;
-                right: 20px;
             }
             
             /* PARTIE 12 : Corrections spécifiques iOS/Safari */
