@@ -1449,7 +1449,13 @@
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <span class="sync-status sync-online" id="sync-status">🟢 Connecté</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="notification-btn" onclick="switchTab('parametres')" title="Paramètres">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6m5.656-14.142l-4.243 4.243m-2.828 2.828l-4.243 4.243M23 12h-6m-6 0H1m14.142-5.656l-4.243 4.243m-2.828 2.828l-4.243 4.243"></path>
+                        </svg>
+                    </button>
                     <button class="notification-btn" onclick="showNotificationsModal()" title="Notifications">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -1468,7 +1474,6 @@
             <button class="tab" data-tab="recurrentes">🔄 Récurrentes</button>
             <button class="tab" data-tab="versements">💸 Versements</button>
             <button class="tab" data-tab="statistiques">📊 Stats</button>
-            <button class="tab" data-tab="parametres">⚙️ Paramètres</button>
         </div>
 
         <!-- Onglet Ajouter -->
