@@ -674,6 +674,46 @@
             #filter-modal div[style*="display: flex"] button {
                 min-width: 100px !important;
             }
+            
+            /* Optimisation modale dépense récurrente sur mobile */
+            #add-recurrent-modal .modal-content {
+                padding: 15px;
+                max-height: 95vh;
+                width: 95%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            #add-recurrent-modal h2 {
+                font-size: 1.2em;
+                margin-bottom: 15px;
+            }
+            
+            #add-recurrent-modal .form-group {
+                margin-bottom: 15px;
+            }
+            
+            #add-recurrent-modal .form-group label {
+                font-size: 0.9em;
+                margin-bottom: 5px;
+            }
+            
+            #add-recurrent-modal input,
+            #add-recurrent-modal select,
+            #add-recurrent-modal textarea {
+                font-size: 16px !important; /* Évite le zoom automatique sur iOS */
+                padding: 10px !important;
+            }
+            
+            /* Boutons fichiers empilés sur mobile */
+            #add-recurrent-modal div[style*="display: flex"][style*="gap: 10px"] {
+                flex-direction: column !important;
+            }
+            
+            #add-recurrent-modal div[style*="display: flex"][style*="gap: 10px"] button {
+                width: 100% !important;
+                min-width: auto !important;
+            }
         }
 
         .welcome-screen {
@@ -1601,6 +1641,114 @@
             </div>
         </div>
 
+        <!-- Modale d'ajout de dépense récurrente -->
+        <div id="add-recurrent-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+                <span class="close" onclick="closeAddRecurrentModal()">&times;</span>
+                <h2 style="color: #667eea; margin-bottom: 20px;">🔄 Ajouter une dépense récurrente</h2>
+                
+                <form id="recurrent-form" onsubmit="addRecurrentExpense(event)">
+                    <div class="form-group">
+                        <label for="rec-description">📝 Description</label>
+                        <input type="text" id="rec-description" placeholder="Ex: Loyer mensuel" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rec-montant">💶 Montant (€)</label>
+                        <input type="number" id="rec-montant" step="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rec-type">📂 Type de dépense</label>
+                        <select id="rec-type" onchange="updateRecurrentCategories()" required>
+                            <option value="">Sélectionner un type</option>
+                            <option value="Enfants">👶 Enfants</option>
+                            <option value="Immobilier">🏠 Immobilier</option>
+                            <option value="Autre">📦 Autre</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rec-categorie">🏷️ Catégorie</label>
+                        <select id="rec-categorie" required>
+                            <option value="">Sélectionner d'abord un type</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rec-payeur">👤 Payé par</label>
+                        <select id="rec-payeur" required></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rec-frequency">⏰ Fréquence</label>
+                        <select id="rec-frequency" required onchange="updateRecurrenceFields()">
+                            <option value="Hebdomadaire">📅 Hebdomadaire</option>
+                            <option value="Mensuel" selected>📅 Mensuel</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="rec-day-group">
+                        <label for="rec-day">📆 Jour du mois</label>
+                        <input type="number" id="rec-day" min="1" max="31" value="1" required>
+                    </div>
+
+                    <div class="form-group" id="rec-weekday-group" style="display: none;">
+                        <label for="rec-weekday">📆 Jour de la semaine</label>
+                        <select id="rec-weekday">
+                            <option value="1">Lundi</option>
+                            <option value="2">Mardi</option>
+                            <option value="3">Mercredi</option>
+                            <option value="4">Jeudi</option>
+                            <option value="5">Vendredi</option>
+                            <option value="6">Samedi</option>
+                            <option value="0">Dimanche</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rec-end-date">📅 Date de fin (optionnel)</label>
+                        <input type="date" id="rec-end-date">
+                        <p style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                            Si laissé vide, la dépense continuera indéfiniment
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rec-notes">📌 Notes (optionnel)</label>
+                        <textarea id="rec-notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>📎 Justificatif (optionnel)</label>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                            <button type="button" onclick="triggerFileInput('rec-attachment', 'camera')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                                📸 Prendre photo
+                            </button>
+                            <button type="button" onclick="triggerFileInput('rec-attachment', 'gallery')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                                🖼️ Choisir photo
+                            </button>
+                            <button type="button" onclick="triggerFileInput('rec-attachment', 'file')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
+                                📄 Importer PDF
+                            </button>
+                        </div>
+                        <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
+                            ℹ️ Ce fichier sera attaché à chaque dépense créée automatiquement
+                        </p>
+                        <input type="file" id="rec-attachment-camera" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
+                        <input type="file" id="rec-attachment-gallery" accept="image/*" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
+                        <input type="file" id="rec-attachment-file" accept=".pdf,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
+                        <input type="file" id="rec-attachment" style="display: none;">
+                        <div id="rec-preview-container" style="margin-top: 10px;"></div>
+                    </div>
+
+                    <button type="submit" class="btn" style="width: 100%; padding: 12px; font-size: 1.1em;">
+                        ✅ Ajouter la dépense récurrente
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <!-- Modale de filtres -->
         <div id="filter-modal" class="modal" style="display: none;">
             <div class="modal-content" style="max-width: 800px;">
@@ -2016,108 +2164,14 @@
 
         <!-- Onglet Dépenses Récurrentes -->
         <div id="tab-recurrentes" class="tab-content">
-            <h2 style="color: #667eea; margin-bottom: 20px;">🔄 Dépenses récurrentes</h2>
-            
-            <form id="recurrent-form" onsubmit="addRecurrentExpense(event)">
-                <div class="form-group">
-                    <label for="rec-description">📝 Description</label>
-                    <input type="text" id="rec-description" placeholder="Ex: Loyer mensuel" required>
-                </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <h2 style="color: #667eea; margin: 0;">🔄 Dépenses récurrentes</h2>
+                <button class="btn" onclick="openAddRecurrentModal()" style="padding: 10px 20px;">
+                    ➕ Ajouter une dépense récurrente
+                </button>
+            </div>
 
-                <div class="form-group">
-                    <label for="rec-montant">💶 Montant (€)</label>
-                    <input type="number" id="rec-montant" step="0.01" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="rec-type">📂 Type de dépense</label>
-                    <select id="rec-type" onchange="updateRecurrentCategories()" required>
-                        <option value="">Sélectionner un type</option>
-                        <option value="Enfants">👶 Enfants</option>
-                        <option value="Immobilier">🏠 Immobilier</option>
-                        <option value="Autre">📦 Autre</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="rec-categorie">🏷️ Catégorie</label>
-                    <select id="rec-categorie" required>
-                        <option value="">Sélectionner d'abord un type</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="rec-payeur">👤 Payé par</label>
-                    <select id="rec-payeur" required></select>
-                </div>
-
-                <div class="form-group">
-                    <label for="rec-frequency">⏰ Fréquence</label>
-                    <select id="rec-frequency" required onchange="updateRecurrenceFields()">
-                        <option value="Hebdomadaire">📅 Hebdomadaire</option>
-                        <option value="Mensuel" selected>📅 Mensuel</option>
-                    </select>
-                </div>
-
-                <div class="form-group" id="rec-day-group">
-                    <label for="rec-day">📆 Jour du mois</label>
-                    <input type="number" id="rec-day" min="1" max="31" value="1" required>
-                </div>
-
-                <div class="form-group" id="rec-weekday-group" style="display: none;">
-                    <label for="rec-weekday">📆 Jour de la semaine</label>
-                    <select id="rec-weekday">
-                        <option value="1">Lundi</option>
-                        <option value="2">Mardi</option>
-                        <option value="3">Mercredi</option>
-                        <option value="4">Jeudi</option>
-                        <option value="5">Vendredi</option>
-                        <option value="6">Samedi</option>
-                        <option value="0">Dimanche</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="rec-end-date">📅 Date de fin (optionnel)</label>
-                    <input type="date" id="rec-end-date">
-                    <p style="font-size: 0.85em; color: #666; margin-top: 5px;">
-                        Si laissé vide, la dépense continuera indéfiniment
-                    </p>
-                </div>
-
-                <div class="form-group">
-                    <label for="rec-notes">📌 Notes (optionnel)</label>
-                    <textarea id="rec-notes"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>📎 Justificatif (optionnel)</label>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                        <button type="button" onclick="triggerFileInput('rec-attachment', 'camera')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
-                            📸 Prendre photo
-                        </button>
-                        <button type="button" onclick="triggerFileInput('rec-attachment', 'gallery')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
-                            🖼️ Choisir photo
-                        </button>
-                        <button type="button" onclick="triggerFileInput('rec-attachment', 'file')" class="btn btn-secondary" style="flex: 1; min-width: 140px; padding: 12px;">
-                            📄 Importer PDF
-                        </button>
-                    </div>
-                    <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
-                        ℹ️ Ce fichier sera attaché à chaque dépense créée automatiquement
-                    </p>
-                    <input type="file" id="rec-attachment-camera" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
-                    <input type="file" id="rec-attachment-gallery" accept="image/*" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
-                    <input type="file" id="rec-attachment-file" accept=".pdf,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'rec-attachment', 'rec-preview-container')">
-                    <input type="file" id="rec-attachment" style="display: none;">
-                    <div id="rec-preview-container" style="margin-top: 10px;"></div>
-                </div>
-
-                <button type="submit" class="btn">➕ Ajouter une dépense récurrente</button>
-            </form>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px 0; flex-wrap: wrap; gap: 10px;">
-                <h3 style="color: #667eea; margin: 0;">📋 Dépenses récurrentes</h3>
+            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 15px;">
                 <label class="custom-checkbox-label">
                     <input type="checkbox" id="show-inactive-recurrents" onchange="displayRecurrentExpenses()">
                     <span>Afficher les désactivées</span>
@@ -4151,6 +4205,7 @@
                 document.getElementById('recurrent-form').reset();
                 clearRecurrentAttachment();
                 updateRecurrenceFields(); // Remettre le formulaire dans l'état par défaut
+                closeAddRecurrentModal(); // Fermer la modale
                 
                 await loadFromSupabase();
                 displayRecurrentExpenses();
@@ -8546,6 +8601,38 @@
         function closeAddContributionModal() {
             document.getElementById('add-contribution-modal').style.display = 'none';
             document.getElementById('contribution-form').reset();
+        }
+
+        function openAddRecurrentModal() {
+            document.getElementById('add-recurrent-modal').style.display = 'flex';
+            
+            // Initialiser le select payeur avec les noms
+            const payeurSelect = document.getElementById('rec-payeur');
+            payeurSelect.innerHTML = `
+                <option value="${settings.parent1_name || 'Parent 1'}">${settings.parent1_name || 'Parent 1'}</option>
+                <option value="${settings.parent2_name || 'Parent 2'}">${settings.parent2_name || 'Parent 2'}</option>
+            `;
+            
+            // Charger les types et catégories
+            updateRecurrentTypeSelect();
+        }
+
+        function closeAddRecurrentModal() {
+            document.getElementById('add-recurrent-modal').style.display = 'none';
+            document.getElementById('recurrent-form').reset();
+            clearRecurrentAttachment();
+            updateRecurrenceFields();
+        }
+
+        function updateRecurrentTypeSelect() {
+            const typeSelect = document.getElementById('rec-type');
+            const types = Object.keys(CATEGORIES);
+            
+            typeSelect.innerHTML = '<option value="">Sélectionner un type</option>';
+            types.forEach(type => {
+                const emoji = type === 'Enfants' ? '👶' : type === 'Immobilier' ? '🏠' : type === 'Véhicules' ? '🚗' : '📦';
+                typeSelect.innerHTML += `<option value="${type}">${emoji} ${type}</option>`;
+            });
         }
 
         async function addContribution(event) {
