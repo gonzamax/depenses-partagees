@@ -1755,62 +1755,81 @@
                 <span class="close" onclick="closeFilterModal()">&times;</span>
                 <h2 style="color: #667eea; margin-bottom: 20px;">🔍 Filtres de recherche</h2>
                 
+                <!-- Filtres rapides période -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <label style="font-weight: 600; color: #333; margin-bottom: 10px; display: block;">📅 Période rapide</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('today')" style="padding: 8px 15px; font-size: 0.9em;">
+                            Aujourd'hui
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('week')" style="padding: 8px 15px; font-size: 0.9em;">
+                            Cette semaine
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('month')" style="padding: 8px 15px; font-size: 0.9em;">
+                            Ce mois
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('lastMonth')" style="padding: 8px 15px; font-size: 0.9em;">
+                            Mois dernier
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('year')" style="padding: 8px 15px; font-size: 0.9em;">
+                            Cette année
+                        </button>
+                    </div>
+                </div>
+                
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-search" style="font-size: 0.9em;">Recherche (description)</label>
+                        <label for="filter-search" style="font-size: 0.9em;">🔍 Recherche</label>
                         <input type="text" id="filter-search" placeholder="Rechercher..." onkeyup="displayExpenses()" style="padding: 10px;">
                     </div>
                     
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-type" style="font-size: 0.9em;">Type</label>
-                        <select id="filter-type" onchange="updateFilterCategories(); displayExpenses();" style="padding: 10px;">
-                            <option value="">Tous les types</option>
-                            <option value="Enfants">👶 Enfants</option>
-                            <option value="Immobilier">🏠 Immobilier</option>
-                            <option value="Autre">📦 Autre</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-category" style="font-size: 0.9em;">Catégorie</label>
-                        <select id="filter-category" onchange="displayExpenses()" style="padding: 10px;">
-                            <option value="">Toutes les catégories</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-payeur" style="font-size: 0.9em;">Payeur</label>
-                        <select id="filter-payeur" onchange="displayExpenses()" style="padding: 10px;">
-                            <option value="">Tous les payeurs</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-month" style="font-size: 0.9em;">Mois</label>
+                        <label for="filter-month" style="font-size: 0.9em;">📅 Mois</label>
                         <input type="month" id="filter-month" onchange="displayExpenses()" style="padding: 10px;">
                     </div>
                     
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-min-amount" style="font-size: 0.9em;">Montant min (€)</label>
+                        <label for="filter-type" style="font-size: 0.9em;">📂 Type</label>
+                        <select id="filter-type" onchange="updateFilterCategories(); displayExpenses();" style="padding: 10px;">
+                            <option value="">Tous les types</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="filter-category" style="font-size: 0.9em;">🏷️ Catégorie</label>
+                        <select id="filter-category" onchange="displayExpenses()" style="padding: 10px;">
+                            <option value="">Toutes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="filter-payeur" style="font-size: 0.9em;">👤 Payeur</label>
+                        <select id="filter-payeur" onchange="displayExpenses()" style="padding: 10px;">
+                            <option value="">Tous</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="filter-has-attachment" style="font-size: 0.9em;">📎 Justificatif</label>
+                        <select id="filter-has-attachment" onchange="displayExpenses()" style="padding: 10px;">
+                            <option value="">Tous</option>
+                            <option value="yes">Avec</option>
+                            <option value="no">Sans</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="filter-min-amount" style="font-size: 0.9em;">💶 Montant min</label>
                         <input type="number" id="filter-min-amount" placeholder="0" step="0.01" oninput="displayExpenses()" style="padding: 10px;">
                     </div>
                     
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-max-amount" style="font-size: 0.9em;">Montant max (€)</label>
+                        <label for="filter-max-amount" style="font-size: 0.9em;">💶 Montant max</label>
                         <input type="number" id="filter-max-amount" placeholder="∞" step="0.01" oninput="displayExpenses()" style="padding: 10px;">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-has-attachment" style="font-size: 0.9em;">Justificatif</label>
-                        <select id="filter-has-attachment" onchange="displayExpenses()" style="padding: 10px;">
-                            <option value="">Tous</option>
-                            <option value="yes">Avec justificatif</option>
-                            <option value="no">Sans justificatif</option>
-                        </select>
                     </div>
                 </div>
                 
-                <div id="filter-results" style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px; color: #666; font-size: 0.95em;"></div>
+                <div id="filter-results" style="padding: 15px; background: #e7f3ff; border-radius: 8px; margin-bottom: 20px; color: #2196F3; font-size: 0.95em; font-weight: 600;"></div>
                 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn btn-secondary" onclick="resetFilters()" style="flex: 1; min-width: 150px;">
@@ -6175,6 +6194,36 @@
             const maxAmountFilter = document.getElementById('filter-max-amount').value;
             const attachmentFilter = document.getElementById('filter-has-attachment').value;
 
+            // Filtre rapide période
+            if (window.quickFilterPeriod) {
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                
+                if (window.quickFilterPeriod === 'today') {
+                    filtered = filtered.filter(e => {
+                        const expenseDate = new Date(e.date);
+                        expenseDate.setHours(0, 0, 0, 0);
+                        return expenseDate.getTime() === now.getTime();
+                    });
+                } else if (window.quickFilterPeriod === 'week') {
+                    const weekStart = new Date(now);
+                    weekStart.setDate(now.getDate() - now.getDay() + 1); // Lundi
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6); // Dimanche
+                    
+                    filtered = filtered.filter(e => {
+                        const expenseDate = new Date(e.date);
+                        return expenseDate >= weekStart && expenseDate <= weekEnd;
+                    });
+                } else if (window.quickFilterPeriod === 'year') {
+                    const currentYear = now.getFullYear();
+                    filtered = filtered.filter(e => {
+                        const expenseYear = new Date(e.date).getFullYear();
+                        return expenseYear === currentYear;
+                    });
+                }
+            }
+
             // Appliquer les filtres
             if (searchFilter) {
                 filtered = filtered.filter(e => 
@@ -6302,15 +6351,88 @@
             document.getElementById('filter-min-amount').value = '';
             document.getElementById('filter-max-amount').value = '';
             document.getElementById('filter-has-attachment').value = '';
+            window.quickFilterPeriod = null;
+            updateFilterCategories();
             displayExpenses();
         }
 
         function openFilterModal() {
-            document.getElementById('filter-modal').style.display = 'block';
+            // Initialiser le mois courant si vide
+            const monthInput = document.getElementById('filter-month');
+            if (!monthInput.value) {
+                const now = new Date();
+                monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            }
+            
+            // Initialiser les types
+            const typeSelect = document.getElementById('filter-type');
+            if (typeSelect.options.length === 1) { // Seulement "Tous les types"
+                const types = Object.keys(CATEGORIES);
+                types.forEach(type => {
+                    const emoji = type === 'Enfants' ? '👶' : type === 'Immobilier' ? '🏠' : type === 'Véhicules' ? '🚗' : '📦';
+                    typeSelect.innerHTML += `<option value="${type}">${emoji} ${type}</option>`;
+                });
+            }
+            
+            // Initialiser les payeurs
+            const payeurSelect = document.getElementById('filter-payeur');
+            if (payeurSelect.options.length === 1) { // Seulement "Tous"
+                payeurSelect.innerHTML += `
+                    <option value="${settings.parent1_name || 'Parent 1'}">${settings.parent1_name || 'Parent 1'}</option>
+                    <option value="${settings.parent2_name || 'Parent 2'}">${settings.parent2_name || 'Parent 2'}</option>
+                `;
+            }
+            
+            // Mettre à jour les catégories
+            updateFilterCategories();
+            
+            document.getElementById('filter-modal').style.display = 'flex';
         }
 
         function closeFilterModal() {
             document.getElementById('filter-modal').style.display = 'none';
+        }
+
+        function setQuickFilter(period) {
+            const now = new Date();
+            const monthInput = document.getElementById('filter-month');
+            
+            // Réinitialiser tous les filtres d'abord
+            document.getElementById('filter-search').value = '';
+            document.getElementById('filter-type').value = '';
+            document.getElementById('filter-category').value = '';
+            document.getElementById('filter-payeur').value = '';
+            document.getElementById('filter-min-amount').value = '';
+            document.getElementById('filter-max-amount').value = '';
+            document.getElementById('filter-has-attachment').value = '';
+            
+            switch(period) {
+                case 'today':
+                    // Pas de filtre mois, on filtre manuellement dans displayExpenses
+                    monthInput.value = '';
+                    window.quickFilterPeriod = 'today';
+                    break;
+                case 'week':
+                    monthInput.value = '';
+                    window.quickFilterPeriod = 'week';
+                    break;
+                case 'month':
+                    monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    window.quickFilterPeriod = null;
+                    break;
+                case 'lastMonth':
+                    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    monthInput.value = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+                    window.quickFilterPeriod = null;
+                    break;
+                case 'year':
+                    monthInput.value = '';
+                    window.quickFilterPeriod = 'year';
+                    break;
+            }
+            
+            updateFilterCategories();
+            displayExpenses();
         }
 
         // Mettre à jour le select des catégories en fonction du type sélectionné
