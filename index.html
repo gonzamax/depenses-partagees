@@ -1119,6 +1119,16 @@
                 padding: 15px;
             }
 
+            /* Filtres actifs responsive */
+            #active-filters-display {
+                font-size: 0.8em;
+            }
+            
+            #active-filters-display span {
+                font-size: 0.75em !important;
+                padding: 4px 8px !important;
+            }
+
             /* Welcome screen mobile */
             .welcome-screen {
                 padding: 25px 15px;
@@ -1592,8 +1602,8 @@
         <div id="tab-liste" class="tab-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                 <h2 style="color: #667eea; margin: 0;">📋 Liste des dépenses</h2>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <div id="filter-results-compact" style="color: #666; font-size: 0.9em;"></div>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <div id="active-filters-display" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;"></div>
                     <button class="btn" onclick="openFilterModal()" style="padding: 10px 20px;">
                         🔍 Filtrer
                     </button>
@@ -6274,13 +6284,20 @@
             // Mettre à jour les deux zones de résultats
             document.getElementById('filter-results').innerHTML = resultsText;
             
-            // Version compacte pour l'affichage hors modale
-            const hasFilters = searchFilter || typeFilter || categoryFilter || payeurFilter || monthFilter || minAmountFilter || maxAmountFilter || attachmentFilter;
-            if (hasFilters) {
-                document.getElementById('filter-results-compact').innerHTML = `<span style="background: #667eea; color: white; padding: 5px 10px; border-radius: 12px; font-size: 0.85em;">${filtered.length}/${expenses.length}</span>`;
-            } else {
-                document.getElementById('filter-results-compact').innerHTML = '';
-            }
+            // Affichage détaillé des filtres actifs
+            updateActiveFiltersDisplay({
+                search: searchFilter,
+                type: typeFilter,
+                category: categoryFilter,
+                payeur: payeurFilter,
+                month: monthFilter,
+                minAmount: minAmountFilter,
+                maxAmount: maxAmountFilter,
+                attachment: attachmentFilter,
+                quickPeriod: window.quickFilterPeriod,
+                count: filtered.length,
+                total: expenses.length
+            });
 
             if (filtered.length === 0) {
                 list.innerHTML = `
@@ -6354,6 +6371,78 @@
             window.quickFilterPeriod = null;
             updateFilterCategories();
             displayExpenses();
+        }
+
+        function updateActiveFiltersDisplay(filters) {
+            const container = document.getElementById('active-filters-display');
+            const badges = [];
+            
+            // Badge période rapide
+            if (filters.quickPeriod) {
+                const periodNames = {
+                    'today': "Aujourd'hui",
+                    'week': 'Cette semaine',
+                    'year': 'Cette année'
+                };
+                badges.push(`📅 ${periodNames[filters.quickPeriod]}`);
+            }
+            
+            // Badge mois
+            if (filters.month) {
+                const [year, month] = filters.month.split('-');
+                const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+                badges.push(`📅 ${monthNames[parseInt(month) - 1]} ${year}`);
+            }
+            
+            // Badge recherche
+            if (filters.search) {
+                badges.push(`🔍 "${filters.search}"`);
+            }
+            
+            // Badge type
+            if (filters.type) {
+                const emoji = filters.type === 'Enfants' ? '👶' : filters.type === 'Immobilier' ? '🏠' : filters.type === 'Véhicules' ? '🚗' : '📦';
+                badges.push(`${emoji} ${filters.type}`);
+            }
+            
+            // Badge catégorie
+            if (filters.category) {
+                badges.push(`🏷️ ${filters.category}`);
+            }
+            
+            // Badge payeur
+            if (filters.payeur) {
+                badges.push(`👤 ${filters.payeur}`);
+            }
+            
+            // Badge montant
+            if (filters.minAmount && filters.maxAmount) {
+                badges.push(`💶 ${filters.minAmount}€ - ${filters.maxAmount}€`);
+            } else if (filters.minAmount) {
+                badges.push(`💶 ≥ ${filters.minAmount}€`);
+            } else if (filters.maxAmount) {
+                badges.push(`💶 ≤ ${filters.maxAmount}€`);
+            }
+            
+            // Badge justificatif
+            if (filters.attachment === 'yes') {
+                badges.push('📎 Avec justificatif');
+            } else if (filters.attachment === 'no') {
+                badges.push('📎 Sans justificatif');
+            }
+            
+            // Affichage
+            if (badges.length === 0) {
+                container.innerHTML = '<span style="color: #999; font-size: 0.9em; font-style: italic;">Aucun filtre actif</span>';
+            } else {
+                const badgesHTML = badges.map(badge => 
+                    `<span style="background: #667eea; color: white; padding: 5px 12px; border-radius: 12px; font-size: 0.85em; white-space: nowrap;">${badge}</span>`
+                ).join('');
+                
+                const countBadge = `<span style="background: #28a745; color: white; padding: 5px 12px; border-radius: 12px; font-size: 0.85em; font-weight: bold;">${filters.count}/${filters.total}</span>`;
+                
+                container.innerHTML = badgesHTML + countBadge;
+            }
         }
 
         function openFilterModal() {
