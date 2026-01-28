@@ -8187,15 +8187,17 @@
             const budgetTotal = calculateMonthlyBudgetItems(month, year);
             const previsionnel = recurrentTotal + budgetTotal;
             
-            // Récupérer les dépenses récurrentes prévues ce mois
-            const recurrentItems = recurrentExpenses.filter(r => {
-                if (!r.active) return false;
-                if (r.frequency === 'Mensuel') {
-                    return r.day_of_month;
-                } else if (r.frequency === 'Hebdomadaire') {
-                    return true;
-                }
-                return false;
+            // Récupérer les dépenses récurrentes prévues ce mois (1 seule occurrence par récurrente)
+            const recurrentItems = recurrentExpenses.filter(r => r.active).map(item => {
+                return {
+                    type: 'récurrente',
+                    description: item.description,
+                    montant: item.montant,
+                    frequency: item.frequency,
+                    categorie: item.categorie,
+                    previsionnel: true,
+                    id: item.id
+                };
             });
             
             // Récupérer les dépenses prévisionnelles de ce mois
@@ -8209,13 +8211,40 @@
                     return true;
                 }
                 return false;
+            }).map(item => {
+                let montant = item.montant;
+                // Pour les hebdomadaires, multiplier par 4 pour avoir le total mensuel
+                if (item.recurrence_type === 'Hebdomadaire') {
+                    montant = montant * 4;
+                }
+                return {
+                    type: 'prévisionnelle',
+                    description: item.description,
+                    montant: montant,
+                    categorie: item.categorie,
+                    previsionnel: true,
+                    confirmed: item.confirmed,
+                    id: item.id
+                };
             });
             
             // Récupérer les dépenses réelles du mois
             const actualExpenses = expenses.filter(e => {
                 const date = new Date(e.date);
                 return date.getFullYear() === year && (date.getMonth() + 1) === month;
+            }).map(expense => {
+                return {
+                    type: 'réelle',
+                    description: expense.description,
+                    montant: expense.montant,
+                    categorie: expense.categorie,
+                    previsionnel: false,
+                    date: expense.date,
+                    payeur: expense.payeur,
+                    id: expense.id
+                };
             });
+            
             const reel = actualExpenses.reduce((sum, e) => sum + e.montant, 0);
             
             // Calculer écart
@@ -8255,56 +8284,24 @@
             // Grouper par catégorie
             const categories = {};
             
-            // Ajouter les récurrentes au prévisionnel
-            recurrentItems.forEach(item => {
+            // Ajouter toutes les dépenses prévisionnelles
+            [...recurrentItems, ...budgetItemsMonth].forEach(item => {
                 const cat = item.categorie || 'Autre';
                 if (!categories[cat]) {
-                    categories[cat] = { previsionnel: 0, reel: 0, items: [] };
+                    categories[cat] = { previsionnel: 0, reel: 0, previsionnelItems: [], reelItems: [] };
                 }
                 categories[cat].previsionnel += item.montant;
-                categories[cat].items.push({
-                    type: 'récurrente',
-                    description: item.description,
-                    montant: item.montant,
-                    previsionnel: true
-                });
-            });
-            
-            // Ajouter les prévisionnelles
-            budgetItemsMonth.forEach(item => {
-                const cat = item.categorie || 'Autre';
-                if (!categories[cat]) {
-                    categories[cat] = { previsionnel: 0, reel: 0, items: [] };
-                }
-                let montant = item.montant;
-                if (item.recurrence_type === 'Hebdomadaire') {
-                    montant = montant * 4;
-                }
-                categories[cat].previsionnel += montant;
-                categories[cat].items.push({
-                    type: 'prévisionnelle',
-                    description: item.description,
-                    montant: montant,
-                    previsionnel: true,
-                    confirmed: item.confirmed
-                });
+                categories[cat].previsionnelItems.push(item);
             });
             
             // Ajouter les dépenses réelles
             actualExpenses.forEach(expense => {
                 const cat = expense.categorie || 'Autre';
                 if (!categories[cat]) {
-                    categories[cat] = { previsionnel: 0, reel: 0, items: [] };
+                    categories[cat] = { previsionnel: 0, reel: 0, previsionnelItems: [], reelItems: [] };
                 }
                 categories[cat].reel += expense.montant;
-                categories[cat].items.push({
-                    type: 'réelle',
-                    description: expense.description,
-                    montant: expense.montant,
-                    previsionnel: false,
-                    date: expense.date,
-                    payeur: expense.payeur
-                });
+                categories[cat].reelItems.push(expense);
             });
             
             // Afficher les détails par catégorie
@@ -8317,34 +8314,44 @@
                 const ecartPercentCat = data.previsionnel > 0 ? ((ecartCat / data.previsionnel) * 100) : 0;
                 
                 // Séparer items prévisionnel et réel
-                const previsionnelItems = data.items.filter(i => i.previsionnel);
-                const reelItems = data.items.filter(i => !i.previsionnel);
+                const previsionnelItems = data.previsionnelItems;
+                const reelItems = data.reelItems;
                 
-                // Fonction de matching : cherche si une dépense réelle correspond à une prévision
+                // Fonction de matching améliorée : descriptions doivent correspondre précisément
                 function findMatch(prevItem, reelList) {
-                    // Critères de matching :
-                    // 1. Description similaire (même début ou mots-clés)
-                    // 2. Montant proche (±20%)
-                    
-                    const prevDesc = prevItem.description.toLowerCase();
+                    const prevDesc = prevItem.description.toLowerCase().trim();
                     const prevAmount = prevItem.montant;
                     
                     return reelList.findIndex(realItem => {
-                        const realDesc = realItem.description.toLowerCase();
+                        const realDesc = realItem.description.toLowerCase().trim();
                         const realAmount = realItem.montant;
                         
-                        // Check si descriptions similaires
-                        const wordsMatch = prevDesc.split(' ').some(word => 
-                            word.length > 3 && realDesc.includes(word)
-                        ) || realDesc.split(' ').some(word => 
-                            word.length > 3 && prevDesc.includes(word)
-                        );
+                        // Extraire les mots significatifs (>3 lettres, pas de mots vides)
+                        const stopWords = ['pour', 'avec', 'sans', 'dans', 'sur', 'par', 'chez', 'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de'];
+                        const prevWords = prevDesc.split(/\s+/).filter(w => w.length > 3 && !stopWords.includes(w));
+                        const realWords = realDesc.split(/\s+/).filter(w => w.length > 3 && !stopWords.includes(w));
                         
-                        // Check si montants proches (±20%)
+                        // Score de matching basé sur :
+                        // 1. Mots en commun (poids fort)
+                        const commonWords = prevWords.filter(w => realWords.includes(w)).length;
+                        const totalWords = Math.max(prevWords.length, realWords.length);
+                        const wordScore = totalWords > 0 ? commonWords / totalWords : 0;
+                        
+                        // 2. Début de description identique (poids fort)
+                        const startMatch = prevDesc.startsWith(realDesc.substring(0, 10)) || 
+                                          realDesc.startsWith(prevDesc.substring(0, 10));
+                        
+                        // 3. Montant proche (±15%)
                         const amountDiff = Math.abs(realAmount - prevAmount);
-                        const amountClose = amountDiff <= (prevAmount * 0.2);
+                        const amountClose = prevAmount > 0 ? (amountDiff / prevAmount) <= 0.15 : false;
                         
-                        return wordsMatch || amountClose;
+                        // Match si:
+                        // - Au moins 50% des mots en commun ET montant proche
+                        // - OU début identique ET montant proche
+                        // - OU description quasi identique (>80% mots communs)
+                        return (wordScore >= 0.5 && amountClose) || 
+                               (startMatch && amountClose) || 
+                               (wordScore >= 0.8);
                     });
                 }
                 
