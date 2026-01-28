@@ -8320,6 +8320,52 @@
                 const previsionnelItems = data.items.filter(i => i.previsionnel);
                 const reelItems = data.items.filter(i => !i.previsionnel);
                 
+                // Fonction de matching : cherche si une dépense réelle correspond à une prévision
+                function findMatch(prevItem, reelList) {
+                    // Critères de matching :
+                    // 1. Description similaire (même début ou mots-clés)
+                    // 2. Montant proche (±20%)
+                    
+                    const prevDesc = prevItem.description.toLowerCase();
+                    const prevAmount = prevItem.montant;
+                    
+                    return reelList.findIndex(realItem => {
+                        const realDesc = realItem.description.toLowerCase();
+                        const realAmount = realItem.montant;
+                        
+                        // Check si descriptions similaires
+                        const wordsMatch = prevDesc.split(' ').some(word => 
+                            word.length > 3 && realDesc.includes(word)
+                        ) || realDesc.split(' ').some(word => 
+                            word.length > 3 && prevDesc.includes(word)
+                        );
+                        
+                        // Check si montants proches (±20%)
+                        const amountDiff = Math.abs(realAmount - prevAmount);
+                        const amountClose = amountDiff <= (prevAmount * 0.2);
+                        
+                        return wordsMatch || amountClose;
+                    });
+                }
+                
+                // Créer les paires matched et non-matched
+                const matched = [];
+                const unmatchedPrev = [];
+                const unmatchedReal = [...reelItems];
+                
+                previsionnelItems.forEach(prevItem => {
+                    const matchIndex = findMatch(prevItem, unmatchedReal);
+                    if (matchIndex !== -1) {
+                        matched.push({
+                            prev: prevItem,
+                            real: unmatchedReal[matchIndex]
+                        });
+                        unmatchedReal.splice(matchIndex, 1);
+                    } else {
+                        unmatchedPrev.push(prevItem);
+                    }
+                });
+                
                 detailsHTML += `
                     <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e0e0e0;">
@@ -8334,54 +8380,125 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                            <!-- Colonne Prévisionnel -->
-                            <div>
-                                <h4 style="color: #667eea; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
-                                    📋 Prévisionnel (${previsionnelItems.length})
-                                </h4>
-                                ${previsionnelItems.length > 0 ? previsionnelItems.map(item => `
-                                    <div style="padding: 10px; margin-bottom: 8px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #667eea;">
-                                        <div style="display: flex; justify-content: space-between; align-items: start;">
-                                            <div style="flex: 1;">
-                                                <div style="font-weight: 600; color: #333; margin-bottom: 3px;">${item.description}</div>
-                                                <div style="font-size: 0.85em; color: #666;">
-                                                    ${item.type === 'récurrente' ? '🔄 Récurrente' : item.confirmed ? '✅ Confirmée' : '📝 Prévisionnelle'}
-                                                </div>
-                                            </div>
-                                            <div style="font-weight: bold; color: #667eea; white-space: nowrap; margin-left: 10px;">
-                                                ${item.montant.toFixed(2)} €
-                                            </div>
-                                        </div>
-                                    </div>
-                                `).join('') : '<div style="color: #999; font-style: italic; padding: 20px; text-align: center;">Aucune dépense prévue</div>'}
-                            </div>
-                            
-                            <!-- Colonne Réel -->
-                            <div>
-                                <h4 style="color: #28a745; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
-                                    💰 Réel (${reelItems.length})
-                                </h4>
-                                ${reelItems.length > 0 ? reelItems.map(item => `
-                                    <div style="padding: 10px; margin-bottom: 8px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #28a745;">
-                                        <div style="display: flex; justify-content: space-between; align-items: start;">
-                                            <div style="flex: 1;">
-                                                <div style="font-weight: 600; color: #333; margin-bottom: 3px;">${item.description}</div>
-                                                <div style="font-size: 0.85em; color: #666;">
-                                                    ${new Date(item.date).toLocaleDateString('fr-FR')} • ${item.payeur}
-                                                </div>
-                                            </div>
-                                            <div style="font-weight: bold; color: #28a745; white-space: nowrap; margin-left: 10px;">
-                                                ${item.montant.toFixed(2)} €
-                                            </div>
-                                        </div>
-                                    </div>
-                                `).join('') : '<div style="color: #999; font-style: italic; padding: 20px; text-align: center;">Aucune dépense réalisée</div>'}
-                            </div>
-                        </div>
-                    </div>
                 `;
+                
+                // Afficher les paires matchées
+                if (matched.length > 0) {
+                    detailsHTML += `
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #28a745; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
+                                ✅ Dépenses correspondantes (${matched.length})
+                            </h4>
+                    `;
+                    
+                    matched.forEach(pair => {
+                        const diff = pair.real.montant - pair.prev.montant;
+                        const diffPercent = pair.prev.montant > 0 ? ((diff / pair.prev.montant) * 100) : 0;
+                        
+                        detailsHTML += `
+                            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; margin-bottom: 12px; padding: 12px; background: #f8f9fa; border-radius: 8px; align-items: center;">
+                                <!-- Prévisionnel -->
+                                <div style="padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #667eea;">
+                                    <div style="font-weight: 600; color: #333; margin-bottom: 3px; font-size: 0.95em;">${pair.prev.description}</div>
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">
+                                        ${pair.prev.type === 'récurrente' ? '🔄 Récurrente' : pair.prev.confirmed ? '✅ Confirmée' : '📝 Prévisionnelle'}
+                                    </div>
+                                    <div style="font-weight: bold; color: #667eea;">
+                                        ${pair.prev.montant.toFixed(2)} €
+                                    </div>
+                                </div>
+                                
+                                <!-- Flèche + écart -->
+                                <div style="text-align: center; padding: 0 10px;">
+                                    <div style="font-size: 1.5em; color: #999;">→</div>
+                                    ${Math.abs(diff) > 0.01 ? `
+                                        <div style="font-size: 0.75em; font-weight: bold; color: ${diff >= 0 ? '#dc3545' : '#28a745'}; margin-top: 5px;">
+                                            ${diff >= 0 ? '+' : ''}${diff.toFixed(2)}€
+                                            <br>
+                                            <span style="font-size: 0.9em;">(${diff >= 0 ? '+' : ''}${diffPercent.toFixed(0)}%)</span>
+                                        </div>
+                                    ` : `
+                                        <div style="font-size: 0.75em; font-weight: bold; color: #28a745; margin-top: 5px;">
+                                            ✓ Exact
+                                        </div>
+                                    `}
+                                </div>
+                                
+                                <!-- Réel -->
+                                <div style="padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #28a745;">
+                                    <div style="font-weight: 600; color: #333; margin-bottom: 3px; font-size: 0.95em;">${pair.real.description}</div>
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">
+                                        ${new Date(pair.real.date).toLocaleDateString('fr-FR')} • ${pair.real.payeur}
+                                    </div>
+                                    <div style="font-weight: bold; color: #28a745;">
+                                        ${pair.real.montant.toFixed(2)} €
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    detailsHTML += '</div>';
+                }
+                
+                // Afficher les non-matches en 2 colonnes
+                if (unmatchedPrev.length > 0 || unmatchedReal.length > 0) {
+                    detailsHTML += `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    `;
+                    
+                    // Prévisionnel non réalisé
+                    detailsHTML += `
+                        <div>
+                            <h4 style="color: #ffc107; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
+                                ⚠️ Prévu non réalisé (${unmatchedPrev.length})
+                            </h4>
+                            ${unmatchedPrev.length > 0 ? unmatchedPrev.map(item => `
+                                <div style="padding: 10px; margin-bottom: 8px; background: #fff3cd; border-radius: 6px; border-left: 3px solid #ffc107;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600; color: #333; margin-bottom: 3px;">${item.description}</div>
+                                            <div style="font-size: 0.85em; color: #856404;">
+                                                ${item.type === 'récurrente' ? '🔄 Récurrente' : item.confirmed ? '✅ Confirmée' : '📝 Prévisionnelle'}
+                                            </div>
+                                        </div>
+                                        <div style="font-weight: bold; color: #856404; white-space: nowrap; margin-left: 10px;">
+                                            ${item.montant.toFixed(2)} €
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('') : '<div style="color: #999; font-style: italic; padding: 20px; text-align: center;">-</div>'}
+                        </div>
+                    `;
+                    
+                    // Réel non prévu
+                    detailsHTML += `
+                        <div>
+                            <h4 style="color: #dc3545; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
+                                ❗ Dépenses imprévues (${unmatchedReal.length})
+                            </h4>
+                            ${unmatchedReal.length > 0 ? unmatchedReal.map(item => `
+                                <div style="padding: 10px; margin-bottom: 8px; background: #f8d7da; border-radius: 6px; border-left: 3px solid #dc3545;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600; color: #333; margin-bottom: 3px;">${item.description}</div>
+                                            <div style="font-size: 0.85em; color: #721c24;">
+                                                ${new Date(item.date).toLocaleDateString('fr-FR')} • ${item.payeur}
+                                            </div>
+                                        </div>
+                                        <div style="font-weight: bold; color: #721c24; white-space: nowrap; margin-left: 10px;">
+                                            ${item.montant.toFixed(2)} €
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('') : '<div style="color: #999; font-style: italic; padding: 20px; text-align: center;">-</div>'}
+                        </div>
+                    `;
+                    
+                    detailsHTML += '</div>';
+                }
+                
+                detailsHTML += '</div>';
             });
             
             document.getElementById('comparison-details').innerHTML = detailsHTML;
@@ -9980,6 +10097,28 @@
             #comparison-details > div > div[style*="grid-template-columns"] {
                 grid-template-columns: 1fr !important;
                 gap: 15px !important;
+            }
+            
+            /* Paires matchées en colonne sur mobile */
+            #comparison-details div[style*="grid-template-columns: 1fr auto 1fr"] {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            
+            /* Cacher la flèche sur mobile et remplacer par texte */
+            @media (max-width: 768px) {
+                #comparison-details div[style*="grid-template-columns: 1fr auto 1fr"] > div:nth-child(2) {
+                    display: none;
+                }
+                
+                #comparison-details div[style*="grid-template-columns: 1fr auto 1fr"] > div:first-child:after {
+                    content: "↓ Réalisé";
+                    display: block;
+                    text-align: center;
+                    color: #999;
+                    font-size: 0.8em;
+                    margin-top: 5px;
+                }
             }
             
             #comparison-summary {
