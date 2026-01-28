@@ -8187,17 +8187,35 @@
             const budgetTotal = calculateMonthlyBudgetItems(month, year);
             const previsionnel = recurrentTotal + budgetTotal;
             
-            // Récupérer les dépenses récurrentes prévues ce mois (1 seule occurrence par récurrente)
-            const recurrentItems = recurrentExpenses.filter(r => r.active).map(item => {
-                return {
-                    type: 'récurrente',
-                    description: item.description,
-                    montant: item.montant,
-                    frequency: item.frequency,
-                    categorie: item.categorie,
-                    previsionnel: true,
-                    id: item.id
-                };
+            // Récupérer les dépenses récurrentes prévues ce mois
+            const recurrentItems = [];
+            recurrentExpenses.filter(r => r.active).forEach(item => {
+                if (item.frequency === 'Hebdomadaire') {
+                    // Créer 4 occurrences pour les hebdomadaires (une par semaine)
+                    for (let week = 1; week <= 4; week++) {
+                        recurrentItems.push({
+                            type: 'récurrente',
+                            description: item.description,
+                            montant: item.montant,
+                            frequency: item.frequency,
+                            categorie: item.categorie,
+                            previsionnel: true,
+                            id: item.id + '-week' + week,
+                            weekNumber: week
+                        });
+                    }
+                } else {
+                    // Une seule occurrence pour les mensuelles
+                    recurrentItems.push({
+                        type: 'récurrente',
+                        description: item.description,
+                        montant: item.montant,
+                        frequency: item.frequency,
+                        categorie: item.categorie,
+                        previsionnel: true,
+                        id: item.id
+                    });
+                }
             });
             
             // Récupérer les dépenses prévisionnelles de ce mois
@@ -8211,21 +8229,31 @@
                     return true;
                 }
                 return false;
-            }).map(item => {
-                let montant = item.montant;
-                // Pour les hebdomadaires, multiplier par 4 pour avoir le total mensuel
+            }).flatMap(item => {
                 if (item.recurrence_type === 'Hebdomadaire') {
-                    montant = montant * 4;
+                    // Créer 4 occurrences pour les hebdomadaires
+                    return [1, 2, 3, 4].map(week => ({
+                        type: 'prévisionnelle',
+                        description: item.description,
+                        montant: item.montant,
+                        categorie: item.categorie,
+                        previsionnel: true,
+                        confirmed: item.confirmed,
+                        id: item.id + '-week' + week,
+                        weekNumber: week
+                    }));
+                } else {
+                    // Une seule occurrence pour mensuelles et ponctuelles
+                    return [{
+                        type: 'prévisionnelle',
+                        description: item.description,
+                        montant: item.montant,
+                        categorie: item.categorie,
+                        previsionnel: true,
+                        confirmed: item.confirmed,
+                        id: item.id
+                    }];
                 }
-                return {
-                    type: 'prévisionnelle',
-                    description: item.description,
-                    montant: montant,
-                    categorie: item.categorie,
-                    previsionnel: true,
-                    confirmed: item.confirmed,
-                    id: item.id
-                };
             });
             
             // Récupérer les dépenses réelles du mois
