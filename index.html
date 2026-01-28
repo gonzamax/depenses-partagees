@@ -7108,47 +7108,102 @@
             console.log('- parent1Total:', parent1Total, '- parent1ShouldPay:', parent1ShouldPay, '= parent1Difference:', parent1Difference);
             console.log('- parent2Total:', parent2Total, '- parent2ShouldPay:', parent2ShouldPay, '= parent2Difference:', parent2Difference);
             
-            // Déterminer qui doit à qui en comparant les deux différences
+            // Déterminer le type de situation et le message à afficher
             let debtor, creditor, amountOwed;
+            let messageType = 'normal'; // 'normal', 'balanced', 'both-creditors', 'error'
             
-            // Si les deux sont créditeurs ou débiteurs, comparer qui a le plus contribué
-            if (Math.abs(parent1Difference) > 1 || Math.abs(parent2Difference) > 1) {
-                if (parent1Difference > parent2Difference) {
-                    // Parent1 a plus contribué que Parent2
-                    // Parent2 doit rembourser Parent1 (sauf si Parent2 est aussi créditeur)
-                    if (parent2Difference < 0) {
-                        // Parent2 est débiteur, doit rembourser
-                        debtor = settings.parent2_name;
-                        creditor = settings.parent1_name;
-                        amountOwed = Math.abs(parent1Difference - parent2Difference);
-                    } else {
-                        // Les deux sont créditeurs, Parent1 doit rembourser la différence
-                        debtor = settings.parent1_name;
-                        creditor = settings.parent2_name;
-                        amountOwed = Math.abs(parent1Difference - parent2Difference);
-                    }
-                } else {
-                    // Parent2 a plus contribué que Parent1
-                    if (parent1Difference < 0) {
-                        // Parent1 est débiteur, doit rembourser
-                        debtor = settings.parent1_name;
-                        creditor = settings.parent2_name;
-                        amountOwed = Math.abs(parent1Difference - parent2Difference);
-                    } else {
-                        // Les deux sont créditeurs, Parent2 doit rembourser la différence
-                        debtor = settings.parent2_name;
-                        creditor = settings.parent1_name;
-                        amountOwed = Math.abs(parent1Difference - parent2Difference);
-                    }
-                }
-            } else {
+            if (Math.abs(parent1Difference) < 1 && Math.abs(parent2Difference) < 1) {
+                // CAS 4 : Comptes équilibrés
                 amountOwed = 0;
+                messageType = 'balanced';
+                
+            } else if (parent1Difference > 0 && parent2Difference < 0) {
+                // CAS 1A : Parent1 créditeur, Parent2 débiteur (NORMAL)
+                debtor = settings.parent2_name;
+                creditor = settings.parent1_name;
+                amountOwed = Math.abs(parent2Difference);
+                messageType = 'normal';
+                
+            } else if (parent1Difference < 0 && parent2Difference > 0) {
+                // CAS 1B : Parent1 débiteur, Parent2 créditeur (NORMAL inversé)
+                debtor = settings.parent1_name;
+                creditor = settings.parent2_name;
+                amountOwed = Math.abs(parent1Difference);
+                messageType = 'normal';
+                
+            } else if (parent1Difference > 0 && parent2Difference > 0) {
+                // CAS 2 : Les deux créditeurs - Pas de rééquilibrage
+                amountOwed = 0;
+                messageType = 'both-creditors';
+                
+            } else {
+                // CAS 3 : Les deux débiteurs (ne devrait jamais arriver)
+                console.error('⚠️ Données incohérentes : les deux parents sont débiteurs');
+                amountOwed = 0;
+                messageType = 'error';
             }
             
             console.log('Résultat final:');
+            console.log('- messageType:', messageType);
             console.log('- debtor:', debtor);
             console.log('- creditor:', creditor);
             console.log('- amountOwed:', amountOwed);
+            
+            // Générer le message approprié selon le cas
+            let balanceMessage = '';
+            
+            switch(messageType) {
+                case 'normal':
+                    balanceMessage = `
+                        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
+                            <div style="font-size: 1.1em; color: #856404;">
+                                <strong>⚖️ Rééquilibrage :</strong> 
+                                ${debtor} doit <strong>${amountOwed.toFixed(2)} ${settings.currency_symbol}</strong> à ${creditor}
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'balanced':
+                    balanceMessage = `
+                        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
+                            <div style="font-size: 1.1em; color: #155724;">
+                                <strong>✅ Les comptes sont équilibrés !</strong>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'both-creditors':
+                    balanceMessage = `
+                        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
+                            <div style="font-size: 1.1em; color: #155724; margin-bottom: 10px;">
+                                <strong>💰 Excédent de versements</strong>
+                            </div>
+                            <div style="font-size: 0.95em; color: #155724;">
+                                ${settings.parent1_name} : <strong>+${parent1Difference.toFixed(2)} ${settings.currency_symbol}</strong> en avance<br>
+                                ${settings.parent2_name} : <strong>+${parent2Difference.toFixed(2)} ${settings.currency_symbol}</strong> en avance
+                            </div>
+                            <div style="font-size: 0.85em; color: #155724; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(21,87,36,0.2); font-style: italic;">
+                                ℹ️ Le rééquilibrage se fera automatiquement avec les prochaines dépenses
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'error':
+                    balanceMessage = `
+                        <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 20px; border-radius: 8px;">
+                            <div style="font-size: 1.1em; color: #721c24; margin-bottom: 8px;">
+                                <strong>⚠️ Erreur de calcul</strong>
+                            </div>
+                            <div style="font-size: 0.9em; color: #721c24;">
+                                Les données sont incohérentes. Vérifiez les dépenses et versements.
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
 
             balanceCard.innerHTML = `
                 <h2 style="color: #667eea; margin-bottom: 20px;">💰 Équilibre des comptes</h2>
@@ -7199,20 +7254,7 @@
                     </div>
                 </div>
                 
-                ${amountOwed > 1 ? `
-                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 1.1em; color: #856404;">
-                            <strong>⚖️ Rééquilibrage :</strong> 
-                            ${debtor} doit <strong>${amountOwed.toFixed(2)} ${settings.currency_symbol}</strong> à ${creditor}
-                        </div>
-                    </div>
-                ` : `
-                    <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 1.1em; color: #155724;">
-                            <strong>✅ Les comptes sont équilibrés !</strong>
-                        </div>
-                    </div>
-                `}
+                ${balanceMessage}
             `;
         }
 
