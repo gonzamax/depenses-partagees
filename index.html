@@ -202,10 +202,9 @@
         }
 
         .expense-list {
-            margin-top: 30px;
-            max-height: 600px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            margin-top: 0;
+            /* Prendre toute la hauteur disponible sans limite fixe */
+            max-height: none;
             padding-right: 4px;
         }
 
@@ -1182,6 +1181,32 @@
                 padding: 15px 12px;
             }
 
+            /* Header sticky optimisé mobile */
+            #tab-liste > div:first-child {
+                margin: -15px -12px 15px -12px !important;
+                padding: 12px !important;
+                top: -15px !important;
+            }
+
+            #tab-liste h2 {
+                font-size: 1.2em;
+            }
+
+            #tab-liste .btn {
+                font-size: 0.9em;
+                padding: 8px 16px !important;
+            }
+
+            /* Filtres actifs compacts sur mobile */
+            #active-filters-display {
+                margin-top: 8px !important;
+            }
+
+            #active-filters-display span {
+                font-size: 0.75em !important;
+                padding: 4px 8px !important;
+            }
+
             .stats-grid {
                 grid-template-columns: 1fr;
                 gap: 15px;
@@ -1808,16 +1833,20 @@
 
         <!-- Onglet Liste -->
         <div id="tab-liste" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                <h2 style="color: #667eea; margin: 0;">📋 Liste des dépenses</h2>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <div id="active-filters-display" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;"></div>
-                    <button class="btn" onclick="openFilterModal()" style="padding: 10px 20px;">
+            <!-- Header sticky -->
+            <div style="position: sticky; top: -30px; background: white; z-index: 10; margin: -30px -30px 20px -30px; padding: 20px 30px; border-bottom: 1px solid #e0e0e0; border-radius: 16px 16px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <h2 style="color: #667eea; margin: 0;">📋 Liste des dépenses</h2>
+                    <button class="btn" onclick="openFilterModal()" style="padding: 10px 20px; white-space: nowrap;">
                         🔍 Filtrer
                     </button>
                 </div>
+                
+                <!-- Filtres actifs - Compact -->
+                <div id="active-filters-display" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 12px; min-height: 24px;"></div>
             </div>
 
+            <!-- Liste scrollable -->
             <div id="expense-list" class="expense-list"></div>
         </div>
 
