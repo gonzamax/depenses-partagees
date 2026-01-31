@@ -804,6 +804,247 @@
             margin-bottom: 20px;
         }
 
+        /* Bottom Sheet Filters - Style App Native */
+        .filter-bottom-sheet {
+            align-items: flex-end;
+            padding: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .filter-bottom-sheet.active {
+            display: flex;
+        }
+
+        .filter-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .filter-sheet-content {
+            position: relative;
+            background: white;
+            width: 100%;
+            max-height: 85vh;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .filter-bottom-sheet.active .filter-sheet-content {
+            transform: translateY(0);
+        }
+
+        .filter-handle {
+            width: 40px;
+            height: 4px;
+            background: #d0d0d0;
+            border-radius: 2px;
+            margin: 12px auto 8px auto;
+        }
+
+        .filter-header {
+            padding: 0 20px 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .filter-header h2 {
+            margin: 0;
+            font-size: 1.3em;
+            color: #667eea;
+        }
+
+        .filter-close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #f0f0f0;
+            color: #666;
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .filter-close-btn:active {
+            background: #e0e0e0;
+            transform: scale(0.95);
+        }
+
+        .filter-body {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            background: white;
+            color: #666;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .filter-chip:active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .filter-input,
+        .filter-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            background: white;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .filter-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+        }
+
+        .filter-results {
+            padding: 12px 16px;
+            background: #e7f3ff;
+            border-radius: 12px;
+            color: #2196F3;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .filter-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+            background: white;
+        }
+
+        .filter-footer .btn {
+            padding: 14px;
+            font-size: 1em;
+            font-weight: 600;
+        }
+
+        /* Desktop: modal centré optimisé */
+        @media (min-width: 769px) {
+            .filter-bottom-sheet {
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+
+            .filter-sheet-content {
+                max-width: 500px;
+                width: 100%;
+                max-height: 85vh;
+                border-radius: 16px;
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            .filter-bottom-sheet.active .filter-sheet-content {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            .filter-handle {
+                display: none;
+            }
+            
+            .filter-header {
+                padding: 20px 25px 15px 25px;
+            }
+            
+            .filter-body {
+                padding: 0 25px 20px 25px;
+            }
+            
+            .filter-footer {
+                padding: 15px 25px 20px 25px;
+            }
+            
+            /* Optimiser les sections desktop */
+            .filter-section {
+                margin-bottom: 18px;
+            }
+            
+            .filter-chips {
+                gap: 10px;
+            }
+            
+            .filter-chip {
+                padding: 10px 20px;
+                font-size: 0.95em;
+            }
+            
+            .filter-chip:hover {
+                background: #f5f5f5;
+                border-color: #667eea;
+            }
+            
+            .filter-input,
+            .filter-select {
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+        }
+
         .sync-status {
             display: inline-block;
             padding: 5px 12px;
@@ -1759,93 +2000,95 @@
             </div>
         </div>
 
-        <!-- Modale de filtres -->
-        <div id="filter-modal" class="modal" style="display: none;">
-            <div class="modal-content" style="max-width: 800px;">
-                <span class="close" onclick="closeFilterModal()">&times;</span>
-                <h2 style="color: #667eea; margin-bottom: 20px;">🔍 Filtres de recherche</h2>
+        <!-- Modale de filtres - Style Bottom Sheet Mobile -->
+        <div id="filter-modal" class="modal filter-bottom-sheet" style="display: none;">
+            <div class="filter-backdrop" onclick="closeFilterModal()"></div>
+            <div class="filter-sheet-content">
+                <!-- Handle pour swipe -->
+                <div class="filter-handle"></div>
                 
-                <!-- Filtres rapides période -->
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <label style="font-weight: 600; color: #333; margin-bottom: 10px; display: block;">📅 Période rapide</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('today')" style="padding: 8px 15px; font-size: 0.9em;">
-                            Aujourd'hui
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('week')" style="padding: 8px 15px; font-size: 0.9em;">
-                            Cette semaine
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('month')" style="padding: 8px 15px; font-size: 0.9em;">
-                            Ce mois
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('lastMonth')" style="padding: 8px 15px; font-size: 0.9em;">
-                            Mois dernier
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="setQuickFilter('year')" style="padding: 8px 15px; font-size: 0.9em;">
-                            Cette année
-                        </button>
-                    </div>
+                <div class="filter-header">
+                    <h2>🔍 Filtres</h2>
+                    <button class="filter-close-btn" onclick="closeFilterModal()">×</button>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-search" style="font-size: 0.9em;">🔍 Recherche</label>
-                        <input type="text" id="filter-search" placeholder="Rechercher..." onkeyup="displayExpenses()" style="padding: 10px;">
+                <div class="filter-body">
+                    <!-- Filtres rapides période -->
+                    <div class="filter-section">
+                        <label class="filter-label">📅 Période rapide</label>
+                        <div class="filter-chips">
+                            <button type="button" class="filter-chip" onclick="setQuickFilter('today')">Aujourd'hui</button>
+                            <button type="button" class="filter-chip" onclick="setQuickFilter('week')">Semaine</button>
+                            <button type="button" class="filter-chip" onclick="setQuickFilter('month')">Ce mois</button>
+                            <button type="button" class="filter-chip" onclick="setQuickFilter('lastMonth')">Mois dernier</button>
+                            <button type="button" class="filter-chip" onclick="setQuickFilter('year')">Année</button>
+                        </div>
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-month" style="font-size: 0.9em;">📅 Mois</label>
-                        <input type="month" id="filter-month" onchange="displayExpenses()" style="padding: 10px;">
+                    <!-- Recherche -->
+                    <div class="filter-section">
+                        <label class="filter-label" for="filter-search">🔍 Recherche</label>
+                        <input type="text" id="filter-search" class="filter-input" placeholder="Rechercher une dépense..." onkeyup="displayExpenses()">
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-type" style="font-size: 0.9em;">📂 Type</label>
-                        <select id="filter-type" onchange="updateFilterCategories(); displayExpenses();" style="padding: 10px;">
+                    <!-- Mois -->
+                    <div class="filter-section">
+                        <label class="filter-label" for="filter-month">📅 Mois</label>
+                        <input type="month" id="filter-month" class="filter-input" onchange="displayExpenses()">
+                    </div>
+                    
+                    <!-- Type et Catégorie -->
+                    <div class="filter-section">
+                        <label class="filter-label" for="filter-type">📂 Type</label>
+                        <select id="filter-type" class="filter-select" onchange="updateFilterCategories(); displayExpenses();">
                             <option value="">Tous les types</option>
                         </select>
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-category" style="font-size: 0.9em;">🏷️ Catégorie</label>
-                        <select id="filter-category" onchange="displayExpenses()" style="padding: 10px;">
+                    <div class="filter-section">
+                        <label class="filter-label" for="filter-category">🏷️ Catégorie</label>
+                        <select id="filter-category" class="filter-select" onchange="displayExpenses()">
                             <option value="">Toutes</option>
                         </select>
                     </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-payeur" style="font-size: 0.9em;">👤 Payeur</label>
-                        <select id="filter-payeur" onchange="displayExpenses()" style="padding: 10px;">
+                    
+                    <!-- Payeur -->
+                    <div class="filter-section">
+                        <label class="filter-label" for="filter-payeur">👤 Payeur</label>
+                        <select id="filter-payeur" class="filter-select" onchange="displayExpenses()">
                             <option value="">Tous</option>
                         </select>
                     </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-has-attachment" style="font-size: 0.9em;">📎 Justificatif</label>
-                        <select id="filter-has-attachment" onchange="displayExpenses()" style="padding: 10px;">
+                    
+                    <!-- Montants -->
+                    <div class="filter-section">
+                        <label class="filter-label">💶 Montant</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <input type="number" id="filter-min-amount" class="filter-input" placeholder="Min" step="0.01" oninput="displayExpenses()">
+                            <input type="number" id="filter-max-amount" class="filter-input" placeholder="Max" step="0.01" oninput="displayExpenses()">
+                        </div>
+                    </div>
+                    
+                    <!-- Justificatif -->
+                    <div class="filter-section">
+                        <label class="filter-label" for="filter-has-attachment">📎 Justificatif</label>
+                        <select id="filter-has-attachment" class="filter-select" onchange="displayExpenses()">
                             <option value="">Tous</option>
                             <option value="yes">Avec</option>
                             <option value="no">Sans</option>
                         </select>
                     </div>
                     
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-min-amount" style="font-size: 0.9em;">💶 Montant min</label>
-                        <input type="number" id="filter-min-amount" placeholder="0" step="0.01" oninput="displayExpenses()" style="padding: 10px;">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="filter-max-amount" style="font-size: 0.9em;">💶 Montant max</label>
-                        <input type="number" id="filter-max-amount" placeholder="∞" step="0.01" oninput="displayExpenses()" style="padding: 10px;">
-                    </div>
+                    <!-- Résultats -->
+                    <div id="filter-results" class="filter-results"></div>
                 </div>
                 
-                <div id="filter-results" style="padding: 15px; background: #e7f3ff; border-radius: 8px; margin-bottom: 20px; color: #2196F3; font-size: 0.95em; font-weight: 600;"></div>
-                
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-secondary" onclick="resetFilters()" style="flex: 1; min-width: 150px;">
+                <!-- Actions fixes en bas -->
+                <div class="filter-footer">
+                    <button class="btn btn-secondary" onclick="resetFilters()" style="flex: 1;">
                         🔄 Réinitialiser
                     </button>
-                    <button class="btn btn-success" onclick="closeFilterModal()" style="flex: 1; min-width: 150px;">
+                    <button class="btn btn-primary" onclick="closeFilterModal()" style="flex: 1;">
                         ✅ Appliquer
                     </button>
                 </div>
@@ -6515,11 +6758,27 @@
             // Mettre à jour les catégories
             updateFilterCategories();
             
-            document.getElementById('filter-modal').style.display = 'flex';
+            // Afficher avec animation
+            const modal = document.getElementById('filter-modal');
+            modal.style.display = 'flex';
+            // Forcer reflow pour animation CSS
+            modal.offsetHeight;
+            modal.classList.add('active');
+            
+            // Bloquer le scroll du body
+            document.body.style.overflow = 'hidden';
         }
 
         function closeFilterModal() {
-            document.getElementById('filter-modal').style.display = 'none';
+            const modal = document.getElementById('filter-modal');
+            modal.classList.remove('active');
+            
+            // Attendre la fin de l'animation avant de cacher
+            setTimeout(() => {
+                modal.style.display = 'none';
+                // Restaurer le scroll
+                document.body.style.overflow = '';
+            }, 300);
         }
 
         function setQuickFilter(period) {
@@ -9193,6 +9452,16 @@
                 );
                 return;
             }
+            
+            // Fermer la modale de filtres avec ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const filterModal = document.getElementById('filter-modal');
+                    if (filterModal && filterModal.classList.contains('active')) {
+                        closeFilterModal();
+                    }
+                }
+            });
             
             // Attacher les événements pour les paramètres
             const btnAddType = document.getElementById('btn-add-type');
