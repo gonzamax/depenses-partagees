@@ -639,42 +639,6 @@
                 gap: 10px !important;
             }
             
-            /* Optimisation modale filtres sur mobile */
-            #filter-modal .modal-content {
-                padding: 15px;
-                max-height: 90vh;
-                width: 95%;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            #filter-modal h2 {
-                font-size: 1.2em;
-                margin-bottom: 15px;
-            }
-            
-            #filter-modal .form-group label {
-                font-size: 0.85em;
-                margin-bottom: 5px;
-            }
-            
-            #filter-modal input,
-            #filter-modal select {
-                font-size: 16px; /* Évite le zoom automatique sur iOS */
-                padding: 8px !important;
-            }
-            
-            /* Force la grille de filtres en colonne unique sur mobile */
-            #filter-modal div[style*="grid-template-columns"] {
-                grid-template-columns: 1fr !important;
-                gap: 10px !important;
-            }
-            
-            /* Boutons d'action en pleine largeur */
-            #filter-modal div[style*="display: flex"] button {
-                min-width: 100px !important;
-            }
-            
             /* Optimisation modale dépense récurrente sur mobile */
             #add-recurrent-modal .modal-content {
                 padding: 15px;
@@ -806,13 +770,14 @@
 
         /* Bottom Sheet Filters - Style App Native */
         .filter-bottom-sheet {
-            align-items: flex-end;
-            padding: 0;
+            align-items: flex-end !important;
+            padding: 0 !important;
             transition: opacity 0.3s ease;
+            overflow-y: visible !important;
         }
 
         .filter-bottom-sheet.active {
-            display: flex;
+            display: flex !important;
         }
 
         .filter-backdrop {
@@ -822,6 +787,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.4);
+            z-index: 1;
         }
 
         .filter-sheet-content {
@@ -835,6 +801,7 @@
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2;
         }
 
         .filter-bottom-sheet.active .filter-sheet-content {
