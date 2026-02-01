@@ -2189,8 +2189,7 @@
     </style>
 </head>
 <body>
-    <div class="app-wrapper">
-    <!-- Écran de bienvenue -->
+    <!-- Écran de bienvenue (toujours en dehors de l'app) -->
     <div id="welcome-screen" class="welcome-screen">
         <h2>🎉 Bienvenue !</h2>
         <p>Gérez vos dépenses partagées en temps réel.<br>Choisissez comment commencer :</p>
@@ -2224,13 +2223,12 @@
         </div>
     </div>
 
-    <!-- Application principale -->
-    <div id="main-app" class="container" style="display: none;">
-        <!-- Bouton flottant pour accès rapide au formulaire (mobile) -->
-        
+    <!-- Application principale (cachée au début) -->
+    <div class="app-wrapper" id="main-app" style="display: none;">
         <!-- Bouton flottant pour l'aide -->
         <button class="help-button" id="help-button" onclick="openHelpModal()" title="Aide">❓</button>
         
+        <div class="container">
         <div class="header">
             <h1>💰 Gestion des Dépenses Partagées</h1>
             <p>Synchronisation en temps réel</p>
@@ -2256,6 +2254,7 @@
             </div>
         </div>
 
+        <!-- Navigation Desktop (onglets en haut) -->
         <div class="tabs">
             <button class="tab active" data-tab="ajouter" data-tooltip="Ajouter une nouvelle dépense" data-tooltip-position="bottom">➕ Ajouter</button>
             <button class="tab" data-tab="liste" data-tooltip="Voir toutes les dépenses" data-tooltip-position="bottom">📋 Liste</button>
@@ -2264,31 +2263,6 @@
             <button class="tab" data-tab="versements" data-tooltip="Versements entre parents" data-tooltip-position="bottom">💸 Versements</button>
             <button class="tab" data-tab="statistiques" data-tooltip="Statistiques et graphiques" data-tooltip-position="bottom">📊 Stats</button>
         </div>
-    </div><!-- /.app-wrapper -->
-
-        <!-- Bottom Navigation Mobile (iOS style) -->
-        <nav class="bottom-nav-mobile">
-            <button class="bottom-nav-item active" data-tab="ajouter">
-                <span class="bottom-nav-icon">➕</span>
-                <span class="bottom-nav-label">Ajouter</span>
-            </button>
-            <button class="bottom-nav-item" data-tab="liste">
-                <span class="bottom-nav-icon">📋</span>
-                <span class="bottom-nav-label">Liste</span>
-            </button>
-            <button class="bottom-nav-item" data-tab="budget">
-                <span class="bottom-nav-icon">💰</span>
-                <span class="bottom-nav-label">Budget</span>
-            </button>
-            <button class="bottom-nav-item" data-tab="versements">
-                <span class="bottom-nav-icon">💸</span>
-                <span class="bottom-nav-label">Versements</span>
-            </button>
-            <button class="bottom-nav-item" data-tab="statistiques">
-                <span class="bottom-nav-icon">📊</span>
-                <span class="bottom-nav-label">Stats</span>
-            </button>
-        </nav>
 
         <!-- Onglet Ajouter -->
         <div id="tab-ajouter" class="tab-content active">
@@ -3407,7 +3381,33 @@
                 <button class="btn btn-secondary" onclick="exportToCSV()">📊 Exporter CSV</button>
             </div>
         </div>
-    </div>
+        
+        </div><!-- /.container -->
+    </div><!-- /.app-wrapper (main-app) -->
+
+    <!-- Bottom Navigation Mobile (iOS style) -->
+    <nav class="bottom-nav-mobile">
+        <button class="bottom-nav-item active" data-tab="ajouter">
+            <span class="bottom-nav-icon">➕</span>
+            <span class="bottom-nav-label">Ajouter</span>
+        </button>
+        <button class="bottom-nav-item" data-tab="liste">
+            <span class="bottom-nav-icon">📋</span>
+            <span class="bottom-nav-label">Liste</span>
+        </button>
+        <button class="bottom-nav-item" data-tab="budget">
+            <span class="bottom-nav-icon">💰</span>
+            <span class="bottom-nav-label">Budget</span>
+        </button>
+        <button class="bottom-nav-item" data-tab="versements">
+            <span class="bottom-nav-icon">💸</span>
+            <span class="bottom-nav-label">Versements</span>
+        </button>
+        <button class="bottom-nav-item" data-tab="statistiques">
+            <span class="bottom-nav-icon">📊</span>
+            <span class="bottom-nav-label">Stats</span>
+        </button>
+    </nav>
 
     <script>
         // ==========================================
