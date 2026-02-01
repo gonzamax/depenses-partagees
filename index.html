@@ -108,6 +108,15 @@
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
+                overflow-x: hidden;
+                width: 100vw;
+                max-width: 100vw;
+            }
+            
+            /* Empêcher tout dépassement horizontal */
+            * {
+                max-width: 100vw;
+                box-sizing: border-box;
             }
 
             /* Zone scrollable */
@@ -117,6 +126,7 @@
                 overflow-x: hidden;
                 -webkit-overflow-scrolling: touch;
                 padding: 10px;
+                width: 100%;
             }
 
             /* Cacher navigation desktop */
@@ -355,6 +365,8 @@
             border-radius: 8px;
             font-size: 1em;
             transition: border-color 0.3s;
+            box-sizing: border-box;
+            max-width: 100%;
         }
 
         input:focus, select:focus, textarea:focus {
@@ -1206,24 +1218,43 @@
         /* Mobile : améliorer l'affichage des modales */
         @media (max-width: 768px) {
             .modal {
-                padding: 10px;
+                padding: 10px !important;
                 align-items: flex-start;
                 padding-top: 40px;
             }
             
             .modal-content {
-                padding: 24px;
-                width: 95%;
-                max-height: calc(100vh - 80px);
+                padding: 20px !important;
+                width: calc(100% - 20px) !important;
+                max-width: 100% !important;
+                max-height: calc(100vh - 80px) !important;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
-                margin: 0 auto;
+                margin: 0 auto !important;
+                box-sizing: border-box;
             }
             
             /* Spécifique pour modale récurrente qui est longue */
             #add-recurrent-modal .modal-content {
-                max-height: calc(100vh - 60px);
+                max-height: calc(100vh - 60px) !important;
                 margin-top: 0;
+            }
+            
+            /* Modale budget */
+            #add-budget-item-modal .modal-content {
+                max-height: calc(100vh - 60px) !important;
+            }
+            
+            /* Tous les form-group dans les modales */
+            .modal-content .form-group {
+                margin-bottom: 16px;
+            }
+            
+            .modal-content .form-group input,
+            .modal-content .form-group select,
+            .modal-content .form-group textarea {
+                width: 100%;
+                box-sizing: border-box;
             }
         }
 
