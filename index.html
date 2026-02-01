@@ -1203,6 +1203,30 @@
             position: relative;
         }
 
+        /* Mobile : améliorer l'affichage des modales */
+        @media (max-width: 768px) {
+            .modal {
+                padding: 10px;
+                align-items: flex-start;
+                padding-top: 40px;
+            }
+            
+            .modal-content {
+                padding: 24px;
+                width: 95%;
+                max-height: calc(100vh - 80px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                margin: 0 auto;
+            }
+            
+            /* Spécifique pour modale récurrente qui est longue */
+            #add-recurrent-modal .modal-content {
+                max-height: calc(100vh - 60px);
+                margin-top: 0;
+            }
+        }
+
         .modal-content h2 {
             color: #667eea;
             margin-bottom: 20px;
@@ -7153,16 +7177,9 @@
             } else if (type === 'recurrent') {
                 // Aller à l'onglet Récurrentes
                 switchTab('recurrentes');
-                // Scroll en haut et ouvrir modale
+                // Ouvrir la modale (elle gère elle-même le scroll)
                 setTimeout(() => {
-                    const appWrapper = document.querySelector('.app-wrapper');
-                    if (appWrapper) {
-                        appWrapper.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                    // Ouvrir la modale d'ajout récurrente
-                    setTimeout(() => {
-                        openAddRecurrentModal();
-                    }, 200);
+                    openAddRecurrentModal();
                 }, 100);
             }
         }
@@ -10426,7 +10443,23 @@
         }
 
         function openAddRecurrentModal() {
+            // Sur mobile, scroll en haut de l'app-wrapper d'abord
+            if (window.innerWidth <= 768) {
+                const appWrapper = document.querySelector('.app-wrapper');
+                if (appWrapper) {
+                    appWrapper.scrollTo({ top: 0, behavior: 'instant' });
+                }
+            }
+            
             document.getElementById('add-recurrent-modal').style.display = 'flex';
+            
+            // Sur mobile, scroll aussi la modale en haut
+            setTimeout(() => {
+                const modalContent = document.querySelector('#add-recurrent-modal .modal-content');
+                if (modalContent) {
+                    modalContent.scrollTop = 0;
+                }
+            }, 50);
             
             // Initialiser le select payeur avec les noms
             const payeurSelect = document.getElementById('rec-payeur');
