@@ -1232,6 +1232,47 @@
             margin-bottom: 20px;
         }
 
+        /* Bouton X fermeture modale */
+        .close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 32px;
+            font-weight: 300;
+            color: #999;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+            line-height: 1;
+            z-index: 10;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .close:hover {
+            background: #f0f0f0;
+            color: #333;
+            transform: rotate(90deg);
+        }
+
+        .close:active {
+            transform: scale(0.9) rotate(90deg);
+        }
+
+        @media (max-width: 768px) {
+            .close {
+                top: 12px;
+                right: 12px;
+                font-size: 36px;
+                width: 44px;
+                height: 44px;
+            }
+        }
+
         /* Bottom Sheet Filters - Style App Native */
         .filter-bottom-sheet {
             align-items: flex-end !important;
@@ -2357,8 +2398,8 @@
     </div>
 
     <!-- Modale choix type dépense (Mobile) -->
-    <div id="add-expense-choice-modal" class="add-expense-modal">
-        <div class="add-expense-modal-content">
+    <div id="add-expense-choice-modal" class="add-expense-modal" onclick="closeAddExpenseChoiceModalIfBackdrop(event)">
+        <div class="add-expense-modal-content" onclick="event.stopPropagation()">
             <div class="add-expense-modal-handle"></div>
             <div class="add-expense-modal-title">➕ Ajouter une dépense</div>
             
@@ -2379,6 +2420,10 @@
                     </div>
                 </div>
             </div>
+            
+            <button class="btn btn-secondary" onclick="closeAddExpenseChoiceModal()" style="width: 100%; margin-top: 16px; padding: 14px;">
+                Annuler
+            </button>
         </div>
     </div>
 
@@ -7161,6 +7206,13 @@
             }
         }
 
+        function closeAddExpenseChoiceModalIfBackdrop(event) {
+            // Fermer si clic directement sur le backdrop (pas sur le contenu)
+            if (event.target.id === 'add-expense-choice-modal') {
+                closeAddExpenseChoiceModal();
+            }
+        }
+
         function selectExpenseType(type) {
             closeAddExpenseChoiceModal();
             
@@ -7184,11 +7236,72 @@
             }
         }
 
-        // Fermer avec backdrop
+        // ==========================================
+        // GESTIONNAIRE GLOBAL MODALES
+        // ==========================================
+        
+        // Fermer modales avec ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // Modale choix dépense
+                const choiceModal = document.getElementById('add-expense-choice-modal');
+                if (choiceModal && choiceModal.classList.contains('active')) {
+                    closeAddExpenseChoiceModal();
+                    return;
+                }
+                
+                // Modale récurrente
+                const recurrentModal = document.getElementById('add-recurrent-modal');
+                if (recurrentModal && recurrentModal.style.display === 'flex') {
+                    closeAddRecurrentModal();
+                    return;
+                }
+                
+                // Modale budget
+                const budgetModal = document.getElementById('add-budget-item-modal');
+                if (budgetModal && budgetModal.style.display === 'flex') {
+                    closeAddBudgetItemModal();
+                    return;
+                }
+                
+                // Modale versement
+                const contributionModal = document.getElementById('add-contribution-modal');
+                if (contributionModal && contributionModal.style.display === 'flex') {
+                    closeAddContributionModal();
+                    return;
+                }
+                
+                // Modale aide
+                const helpModal = document.getElementById('help-modal');
+                if (helpModal && helpModal.style.display === 'flex') {
+                    closeHelpModal();
+                    return;
+                }
+                
+                // Modale filtres
+                const filterModal = document.getElementById('filter-modal');
+                if (filterModal && filterModal.classList.contains('active')) {
+                    closeFilterModal();
+                    return;
+                }
+            }
+        });
+
+        // Fermer modales standard en cliquant sur backdrop
         document.addEventListener('click', (e) => {
-            const modal = document.getElementById('add-expense-choice-modal');
-            if (modal && e.target === modal) {
-                closeAddExpenseChoiceModal();
+            // Vérifier si clic sur une modale (classe .modal)
+            if (e.target.classList.contains('modal') && e.target.style.display === 'flex') {
+                const modalId = e.target.id;
+                
+                if (modalId === 'add-recurrent-modal') {
+                    closeAddRecurrentModal();
+                } else if (modalId === 'add-budget-item-modal') {
+                    closeAddBudgetItemModal();
+                } else if (modalId === 'add-contribution-modal') {
+                    closeAddContributionModal();
+                } else if (modalId === 'help-modal') {
+                    closeHelpModal();
+                }
             }
         });
 
