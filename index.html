@@ -907,6 +907,148 @@
             transform: scale(0.95);
         }
 
+        /* FAB (Floating Action Button) - Mobile uniquement */
+        .fab-container {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .fab-container {
+                display: block;
+                position: fixed;
+                bottom: calc(80px + env(safe-area-inset-bottom));
+                right: 20px;
+                z-index: 900;
+            }
+
+            .fab-main {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                font-size: 24px;
+                box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .fab-main:active {
+                transform: scale(0.9);
+            }
+
+            .fab-main.active {
+                transform: rotate(45deg);
+                background: #dc3545;
+            }
+
+            /* Speed Dial Menu */
+            .fab-menu {
+                position: absolute;
+                bottom: 70px;
+                right: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                opacity: 0;
+                pointer-events: none;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .fab-menu.active {
+                opacity: 1;
+                pointer-events: auto;
+                bottom: 70px;
+            }
+
+            .fab-option {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                background: white;
+                padding: 12px 16px;
+                border-radius: 28px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                cursor: pointer;
+                transition: all 0.2s;
+                white-space: nowrap;
+                transform: scale(0);
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .fab-menu.active .fab-option {
+                transform: scale(1);
+            }
+
+            .fab-menu.active .fab-option:nth-child(1) {
+                transition-delay: 0.05s;
+            }
+
+            .fab-menu.active .fab-option:nth-child(2) {
+                transition-delay: 0.1s;
+            }
+
+            .fab-option:active {
+                transform: scale(0.95);
+                background: #f0f0f0;
+            }
+
+            .fab-option-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                flex-shrink: 0;
+            }
+
+            .fab-option-icon.normal {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+
+            .fab-option-icon.recurrent {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            }
+
+            .fab-option-label {
+                font-weight: 600;
+                color: #333;
+                font-size: 15px;
+            }
+
+            /* Backdrop */
+            .fab-backdrop {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.3);
+                z-index: 899;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+
+            .fab-backdrop.active {
+                display: block;
+                opacity: 1;
+            }
+
+            /* Cacher le bouton + de la bottom nav quand FAB est actif */
+            .bottom-nav-item[data-tab="ajouter"] {
+                /* Garde le bouton mais le FAB prend le relais */
+            }
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -3383,6 +3525,26 @@
         </div>
         
         </div><!-- /.container -->
+        
+        <!-- FAB Mobile Speed Dial -->
+        <div class="fab-container">
+            <div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
+            
+            <div class="fab-menu" id="fab-menu">
+                <div class="fab-option" onclick="openAddExpense()">
+                    <div class="fab-option-icon normal">💳</div>
+                    <div class="fab-option-label">Dépense normale</div>
+                </div>
+                <div class="fab-option" onclick="openAddRecurrent()">
+                    <div class="fab-option-icon recurrent">🔄</div>
+                    <div class="fab-option-label">Dépense récurrente</div>
+                </div>
+            </div>
+            
+            <button class="fab-main" id="fab-main" onclick="toggleFabMenu()">
+                ➕
+            </button>
+        </div>
     </div><!-- /.app-wrapper (main-app) -->
 
     <!-- Bottom Navigation Mobile (iOS style) -->
@@ -6976,7 +7138,71 @@
             updateCategoriesForSelect('rec-type', 'rec-categorie');
         }
 
+        // ==========================================
+        // FAB MOBILE - SPEED DIAL MENU
+        // ==========================================
+        function toggleFabMenu() {
+            const fabMain = document.getElementById('fab-main');
+            const fabMenu = document.getElementById('fab-menu');
+            const fabBackdrop = document.getElementById('fab-backdrop');
+            
+            const isActive = fabMain.classList.contains('active');
+            
+            if (isActive) {
+                closeFabMenu();
+            } else {
+                fabMain.classList.add('active');
+                fabMenu.classList.add('active');
+                fabBackdrop.classList.add('active');
+            }
+        }
+
+        function closeFabMenu() {
+            const fabMain = document.getElementById('fab-main');
+            const fabMenu = document.getElementById('fab-menu');
+            const fabBackdrop = document.getElementById('fab-backdrop');
+            
+            fabMain.classList.remove('active');
+            fabMenu.classList.remove('active');
+            fabBackdrop.classList.remove('active');
+        }
+
+        function openAddExpense() {
+            closeFabMenu();
+            // Aller à l'onglet Ajouter
+            switchTab('ajouter');
+            // Scroll en haut sur mobile
+            if (window.innerWidth <= 768) {
+                const appWrapper = document.querySelector('.app-wrapper');
+                if (appWrapper) {
+                    appWrapper.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+        }
+
+        function openAddRecurrent() {
+            closeFabMenu();
+            // Aller à l'onglet Récurrentes
+            switchTab('recurrentes');
+            // Scroll en haut sur mobile
+            if (window.innerWidth <= 768) {
+                const appWrapper = document.querySelector('.app-wrapper');
+                if (appWrapper) {
+                    appWrapper.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+            // Ouvrir la modale d'ajout de récurrente
+            setTimeout(() => {
+                openAddRecurrentModal();
+            }, 300);
+        }
+
         function switchTab(tabName) {
+            // Fermer le FAB menu si ouvert
+            if (typeof closeFabMenu === 'function') {
+                closeFabMenu();
+            }
+            
             // Gérer les boutons desktop
             const allTabs = document.querySelectorAll('.tab');
             allTabs.forEach(tab => {
