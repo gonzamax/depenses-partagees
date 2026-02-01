@@ -1245,9 +1245,23 @@
                 max-height: calc(100vh - 60px) !important;
             }
             
+            /* Forcer les grids à devenir une seule colonne sur mobile */
+            .modal-content [style*="grid-template-columns"] {
+                display: block !important;
+            }
+            
+            .modal-content [style*="display: grid"] {
+                display: block !important;
+            }
+            
+            .modal-content [style*="display: grid"] > * {
+                margin-bottom: 15px;
+            }
+            
             /* Tous les form-group dans les modales */
             .modal-content .form-group {
                 margin-bottom: 16px;
+                width: 100%;
             }
             
             .modal-content .form-group input,
