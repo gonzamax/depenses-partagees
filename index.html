@@ -201,6 +201,134 @@
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
         }
 
+        /* Tooltips modernes */
+        [data-tooltip] {
+            position: relative;
+        }
+
+        [data-tooltip]::before,
+        [data-tooltip]::after {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            transition-delay: 0s;
+            z-index: 9999;
+        }
+
+        /* Bulle de tooltip */
+        [data-tooltip]::before {
+            content: attr(data-tooltip);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            white-space: nowrap;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            line-height: 1.4;
+        }
+
+        /* Flèche du tooltip */
+        [data-tooltip]::after {
+            content: '';
+            border: 6px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+            bottom: calc(100% + 2px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+        }
+
+        /* Animation d'apparition avec délai de 600ms */
+        [data-tooltip]:hover::before,
+        [data-tooltip]:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            transition-delay: 0.6s;
+        }
+
+        /* Disparition instantanée (pas de délai) */
+        [data-tooltip]:not(:hover)::before,
+        [data-tooltip]:not(:hover)::after {
+            transition-delay: 0s;
+        }
+
+        /* Tooltip position alternatives */
+        [data-tooltip-position="bottom"]::before {
+            bottom: auto;
+            top: calc(100% + 8px);
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        [data-tooltip-position="bottom"]::after {
+            bottom: auto;
+            top: calc(100% + 2px);
+            border-top-color: transparent;
+            border-bottom-color: rgba(0, 0, 0, 0.9);
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        [data-tooltip-position="bottom"]:hover::before,
+        [data-tooltip-position="bottom"]:hover::after {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        [data-tooltip-position="left"]::before {
+            bottom: auto;
+            top: 50%;
+            left: auto;
+            right: calc(100% + 8px);
+            transform: translateY(-50%) translateX(4px);
+        }
+
+        [data-tooltip-position="left"]::after {
+            bottom: auto;
+            top: 50%;
+            left: auto;
+            right: calc(100% + 2px);
+            border-top-color: transparent;
+            border-left-color: rgba(0, 0, 0, 0.9);
+            transform: translateY(-50%) translateX(4px);
+        }
+
+        [data-tooltip-position="left"]:hover::before,
+        [data-tooltip-position="left"]:hover::after {
+            transform: translateY(-50%) translateX(0);
+        }
+
+        [data-tooltip-position="right"]::before {
+            bottom: auto;
+            top: 50%;
+            left: calc(100% + 8px);
+            transform: translateY(-50%) translateX(-4px);
+        }
+
+        [data-tooltip-position="right"]::after {
+            bottom: auto;
+            top: 50%;
+            left: calc(100% + 2px);
+            border-top-color: transparent;
+            border-right-color: rgba(0, 0, 0, 0.9);
+            transform: translateY(-50%) translateX(-4px);
+        }
+
+        [data-tooltip-position="right"]:hover::before,
+        [data-tooltip-position="right"]:hover::after {
+            transform: translateY(-50%) translateX(0);
+        }
+
+        /* Pas de tooltip sur mobile/touch */
+        @media (hover: none) and (pointer: coarse) {
+            [data-tooltip]::before,
+            [data-tooltip]::after {
+                display: none;
+            }
+        }
+
         .expense-list {
             margin-top: 0;
             /* Prendre toute la hauteur disponible sans limite fixe */
@@ -1030,6 +1158,179 @@
             color: #721c24;
         }
 
+        /* Budget Header Optimisé */
+        .budget-header-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .budget-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .budget-year-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .budget-year-selector label {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.95em;
+            white-space: nowrap;
+        }
+
+        .budget-year-selector select {
+            padding: 10px 16px;
+            font-size: 1em;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        .budget-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-icon-mobile {
+            padding: 12px 20px;
+            white-space: nowrap;
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
+        .desktop-only {
+            display: inline;
+        }
+
+        /* Onglets de vue (chips style) */
+        .budget-view-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .budget-tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 20px;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            background: white;
+            color: #666;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .budget-tab:hover {
+            background: #f0f0f0;
+            border-color: #667eea;
+        }
+
+        .budget-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .budget-tab .tab-icon {
+            font-size: 1.2em;
+        }
+
+        .budget-tab .tab-label {
+            display: inline;
+        }
+
+        /* Mobile styles budget */
+        @media (max-width: 768px) {
+            .budget-header-container {
+                padding: 15px;
+            }
+
+            .budget-header-row {
+                margin-bottom: 15px;
+            }
+
+            .budget-year-selector {
+                flex: 1;
+            }
+
+            .budget-year-selector label {
+                font-size: 0.85em;
+            }
+
+            .budget-year-selector select {
+                padding: 8px 12px;
+                font-size: 0.9em;
+                min-width: 80px;
+            }
+
+            /* Boutons icônes seulement sur mobile */
+            .mobile-only {
+                display: inline;
+                font-size: 1.3em;
+            }
+
+            .desktop-only {
+                display: none;
+            }
+
+            .btn-icon-mobile {
+                padding: 10px 14px;
+                min-width: auto;
+            }
+
+            /* Onglets compacts sur mobile */
+            .budget-view-tabs {
+                gap: 6px;
+                padding: 8px;
+            }
+
+            .budget-tab {
+                flex: 1;
+                min-width: 0;
+                padding: 10px 8px;
+                font-size: 0.85em;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .budget-tab .tab-icon {
+                font-size: 1.4em;
+            }
+
+            .budget-tab .tab-label {
+                display: block;
+                font-size: 0.75em;
+                line-height: 1.2;
+            }
+        }
+        }
+
         .sync-syncing {
             background: #fff3cd;
             color: #856404;
@@ -1751,12 +2052,12 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" data-tab="ajouter">➕ Ajouter</button>
-            <button class="tab" data-tab="liste">📋 Liste</button>
-            <button class="tab" data-tab="budget">💰 Budget</button>
-            <button class="tab" data-tab="recurrentes">🔄 Récurrentes</button>
-            <button class="tab" data-tab="versements">💸 Versements</button>
-            <button class="tab" data-tab="statistiques">📊 Stats</button>
+            <button class="tab active" data-tab="ajouter" data-tooltip="Ajouter une nouvelle dépense" data-tooltip-position="bottom">➕ Ajouter</button>
+            <button class="tab" data-tab="liste" data-tooltip="Voir toutes les dépenses" data-tooltip-position="bottom">📋 Liste</button>
+            <button class="tab" data-tab="budget" data-tooltip="Gérer le budget prévisionnel" data-tooltip-position="bottom">💰 Budget</button>
+            <button class="tab" data-tab="recurrentes" data-tooltip="Dépenses automatiques mensuelles" data-tooltip-position="bottom">🔄 Récurrentes</button>
+            <button class="tab" data-tab="versements" data-tooltip="Versements entre parents" data-tooltip-position="bottom">💸 Versements</button>
+            <button class="tab" data-tab="statistiques" data-tooltip="Statistiques et graphiques" data-tooltip-position="bottom">📊 Stats</button>
         </div>
 
         <!-- Onglet Ajouter -->
@@ -1837,7 +2138,7 @@
             <div style="position: sticky; top: -30px; background: white; z-index: 10; margin: -30px -30px 20px -30px; padding: 20px 30px; border-bottom: 1px solid #e0e0e0; border-radius: 16px 16px 0 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                     <h2 style="color: #667eea; margin: 0;">📋 Liste des dépenses</h2>
-                    <button class="btn" onclick="openFilterModal()" style="padding: 10px 20px; white-space: nowrap;">
+                    <button class="btn" onclick="openFilterModal()" style="padding: 10px 20px; white-space: nowrap;" data-tooltip="Filtrer les dépenses par critères" data-tooltip-position="bottom">
                         🔍 Filtrer
                     </button>
                 </div>
@@ -2214,28 +2515,43 @@
         <div id="tab-budget" class="tab-content">
             <h2 style="color: #667eea; margin-bottom: 20px;">💰 Budget Prévisionnel</h2>
             
-            <!-- Header avec sélecteur d'année et bouton -->
-            <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <label for="budget-year" style="font-weight: bold; color: #667eea;">Année :</label>
-                        <select id="budget-year" onchange="displayBudget()" style="padding: 10px 20px; font-size: 1.1em; border-radius: 8px; border: 2px solid #667eea;">
-                            <!-- Années générées dynamiquement par initializeYearSelectors() -->
-                        </select>
-                        <select id="budget-view-mode" onchange="displayBudget()" style="padding: 10px 20px; font-size: 1em; border-radius: 8px; border: 2px solid #667eea;">
-                            <option value="dashboard">📊 Tableau de bord</option>
-                            <option value="list">📋 Liste détaillée</option>
-                            <option value="comparison">📊 Prévisionnel vs Réel</option>
+            <!-- Header optimisé mobile-first -->
+            <div class="budget-header-container">
+                <!-- Ligne 1 : Année + Actions -->
+                <div class="budget-header-row">
+                    <div class="budget-year-selector">
+                        <label for="budget-year">Année</label>
+                        <select id="budget-year" onchange="displayBudget()">
+                            <!-- Années générées dynamiquement -->
                         </select>
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-secondary" onclick="checkBudgetItemsToConfirm()" style="padding: 12px 20px;" title="Vérifier les dépenses à confirmer">
-                            ✅ Vérifier confirmations
+                    
+                    <div class="budget-actions">
+                        <button class="btn btn-icon-mobile btn-secondary" onclick="checkBudgetItemsToConfirm()" data-tooltip="Vérifier les dépenses prévisionnelles à confirmer">
+                            <span class="mobile-only">✅</span>
+                            <span class="desktop-only">✅ Confirmations</span>
                         </button>
-                        <button class="btn" onclick="openAddBudgetItemModal()" style="padding: 12px 24px;">
-                            ➕ Ajouter une dépense prévisionnelle
+                        <button class="btn btn-icon-mobile" onclick="openAddBudgetItemModal()" data-tooltip="Ajouter une nouvelle dépense prévisionnelle">
+                            <span class="mobile-only">➕</span>
+                            <span class="desktop-only">➕ Ajouter</span>
                         </button>
                     </div>
+                </div>
+                
+                <!-- Ligne 2 : Onglets de vue (chips) -->
+                <div class="budget-view-tabs">
+                    <button class="budget-tab active" data-view="dashboard" onclick="switchBudgetView('dashboard')" data-tooltip="Vue mensuelle avec graphiques" data-tooltip-position="bottom">
+                        <span class="tab-icon">📊</span>
+                        <span class="tab-label">Tableau de bord</span>
+                    </button>
+                    <button class="budget-tab" data-view="list" onclick="switchBudgetView('list')" data-tooltip="Liste détaillée de toutes les dépenses" data-tooltip-position="bottom">
+                        <span class="tab-icon">📋</span>
+                        <span class="tab-label">Liste</span>
+                    </button>
+                    <button class="budget-tab" data-view="comparison" onclick="switchBudgetView('comparison')" data-tooltip="Comparer prévisionnel et dépenses réelles" data-tooltip-position="bottom">
+                        <span class="tab-icon">📊</span>
+                        <span class="tab-label">Prév/Réel</span>
+                    </button>
                 </div>
             </div>
             
@@ -6378,6 +6694,15 @@
                 }
             });
             
+            // Créer le hidden input pour le view mode
+            if (!document.getElementById('budget-view-mode')) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'budget-view-mode';
+                hiddenInput.value = 'dashboard';
+                document.body.appendChild(hiddenInput);
+            }
+            
             // Initialiser aussi le sélecteur de mois avec le mois en cours
             const monthSelector = document.getElementById('budget-month-selector');
             if (monthSelector) {
@@ -7809,9 +8134,41 @@
             return total;
         }
 
+        function switchBudgetView(view) {
+            // Retirer l'ancien select (compatibilité)
+            const oldSelect = document.getElementById('budget-view-mode');
+            if (oldSelect) {
+                // Créer un hidden input pour garder la compatibilité
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'budget-view-mode';
+                hiddenInput.value = view;
+                if (oldSelect.parentNode) {
+                    oldSelect.parentNode.replaceChild(hiddenInput, oldSelect);
+                }
+            } else {
+                // Juste mettre à jour la valeur
+                const hidden = document.getElementById('budget-view-mode');
+                if (hidden) hidden.value = view;
+            }
+            
+            // Mettre à jour les onglets actifs
+            document.querySelectorAll('.budget-tab').forEach(tab => {
+                if (tab.dataset.view === view) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Appeler displayBudget
+            displayBudget();
+        }
+
         function displayBudget() {
             const year = parseInt(document.getElementById('budget-year').value);
-            const viewMode = document.getElementById('budget-view-mode').value;
+            const viewModeElement = document.getElementById('budget-view-mode');
+            const viewMode = viewModeElement ? viewModeElement.value : 'dashboard';
             const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
                            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
             
