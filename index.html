@@ -6172,6 +6172,16 @@
                     .select('*')
                     .eq('room_id', currentRoomId);
 
+                const { data: contributionsData } = await supabase
+                    .from('contributions')
+                    .select('*')
+                    .eq('room_id', currentRoomId);
+
+                const { data: expenseTypesData } = await supabase
+                    .from('expense_types')
+                    .select('*')
+                    .eq('room_id', currentRoomId);
+
                 // Créer l'objet de sauvegarde
                 const backup = {
                     version: '1.0',
@@ -6180,15 +6190,19 @@
                     data: {
                         expenses: expensesData || [],
                         recurrent_expenses: recurrentData || [],
+                        contributions: contributionsData || [],
                         budget_items: roomData?.budget_items || [],
                         settings: settingsData || {},
-                        types: typesData || []
+                        types: typesData || [],
+                        expense_types: expenseTypesData || []
                     },
                     stats: {
                         total_expenses: expensesData?.length || 0,
                         total_recurrents: recurrentData?.length || 0,
+                        total_contributions: contributionsData?.length || 0,
                         total_budget_items: (roomData?.budget_items || []).length,
-                        total_types: typesData?.length || 0
+                        total_types: typesData?.length || 0,
+                        total_expense_types: expenseTypesData?.length || 0
                     }
                 };
 
@@ -6207,7 +6221,7 @@
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
 
-                showNotification(`✅ Sauvegarde créée : ${backup.stats.total_expenses} dépenses, ${backup.stats.total_recurrents} récurrentes`, 'success');
+                showNotification(`✅ Sauvegarde créée : ${backup.stats.total_expenses} dépenses, ${backup.stats.total_recurrents} récurrentes, ${backup.stats.total_contributions} versements`, 'success');
 
             } catch (error) {
                 console.error('Erreur lors de la sauvegarde:', error);
@@ -6251,7 +6265,7 @@
                     console.log('📊 Sauvegarde à restaurer:', backup.stats);
 
                     // ÉTAPE 1 : Supprimer toutes les données existantes
-                    // Ordre important : d'abord les dépendances (expenses, recurrent), puis types
+                    // Ordre important : d'abord les dépendances (expenses, recurrent, contributions), puis types
                     const { error: deleteExpensesError } = await supabase
                         .from('expenses')
                         .delete()
@@ -6270,6 +6284,15 @@
                         console.warn('Erreur suppression recurrent:', deleteRecurrentError);
                     }
 
+                    const { error: deleteContributionsError } = await supabase
+                        .from('contributions')
+                        .delete()
+                        .eq('room_id', currentRoomId);
+                    
+                    if (deleteContributionsError) {
+                        console.warn('Erreur suppression contributions:', deleteContributionsError);
+                    }
+
                     const { error: deleteTypesError } = await supabase
                         .from('types')
                         .delete()
@@ -6279,7 +6302,37 @@
                         console.warn('Erreur suppression types:', deleteTypesError);
                     }
 
-                    // ÉTAPE 2 : Restaurer les types en premier (dépendance pour expenses)
+                    const { error: deleteExpenseTypesError } = await supabase
+                        .from('expense_types')
+                        .delete()
+                        .eq('room_id', currentRoomId);
+                    
+                    if (deleteExpenseTypesError) {
+                        console.warn('Erreur suppression expense_types:', deleteExpenseTypesError);
+                    }
+
+                    // ÉTAPE 2 : Restaurer les expense_types en PREMIER (catégories par type)
+                    if (backup.data.expense_types && backup.data.expense_types.length > 0) {
+                        // Nettoyer les données
+                        const cleanExpenseTypes = backup.data.expense_types.map(et => {
+                            const { id, created_at, updated_at, ...cleanET } = et;
+                            return {
+                                ...cleanET,
+                                room_id: currentRoomId
+                            };
+                        });
+
+                        const { error: expenseTypesError } = await supabase
+                            .from('expense_types')
+                            .insert(cleanExpenseTypes);
+
+                        if (expenseTypesError) {
+                            console.error('Erreur insertion expense_types:', expenseTypesError);
+                            throw new Error(`Erreur expense_types: ${expenseTypesError.message}`);
+                        }
+                    }
+
+                    // ÉTAPE 3 : Restaurer les types (dépendance pour expenses)
                     if (backup.data.types && backup.data.types.length > 0) {
                         // Nettoyer les données : enlever id et timestamps auto-générés
                         const cleanTypes = backup.data.types.map(t => {
@@ -6300,7 +6353,7 @@
                         }
                     }
 
-                    // ÉTAPE 3 : Restaurer les dépenses
+                    // ÉTAPE 4 : Restaurer les dépenses
                     if (backup.data.expenses && backup.data.expenses.length > 0) {
                         // Nettoyer les données : enlever id et timestamps auto-générés
                         const cleanExpenses = backup.data.expenses.map(exp => {
@@ -6321,7 +6374,7 @@
                         }
                     }
 
-                    // ÉTAPE 4 : Restaurer les récurrentes
+                    // ÉTAPE 5 : Restaurer les récurrentes
                     if (backup.data.recurrent_expenses && backup.data.recurrent_expenses.length > 0) {
                         // Nettoyer les données
                         const cleanRecurrent = backup.data.recurrent_expenses.map(rec => {
@@ -6342,7 +6395,28 @@
                         }
                     }
 
-                    // ÉTAPE 5 : Restaurer le budget
+                    // ÉTAPE 6 : Restaurer les contributions (versements)
+                    if (backup.data.contributions && backup.data.contributions.length > 0) {
+                        // Nettoyer les données
+                        const cleanContributions = backup.data.contributions.map(contrib => {
+                            const { id, created_at, updated_at, ...cleanContrib } = contrib;
+                            return {
+                                ...cleanContrib,
+                                room_id: currentRoomId
+                            };
+                        });
+
+                        const { error: contributionsError } = await supabase
+                            .from('contributions')
+                            .insert(cleanContributions);
+
+                        if (contributionsError) {
+                            console.error('Erreur insertion contributions:', contributionsError);
+                            throw new Error(`Erreur versements: ${contributionsError.message}`);
+                        }
+                    }
+
+                    // ÉTAPE 7 : Restaurer le budget
                     if (backup.data.budget_items) {
                         const { error: budgetError } = await supabase
                             .from('rooms')
@@ -6355,7 +6429,7 @@
                         }
                     }
 
-                    // ÉTAPE 6 : Restaurer les paramètres
+                    // ÉTAPE 8 : Restaurer les paramètres
                     if (backup.data.settings) {
                         // Nettoyer les champs qui ne doivent pas être restaurés
                         const { id, created_at, updated_at, room_id, ...cleanSettings } = backup.data.settings;
@@ -6371,19 +6445,20 @@
                         }
                     }
 
-                    // ÉTAPE 7 : Recharger toutes les données
+                    // ÉTAPE 9 : Recharger toutes les données
                     await loadFromSupabase();
 
-                    // ÉTAPE 8 : Rafraîchir tous les affichages
+                    // ÉTAPE 10 : Rafraîchir tous les affichages
                     displayExpenses();
                     displayStatistics();
                     displayBudget();
                     displayRecurrentExpenses();
+                    displayContributions();
                     loadSettings();
                     updateAllTypeSelects();
                     displayTypesList();
 
-                    showNotification(`✅ Restauration réussie ! ${backup.stats.total_expenses} dépenses, ${backup.stats.total_recurrents} récurrentes restaurées`, 'success');
+                    showNotification(`✅ Restauration réussie ! ${backup.stats.total_expenses} dépenses, ${backup.stats.total_recurrents} récurrentes, ${backup.stats.total_contributions || 0} versements restaurés`, 'success');
 
                 } catch (error) {
                     console.error('Erreur lors de la restauration:', error);
@@ -6396,6 +6471,7 @@
                         displayStatistics();
                         displayBudget();
                         displayRecurrentExpenses();
+                        displayContributions();
                         loadSettings();
                         updateAllTypeSelects();
                         displayTypesList();
