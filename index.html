@@ -6251,55 +6251,124 @@
                     console.log('📊 Sauvegarde à restaurer:', backup.stats);
 
                     // ÉTAPE 1 : Supprimer toutes les données existantes
-                    await supabase.from('expenses').delete().eq('room_id', currentRoomId);
-                    await supabase.from('recurrent_expenses').delete().eq('room_id', currentRoomId);
-                    await supabase.from('types').delete().eq('room_id', currentRoomId);
+                    // Ordre important : d'abord les dépendances (expenses, recurrent), puis types
+                    const { error: deleteExpensesError } = await supabase
+                        .from('expenses')
+                        .delete()
+                        .eq('room_id', currentRoomId);
+                    
+                    if (deleteExpensesError) {
+                        console.warn('Erreur suppression expenses:', deleteExpensesError);
+                    }
 
-                    // ÉTAPE 2 : Restaurer les dépenses
+                    const { error: deleteRecurrentError } = await supabase
+                        .from('recurrent_expenses')
+                        .delete()
+                        .eq('room_id', currentRoomId);
+                    
+                    if (deleteRecurrentError) {
+                        console.warn('Erreur suppression recurrent:', deleteRecurrentError);
+                    }
+
+                    const { error: deleteTypesError } = await supabase
+                        .from('types')
+                        .delete()
+                        .eq('room_id', currentRoomId);
+                    
+                    if (deleteTypesError) {
+                        console.warn('Erreur suppression types:', deleteTypesError);
+                    }
+
+                    // ÉTAPE 2 : Restaurer les types en premier (dépendance pour expenses)
+                    if (backup.data.types && backup.data.types.length > 0) {
+                        // Nettoyer les données : enlever id et timestamps auto-générés
+                        const cleanTypes = backup.data.types.map(t => {
+                            const { id, created_at, updated_at, ...cleanType } = t;
+                            return {
+                                ...cleanType,
+                                room_id: currentRoomId // S'assurer que le room_id est correct
+                            };
+                        });
+
+                        const { error: typesError } = await supabase
+                            .from('types')
+                            .insert(cleanTypes);
+
+                        if (typesError) {
+                            console.error('Erreur insertion types:', typesError);
+                            throw new Error(`Erreur types: ${typesError.message}`);
+                        }
+                    }
+
+                    // ÉTAPE 3 : Restaurer les dépenses
                     if (backup.data.expenses && backup.data.expenses.length > 0) {
+                        // Nettoyer les données : enlever id et timestamps auto-générés
+                        const cleanExpenses = backup.data.expenses.map(exp => {
+                            const { id, created_at, updated_at, ...cleanExp } = exp;
+                            return {
+                                ...cleanExp,
+                                room_id: currentRoomId // S'assurer que le room_id est correct
+                            };
+                        });
+
                         const { error: expensesError } = await supabase
                             .from('expenses')
-                            .insert(backup.data.expenses);
+                            .insert(cleanExpenses);
 
-                        if (expensesError) throw expensesError;
+                        if (expensesError) {
+                            console.error('Erreur insertion expenses:', expensesError);
+                            throw new Error(`Erreur expenses: ${expensesError.message}`);
+                        }
                     }
 
-                    // ÉTAPE 3 : Restaurer les récurrentes
+                    // ÉTAPE 4 : Restaurer les récurrentes
                     if (backup.data.recurrent_expenses && backup.data.recurrent_expenses.length > 0) {
+                        // Nettoyer les données
+                        const cleanRecurrent = backup.data.recurrent_expenses.map(rec => {
+                            const { id, created_at, updated_at, ...cleanRec } = rec;
+                            return {
+                                ...cleanRec,
+                                room_id: currentRoomId
+                            };
+                        });
+
                         const { error: recurrentError } = await supabase
                             .from('recurrent_expenses')
-                            .insert(backup.data.recurrent_expenses);
+                            .insert(cleanRecurrent);
 
-                        if (recurrentError) throw recurrentError;
+                        if (recurrentError) {
+                            console.error('Erreur insertion recurrent:', recurrentError);
+                            throw new Error(`Erreur récurrentes: ${recurrentError.message}`);
+                        }
                     }
 
-                    // ÉTAPE 4 : Restaurer le budget
+                    // ÉTAPE 5 : Restaurer le budget
                     if (backup.data.budget_items) {
                         const { error: budgetError } = await supabase
                             .from('rooms')
                             .update({ budget_items: backup.data.budget_items })
                             .eq('room_id', currentRoomId);
 
-                        if (budgetError) throw budgetError;
+                        if (budgetError) {
+                            console.error('Erreur update budget:', budgetError);
+                            throw new Error(`Erreur budget: ${budgetError.message}`);
+                        }
                     }
 
-                    // ÉTAPE 5 : Restaurer les paramètres
+                    // ÉTAPE 6 : Restaurer les paramètres
                     if (backup.data.settings) {
+                        // Nettoyer les champs qui ne doivent pas être restaurés
+                        const { id, created_at, updated_at, room_id, ...cleanSettings } = backup.data.settings;
+                        
                         const { error: settingsError } = await supabase
                             .from('settings')
-                            .update(backup.data.settings)
+                            .update(cleanSettings)
                             .eq('room_id', currentRoomId);
 
-                        if (settingsError) throw settingsError;
-                    }
-
-                    // ÉTAPE 6 : Restaurer les types personnalisés
-                    if (backup.data.types && backup.data.types.length > 0) {
-                        const { error: typesError } = await supabase
-                            .from('types')
-                            .insert(backup.data.types);
-
-                        if (typesError) throw typesError;
+                        if (settingsError) {
+                            console.error('Erreur update settings:', settingsError);
+                            throw new Error(`Erreur paramètres: ${settingsError.message}`);
+                        }
                     }
 
                     // ÉTAPE 7 : Recharger toutes les données
@@ -6318,7 +6387,21 @@
 
                 } catch (error) {
                     console.error('Erreur lors de la restauration:', error);
-                    showNotification('❌ Erreur lors de la restauration : ' + error.message, 'error');
+                    showNotification(`❌ Erreur lors de la restauration : ${error.message}`, 'error');
+                    
+                    // Recharger les données actuelles pour éviter un état incohérent
+                    try {
+                        await loadFromSupabase();
+                        displayExpenses();
+                        displayStatistics();
+                        displayBudget();
+                        displayRecurrentExpenses();
+                        loadSettings();
+                        updateAllTypeSelects();
+                        displayTypesList();
+                    } catch (reloadError) {
+                        console.error('Erreur rechargement données:', reloadError);
+                    }
                 }
 
                 // Réinitialiser l'input
