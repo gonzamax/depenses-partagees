@@ -8575,21 +8575,25 @@
             const n1    = settings.parent1_name;
             const n2    = settings.parent2_name;
 
-            let cumulP1Paid = 0, cumulP2Paid = 0, cumulTotal = 0;
+            // Accumulateurs séparés : dépenses vs versements
+            let cumulP1Exp = 0, cumulP2Exp = 0;
+            let cumulP1Ctr = 0, cumulP2Ctr = 0;
+            let cumulTotalExp = 0;
             let rows = '';
 
             sortedKeys.forEach(key => {
                 const d = allMonthsData[key];
-                const p1Paid   = d.p1Exp + d.p1Contrib;
-                const p2Paid   = d.p2Exp + d.p2Contrib;
-                const totalExp = d.p1Exp + d.p2Exp;
 
-                cumulP1Paid += p1Paid;
-                cumulP2Paid += p2Paid;
-                cumulTotal  += totalExp;
+                cumulP1Exp    += d.p1Exp;
+                cumulP2Exp    += d.p2Exp;
+                cumulP1Ctr    += d.p1Contrib;
+                cumulP2Ctr    += d.p2Contrib;
+                cumulTotalExp += d.p1Exp + d.p2Exp;
 
-                const p1Due     = (cumulTotal * p1pct) / 100;
-                const cumulNet  = cumulP1Paid - p1Due;  // + = P2 doit à P1 ; - = P1 doit à P2
+                const cumulP1Paid = cumulP1Exp + cumulP1Ctr;
+                const cumulP2Paid = cumulP2Exp + cumulP2Ctr;
+                const p1Due       = (cumulTotalExp * p1pct) / 100;
+                const cumulNet    = cumulP1Paid - p1Due;  // + = P2 doit à P1 ; - = P1 doit à P2
 
                 let debtCell = '';
                 if (Math.abs(cumulNet) < 0.01) {
@@ -8603,9 +8607,9 @@
                 rows += `
                     <tr style="border-bottom:1px solid #f0f0f0;">
                         <td style="padding:10px 8px;font-weight:600;white-space:nowrap;">${formatMonthLabel(key)}</td>
-                        <td style="padding:10px 8px;text-align:right;">${cumulP1Paid.toFixed(2)}</td>
-                        <td style="padding:10px 8px;text-align:right;">${cumulP2Paid.toFixed(2)}</td>
-                        <td style="padding:10px 8px;text-align:right;">${cumulTotal.toFixed(2)}</td>
+                        <td style="padding:10px 8px;text-align:right;">${cumulP1Exp.toFixed(2)}${cumulP1Ctr > 0 ? `<br><small style="color:#28a745;">+${cumulP1Ctr.toFixed(2)} vers.</small>` : ''}</td>
+                        <td style="padding:10px 8px;text-align:right;">${cumulP2Exp.toFixed(2)}${cumulP2Ctr > 0 ? `<br><small style="color:#28a745;">+${cumulP2Ctr.toFixed(2)} vers.</small>` : ''}</td>
+                        <td style="padding:10px 8px;text-align:right;">${cumulTotalExp.toFixed(2)}</td>
                         <td style="padding:10px 8px;text-align:center;">${debtCell}</td>
                     </tr>`;
             });
@@ -8616,9 +8620,9 @@
                         <thead>
                             <tr style="background:#f8f9fa;color:#555;">
                                 <th style="padding:10px 8px;text-align:left;border-bottom:2px solid #dee2e6;">Jusqu'à ce mois</th>
-                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n1} cumulé</th>
-                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n2} cumulé</th>
-                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">Total cumulé</th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n1}<br><small style="font-weight:400;">dép. cumulées (+vers.)</small></th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n2}<br><small style="font-weight:400;">dép. cumulées (+vers.)</small></th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">Total dép.<br><small style="font-weight:400;">cumulées</small></th>
                                 <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #dee2e6;">Dette cumulée<br><small style="font-weight:400;">${p1pct}% / ${p2pct}%</small></th>
                             </tr>
                         </thead>
