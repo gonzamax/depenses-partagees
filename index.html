@@ -8633,7 +8633,7 @@
                 .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
 
             // Tableau mensuel de la période filtrée
-            const filteredMonths = groupByMonth(filtered, filteredContributions);
+            const filteredMonths = groupByMonth(filtered, contributions || []);
             const periodMonthlyTable = buildMonthlyTable(filteredMonths, 'période');
 
             // ─────────────────────────────────────────────────────────────────
