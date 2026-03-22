@@ -8459,198 +8459,265 @@
             });
         }
 
+        // ─── Utilitaire : regroupe dépenses et versements par mois ──────────────
+        function groupByMonth(expList, contribList) {
+            const months = {};
+
+            expList.forEach(e => {
+                const key = e.date ? e.date.substring(0, 7) : 'inconnu'; // "YYYY-MM"
+                if (!months[key]) months[key] = { p1Exp: 0, p2Exp: 0, p1Contrib: 0, p2Contrib: 0 };
+                if (e.payeur === settings.parent1_name || e.payeur === 'Parent 1') months[key].p1Exp += parseFloat(e.montant || 0);
+                else months[key].p2Exp += parseFloat(e.montant || 0);
+            });
+
+            (contribList || []).forEach(c => {
+                const key = c.date ? c.date.substring(0, 7) : 'inconnu';
+                if (!months[key]) months[key] = { p1Exp: 0, p2Exp: 0, p1Contrib: 0, p2Contrib: 0 };
+                if (c.parent === settings.parent1_name || c.parent === 'Parent 1') months[key].p1Contrib += parseFloat(c.montant || 0);
+                else months[key].p2Contrib += parseFloat(c.montant || 0);
+            });
+
+            return months;
+        }
+
+        // ─── Formate "YYYY-MM" → "Janvier 2025" ──────────────────────────────
+        function formatMonthLabel(key) {
+            if (key === 'inconnu') return 'Date inconnue';
+            const [y, m] = key.split('-');
+            const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+            return `${months[parseInt(m, 10) - 1]} ${y}`;
+        }
+
+        // ─── Génère le tableau mensuel HTML ──────────────────────────────────
+        function buildMonthlyTable(monthsData, label) {
+            const sortedKeys = Object.keys(monthsData).sort();
+            if (sortedKeys.length === 0) return '<p style="color:#999;font-size:0.9em;">Aucune donnée.</p>';
+
+            const p1pct = settings.parent1_percentage;
+            const p2pct = settings.parent2_percentage;
+            const sym   = settings.currency_symbol;
+            const n1    = settings.parent1_name;
+            const n2    = settings.parent2_name;
+
+            let rows = '';
+            sortedKeys.forEach(key => {
+                const d = monthsData[key];
+                const monthTotal = d.p1Exp + d.p2Exp + d.p1Contrib + d.p2Contrib;
+                const p1Paid     = d.p1Exp + d.p1Contrib;
+                const p2Paid     = d.p2Exp + d.p2Contrib;
+                const totalExp   = d.p1Exp + d.p2Exp;
+                const p1Due      = (totalExp * p1pct) / 100;
+                const p2Due      = (totalExp * p2pct) / 100;
+                const p1Net      = p1Paid - p1Due;  // + = créditeur, - = débiteur
+
+                let debtCell = '';
+                if (Math.abs(p1Net) < 0.01) {
+                    debtCell = `<span style="color:#28a745;font-weight:600;">✅ Équilibré</span>`;
+                } else if (p1Net > 0) {
+                    debtCell = `<span style="color:#856404;font-weight:600;">${n2} doit ${p1Net.toFixed(2)} ${sym}</span>`;
+                } else {
+                    debtCell = `<span style="color:#856404;font-weight:600;">${n1} doit ${Math.abs(p1Net).toFixed(2)} ${sym}</span>`;
+                }
+
+                rows += `
+                    <tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:10px 8px;font-weight:600;white-space:nowrap;">${formatMonthLabel(key)}</td>
+                        <td style="padding:10px 8px;text-align:right;">${d.p1Exp.toFixed(2)}</td>
+                        ${d.p1Contrib > 0 ? `<td style="padding:10px 8px;text-align:right;color:#28a745;">+${d.p1Contrib.toFixed(2)}</td>` : '<td style="padding:10px 8px;text-align:right;color:#ccc;">—</td>'}
+                        <td style="padding:10px 8px;text-align:right;">${d.p2Exp.toFixed(2)}</td>
+                        ${d.p2Contrib > 0 ? `<td style="padding:10px 8px;text-align:right;color:#28a745;">+${d.p2Contrib.toFixed(2)}</td>` : '<td style="padding:10px 8px;text-align:right;color:#ccc;">—</td>'}
+                        <td style="padding:10px 8px;text-align:right;">${totalExp.toFixed(2)}</td>
+                        <td style="padding:10px 8px;text-align:center;">${debtCell}</td>
+                    </tr>`;
+            });
+
+            return `
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.85em;">
+                        <thead>
+                            <tr style="background:#f8f9fa;color:#555;">
+                                <th style="padding:10px 8px;text-align:left;border-bottom:2px solid #dee2e6;">Mois</th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n1}<br><small style="font-weight:400;">Dépenses</small></th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n1}<br><small style="font-weight:400;">Versements</small></th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n2}<br><small style="font-weight:400;">Dépenses</small></th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n2}<br><small style="font-weight:400;">Versements</small></th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">Total<br><small style="font-weight:400;">dépenses</small></th>
+                                <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #dee2e6;">Dette du mois<br><small style="font-weight:400;">${p1pct}% / ${p2pct}%</small></th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+        }
+
+        // ─── Génère le tableau global cumulatif mois par mois ─────────────────
+        function buildCumulativeTable(allMonthsData) {
+            const sortedKeys = Object.keys(allMonthsData).sort();
+            if (sortedKeys.length === 0) return '<p style="color:#999;font-size:0.9em;">Aucune donnée.</p>';
+
+            const p1pct = settings.parent1_percentage;
+            const p2pct = settings.parent2_percentage;
+            const sym   = settings.currency_symbol;
+            const n1    = settings.parent1_name;
+            const n2    = settings.parent2_name;
+
+            let cumulP1Paid = 0, cumulP2Paid = 0, cumulTotal = 0;
+            let rows = '';
+
+            sortedKeys.forEach(key => {
+                const d = allMonthsData[key];
+                const p1Paid   = d.p1Exp + d.p1Contrib;
+                const p2Paid   = d.p2Exp + d.p2Contrib;
+                const totalExp = d.p1Exp + d.p2Exp;
+
+                cumulP1Paid += p1Paid;
+                cumulP2Paid += p2Paid;
+                cumulTotal  += totalExp;
+
+                const p1Due     = (cumulTotal * p1pct) / 100;
+                const cumulNet  = cumulP1Paid - p1Due;  // + = P2 doit à P1 ; - = P1 doit à P2
+
+                let debtCell = '';
+                if (Math.abs(cumulNet) < 0.01) {
+                    debtCell = `<span style="color:#28a745;font-weight:600;">✅ Équilibré</span>`;
+                } else if (cumulNet > 0) {
+                    debtCell = `<span style="color:#856404;font-weight:600;">${n2} doit ${cumulNet.toFixed(2)} ${sym}</span>`;
+                } else {
+                    debtCell = `<span style="color:#856404;font-weight:600;">${n1} doit ${Math.abs(cumulNet).toFixed(2)} ${sym}</span>`;
+                }
+
+                rows += `
+                    <tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:10px 8px;font-weight:600;white-space:nowrap;">${formatMonthLabel(key)}</td>
+                        <td style="padding:10px 8px;text-align:right;">${cumulP1Paid.toFixed(2)}</td>
+                        <td style="padding:10px 8px;text-align:right;">${cumulP2Paid.toFixed(2)}</td>
+                        <td style="padding:10px 8px;text-align:right;">${cumulTotal.toFixed(2)}</td>
+                        <td style="padding:10px 8px;text-align:center;">${debtCell}</td>
+                    </tr>`;
+            });
+
+            return `
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.85em;">
+                        <thead>
+                            <tr style="background:#f8f9fa;color:#555;">
+                                <th style="padding:10px 8px;text-align:left;border-bottom:2px solid #dee2e6;">Jusqu'à ce mois</th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n1} cumulé</th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n2} cumulé</th>
+                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">Total cumulé</th>
+                                <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #dee2e6;">Dette cumulée<br><small style="font-weight:400;">${p1pct}% / ${p2pct}%</small></th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+        }
+
         function displayBalance(filtered, totalParent1, totalParent2, total, filteredContributions = []) {
             const balanceCard = document.getElementById('balance-card');
 
+            const sym  = settings.currency_symbol;
+            const n1   = settings.parent1_name;
+            const n2   = settings.parent2_name;
+            const pct1 = settings.parent1_percentage;
+            const pct2 = settings.parent2_percentage;
+
             // ─────────────────────────────────────────────────────────────────
-            // BLOC 1 : Données de la période sélectionnée (affichage informatif)
+            // BLOC 1 : Résumé de la période sélectionnée
             // ─────────────────────────────────────────────────────────────────
             const p1ContribPeriod = filteredContributions
-                .filter(c => c.parent === 'Parent 1' || c.parent === settings.parent1_name)
+                .filter(c => c.parent === 'Parent 1' || c.parent === n1)
                 .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
-
             const p2ContribPeriod = filteredContributions
-                .filter(c => c.parent === 'Parent 2' || c.parent === settings.parent2_name)
+                .filter(c => c.parent === 'Parent 2' || c.parent === n2)
                 .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
 
-            const p1TotalPeriod = totalParent1 + p1ContribPeriod;
-            const p2TotalPeriod = totalParent2 + p2ContribPeriod;
+            // Tableau mensuel de la période filtrée
+            const filteredMonths = groupByMonth(filtered, filteredContributions);
+            const periodMonthlyTable = buildMonthlyTable(filteredMonths, 'période');
 
             // ─────────────────────────────────────────────────────────────────
-            // BLOC 2 : Calcul de la dette sur la TOTALITÉ des données (toutes périodes)
-            // La question "qui doit quoi" est cumulative : elle ne dépend pas
-            // de la période filtrée mais de l'historique complet.
+            // BLOC 2 : Calcul global (toutes périodes) — dette réelle
             // ─────────────────────────────────────────────────────────────────
-            const allExpenses = expenses; // variable globale
+            const allExpAll   = expenses;
+            const allContAll  = contributions || [];
 
-            const allTotalExpenses = allExpenses.reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
+            const allTotalExp = allExpAll.reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
+            const allP1Exp    = allExpAll.filter(e => e.payeur === n1 || e.payeur === 'Parent 1').reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
+            const allP2Exp    = allExpAll.filter(e => e.payeur === n2 || e.payeur === 'Parent 2').reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
+            const allP1Ctr    = allContAll.filter(c => c.parent === n1 || c.parent === 'Parent 1').reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
+            const allP2Ctr    = allContAll.filter(c => c.parent === n2 || c.parent === 'Parent 2').reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
 
-            const allParent1Expenses = allExpenses
-                .filter(e => e.payeur === settings.parent1_name || e.payeur === 'Parent 1')
-                .reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
+            const p1PaidAll   = allP1Exp + allP1Ctr;
+            const p2PaidAll   = allP2Exp + allP2Ctr;
+            const p1DueAll    = (allTotalExp * pct1) / 100;
+            const netDebt     = p1PaidAll - p1DueAll; // + = P2 doit à P1
 
-            const allParent2Expenses = allExpenses
-                .filter(e => e.payeur === settings.parent2_name || e.payeur === 'Parent 2')
-                .reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
-
-            const allParent1Contributions = (contributions || [])
-                .filter(c => c.parent === 'Parent 1' || c.parent === settings.parent1_name)
-                .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
-
-            const allParent2Contributions = (contributions || [])
-                .filter(c => c.parent === 'Parent 2' || c.parent === settings.parent2_name)
-                .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
-
-            // Part théorique de chaque parent sur le total global
-            const parent1ShouldPayAll = (allTotalExpenses * settings.parent1_percentage) / 100;
-            const parent2ShouldPayAll = (allTotalExpenses * settings.parent2_percentage) / 100;
-
-            // Contribution réelle globale (dépenses payées + versements)
-            const parent1PaidAll = allParent1Expenses + allParent1Contributions;
-            const parent2PaidAll = allParent2Expenses + allParent2Contributions;
-
-            // Solde net : positif = a trop payé (créditeur), négatif = a trop peu payé (débiteur)
-            const parent1NetAll = parent1PaidAll - parent1ShouldPayAll;
-            const parent2NetAll = parent2PaidAll - parent2ShouldPayAll;
-
-            // La dette nette est symétrique : si P1 a +X alors P2 a −X (et vice versa)
-            // On utilise parent1NetAll comme référence unique
-            const netDebt = parent1NetAll; // positif = P2 doit à P1 ; négatif = P1 doit à P2
+            // Tableau cumulatif global mois par mois
+            const allMonths = groupByMonth(allExpAll, allContAll);
+            const cumulTable = buildCumulativeTable(allMonths);
 
             // ─────────────────────────────────────────────────────────────────
-            // BLOC 3 : Détermination du message de dette
+            // BLOC 3 : Verdict final
             // ─────────────────────────────────────────────────────────────────
             let balanceMessage = '';
-
             if (Math.abs(netDebt) < 0.01) {
-                balanceMessage = `
-                    <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 1.1em; color: #155724;">
-                            <strong>✅ Les comptes sont équilibrés !</strong>
-                            <div style="font-size: 0.9em; margin-top: 6px; opacity: 0.85;">Aucun rééquilibrage nécessaire sur l'ensemble des dépenses.</div>
-                        </div>
-                    </div>
-                `;
+                balanceMessage = `<div style="background:#d4edda;border-left:4px solid #28a745;padding:20px;border-radius:8px;">
+                    <div style="font-size:1.1em;color:#155724;">
+                        <strong>✅ Les comptes sont équilibrés !</strong>
+                        <div style="font-size:0.9em;margin-top:6px;opacity:0.85;">Aucun rééquilibrage nécessaire sur l'ensemble des dépenses.</div>
+                    </div></div>`;
             } else if (netDebt > 0) {
-                // P1 a trop payé → P2 doit à P1
-                balanceMessage = `
-                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 1.15em; color: #856404; margin-bottom: 10px;">
-                            <strong>⚖️ Rééquilibrage global :</strong>
-                        </div>
-                        <div style="font-size: 1.4em; font-weight: bold; color: #856404; margin-bottom: 8px;">
-                            ${settings.parent2_name} doit ${netDebt.toFixed(2)} ${settings.currency_symbol} à ${settings.parent1_name}
-                        </div>
-                        <div style="font-size: 0.85em; color: #856404; opacity: 0.8;">
-                            Calculé sur l'ensemble des dépenses (toutes périodes confondues), selon la répartition ${settings.parent1_percentage}% / ${settings.parent2_percentage}%.
-                        </div>
-                    </div>
-                `;
+                balanceMessage = `<div style="background:#fff3cd;border-left:4px solid #ffc107;padding:20px;border-radius:8px;">
+                    <div style="font-size:1.05em;color:#856404;margin-bottom:8px;"><strong>⚖️ Rééquilibrage global :</strong></div>
+                    <div style="font-size:1.5em;font-weight:bold;color:#856404;margin-bottom:8px;">${n2} doit ${netDebt.toFixed(2)} ${sym} à ${n1}</div>
+                    <div style="font-size:0.82em;color:#856404;opacity:0.8;">Calculé sur l'ensemble des dépenses, répartition ${pct1}% / ${pct2}%.</div>
+                </div>`;
             } else {
-                // P2 a trop payé → P1 doit à P2
-                balanceMessage = `
-                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 1.15em; color: #856404; margin-bottom: 10px;">
-                            <strong>⚖️ Rééquilibrage global :</strong>
-                        </div>
-                        <div style="font-size: 1.4em; font-weight: bold; color: #856404; margin-bottom: 8px;">
-                            ${settings.parent1_name} doit ${Math.abs(netDebt).toFixed(2)} ${settings.currency_symbol} à ${settings.parent2_name}
-                        </div>
-                        <div style="font-size: 0.85em; color: #856404; opacity: 0.8;">
-                            Calculé sur l'ensemble des dépenses (toutes périodes confondues), selon la répartition ${settings.parent1_percentage}% / ${settings.parent2_percentage}%.
-                        </div>
-                    </div>
-                `;
+                balanceMessage = `<div style="background:#fff3cd;border-left:4px solid #ffc107;padding:20px;border-radius:8px;">
+                    <div style="font-size:1.05em;color:#856404;margin-bottom:8px;"><strong>⚖️ Rééquilibrage global :</strong></div>
+                    <div style="font-size:1.5em;font-weight:bold;color:#856404;margin-bottom:8px;">${n1} doit ${Math.abs(netDebt).toFixed(2)} ${sym} à ${n2}</div>
+                    <div style="font-size:0.82em;color:#856404;opacity:0.8;">Calculé sur l'ensemble des dépenses, répartition ${pct1}% / ${pct2}%.</div>
+                </div>`;
             }
 
             // ─────────────────────────────────────────────────────────────────
-            // BLOC 4 : Rendu HTML
+            // BLOC 4 : Libellé de période
             // ─────────────────────────────────────────────────────────────────
-
-            // Libellé de période pour l'encart informatif
             const periodEl = document.getElementById('stats-period');
             const periodLabels = {
-                'all': 'Toutes les dépenses',
-                'month': 'Ce mois-ci',
-                'lastMonth': 'Mois dernier',
-                '3months': '3 derniers mois',
-                '6months': '6 derniers mois',
-                'year': 'Cette année',
-                'lastYear': 'Année dernière',
-                'custom': 'Période personnalisée'
+                'all':'Toutes les dépenses','month':'Ce mois-ci','lastMonth':'Mois dernier',
+                '3months':'3 derniers mois','6months':'6 derniers mois',
+                'year':'Cette année','lastYear':'Année dernière','custom':'Période personnalisée'
             };
             const periodLabel = periodEl ? (periodLabels[periodEl.value] || periodEl.value) : '';
 
+            // ─────────────────────────────────────────────────────────────────
+            // BLOC 5 : Rendu HTML complet
+            // ─────────────────────────────────────────────────────────────────
             balanceCard.innerHTML = `
-                <h2 style="color: #667eea; margin-bottom: 20px;">💰 Équilibre des comptes</h2>
+                <h2 style="color:#667eea;margin-bottom:20px;">💰 Équilibre des comptes</h2>
 
                 <!-- Répartition configurée -->
-                <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="font-size: 0.95em; color: #0c5460;">
+                <div style="background:#e7f3ff;border-left:4px solid #2196F3;padding:15px;border-radius:8px;margin-bottom:24px;">
+                    <div style="font-size:0.95em;color:#0c5460;">
                         <strong>⚖️ Répartition configurée :</strong>
-                        ${settings.parent1_name} : ${settings.parent1_percentage}% |
-                        ${settings.parent2_name} : ${settings.parent2_percentage}%
+                        ${n1} : ${pct1}% | ${n2} : ${pct2}%
                     </div>
                 </div>
 
-                <!-- Détail de la période sélectionnée (informatif) -->
-                <div style="margin-bottom: 20px;">
-                    <div style="font-size: 0.85em; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
-                        📅 Période affichée : ${periodLabel}
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px; border-radius: 12px;">
-                            <h4 style="margin-bottom: 8px; opacity: 0.9;">${settings.parent1_name}</h4>
-                            <div style="font-size: 0.85em; opacity: 0.8;">Dépenses payées (période)</div>
-                            <div style="font-size: 1.4em; font-weight: bold;">${totalParent1.toFixed(2)} ${settings.currency_symbol}</div>
-                            ${p1ContribPeriod > 0 ? `
-                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">
-                                Versements : +${p1ContribPeriod.toFixed(2)} ${settings.currency_symbol}
-                            </div>` : ''}
-                            <div style="font-size: 0.9em; font-weight: bold; margin-top: 4px;">
-                                Contribution totale période : ${p1TotalPeriod.toFixed(2)} ${settings.currency_symbol}
-                            </div>
-                            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.82em; opacity: 0.85;">
-                                Part théorique sur ce total : ${((total * settings.parent1_percentage) / 100).toFixed(2)} ${settings.currency_symbol} (${settings.parent1_percentage}%)
-                            </div>
-                        </div>
-                        <div style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; padding: 18px; border-radius: 12px;">
-                            <h4 style="margin-bottom: 8px; opacity: 0.9;">${settings.parent2_name}</h4>
-                            <div style="font-size: 0.85em; opacity: 0.8;">Dépenses payées (période)</div>
-                            <div style="font-size: 1.4em; font-weight: bold;">${totalParent2.toFixed(2)} ${settings.currency_symbol}</div>
-                            ${p2ContribPeriod > 0 ? `
-                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">
-                                Versements : +${p2ContribPeriod.toFixed(2)} ${settings.currency_symbol}
-                            </div>` : ''}
-                            <div style="font-size: 0.9em; font-weight: bold; margin-top: 4px;">
-                                Contribution totale période : ${p2TotalPeriod.toFixed(2)} ${settings.currency_symbol}
-                            </div>
-                            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.82em; opacity: 0.85;">
-                                Part théorique sur ce total : ${((total * settings.parent2_percentage) / 100).toFixed(2)} ${settings.currency_symbol} (${settings.parent2_percentage}%)
-                            </div>
-                        </div>
-                    </div>
+                <!-- Section 1 : Période sélectionnée mois par mois -->
+                <div style="margin-bottom:28px;">
+                    <h3 style="color:#667eea;margin-bottom:4px;font-size:1em;">📅 Détail par mois — ${periodLabel}</h3>
+                    <p style="font-size:0.82em;color:#999;margin-bottom:12px;">Dépenses et versements de la période filtrée, dette calculée mois par mois selon la répartition.</p>
+                    ${periodMonthlyTable}
                 </div>
 
-                <!-- Récapitulatif global (toutes périodes) -->
-                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; font-size: 0.88em; color: #555;">
-                    <strong>📊 Récapitulatif global (toutes périodes) :</strong>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                        <div>
-                            <div>${settings.parent1_name}</div>
-                            <div>Dépenses : <strong>${allParent1Expenses.toFixed(2)} ${settings.currency_symbol}</strong></div>
-                            ${allParent1Contributions > 0 ? `<div>Versements : <strong>+${allParent1Contributions.toFixed(2)} ${settings.currency_symbol}</strong></div>` : ''}
-                            <div>Total : <strong>${parent1PaidAll.toFixed(2)} ${settings.currency_symbol}</strong></div>
-                            <div style="color: #667eea;">Part théorique : ${parent1ShouldPayAll.toFixed(2)} ${settings.currency_symbol}</div>
-                        </div>
-                        <div>
-                            <div>${settings.parent2_name}</div>
-                            <div>Dépenses : <strong>${allParent2Expenses.toFixed(2)} ${settings.currency_symbol}</strong></div>
-                            ${allParent2Contributions > 0 ? `<div>Versements : <strong>+${allParent2Contributions.toFixed(2)} ${settings.currency_symbol}</strong></div>` : ''}
-                            <div>Total : <strong>${parent2PaidAll.toFixed(2)} ${settings.currency_symbol}</strong></div>
-                            <div style="color: #764ba2;">Part théorique : ${parent2ShouldPayAll.toFixed(2)} ${settings.currency_symbol}</div>
-                        </div>
-                    </div>
+                <!-- Section 2 : Récapitulatif cumulatif global mois par mois -->
+                <div style="margin-bottom:24px;">
+                    <h3 style="color:#764ba2;margin-bottom:4px;font-size:1em;">📊 Cumul global mois par mois — toutes périodes</h3>
+                    <p style="font-size:0.82em;color:#999;margin-bottom:12px;">Solde cumulé depuis le début : indique qui doit quoi à chaque fin de mois, indépendamment du filtre de période.</p>
+                    ${cumulTable}
                 </div>
 
                 <!-- Verdict final -->
