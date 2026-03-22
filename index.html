@@ -8499,8 +8499,17 @@
             const n1    = settings.parent1_name;
             const n2    = settings.parent2_name;
 
+            // Mois sans dépenses (versements seuls) : exclus du tableau mensuel.
+            // Ils n'ont pas de dépenses de référence pour calculer une dette cohérente.
+            // Ils restent visibles dans le tableau cumulatif global.
+            const activeKeys = sortedKeys.filter(key => (monthsData[key].p1Exp + monthsData[key].p2Exp) > 0);
+            const versementOnlyMonths = sortedKeys.filter(key => {
+                const d = monthsData[key];
+                return (d.p1Exp + d.p2Exp) === 0 && (d.p1Contrib + d.p2Contrib) > 0;
+            });
+
             let rows = '';
-            sortedKeys.forEach(key => {
+            activeKeys.forEach(key => {
                 const d = monthsData[key];
                 const monthTotal = d.p1Exp + d.p2Exp + d.p1Contrib + d.p2Contrib;
                 const p1Paid     = d.p1Exp + d.p1Contrib;
@@ -8547,7 +8556,12 @@
                         </thead>
                         <tbody>${rows}</tbody>
                     </table>
-                </div>`;
+                </div>
+                ${versementOnlyMonths.length > 0 ? `
+                <div style="margin-top:10px;padding:10px 14px;background:#f0f4ff;border-radius:6px;font-size:0.82em;color:#667eea;">
+                    ℹ️ ${versementOnlyMonths.map(k => formatMonthLabel(k)).join(', ')} :
+                    versement(s) sans dépenses ce mois — intégrés uniquement dans le cumul global.
+                </div>` : ''}`;
         }
 
         // ─── Génère le tableau global cumulatif mois par mois ─────────────────
