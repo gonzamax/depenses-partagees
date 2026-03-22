@@ -8564,7 +8564,7 @@
                 </div>` : ''}`;
         }
 
-        // ─── Génère le tableau global cumulatif mois par mois ─────────────────
+        // ─── Génère le bloc global : solde + tableau dépliable ───────────────
         function buildCumulativeTable(allMonthsData) {
             const sortedKeys = Object.keys(allMonthsData).sort();
             if (sortedKeys.length === 0) return '<p style="color:#999;font-size:0.9em;">Aucune donnée.</p>';
@@ -8575,60 +8575,93 @@
             const n1    = settings.parent1_name;
             const n2    = settings.parent2_name;
 
-            // Accumulateurs séparés : dépenses vs versements
-            let cumulP1Exp = 0, cumulP2Exp = 0;
-            let cumulP1Ctr = 0, cumulP2Ctr = 0;
-            let cumulTotalExp = 0;
-            let rows = '';
-
+            // Calcul du cumul total final
+            let totalP1Exp = 0, totalP2Exp = 0, totalP1Ctr = 0, totalP2Ctr = 0, totalExp = 0;
             sortedKeys.forEach(key => {
                 const d = allMonthsData[key];
+                totalP1Exp += d.p1Exp; totalP2Exp += d.p2Exp;
+                totalP1Ctr += d.p1Contrib; totalP2Ctr += d.p2Contrib;
+                totalExp   += d.p1Exp + d.p2Exp;
+            });
+            const totalP1Paid = totalP1Exp + totalP1Ctr;
+            const totalP2Paid = totalP2Exp + totalP2Ctr;
+            const p1Due       = (totalExp * p1pct) / 100;
+            const finalNet    = totalP1Paid - p1Due; // + = P2 doit à P1
 
-                cumulP1Exp    += d.p1Exp;
-                cumulP2Exp    += d.p2Exp;
-                cumulP1Ctr    += d.p1Contrib;
-                cumulP2Ctr    += d.p2Contrib;
+            // Carte solde global
+            let soldeColor, soldeBg, soldeBorder, soldeIcon, soldeText;
+            if (Math.abs(finalNet) < 0.01) {
+                soldeColor = '#155724'; soldeBg = '#d4edda'; soldeBorder = '#28a745';
+                soldeIcon = '✅'; soldeText = 'Les comptes sont équilibrés';
+            } else if (finalNet > 0) {
+                soldeColor = '#856404'; soldeBg = '#fff8e1'; soldeBorder = '#ffc107';
+                soldeIcon = '⚖️'; soldeText = `${n2} doit <strong>${finalNet.toFixed(2)} ${sym}</strong> à ${n1}`;
+            } else {
+                soldeColor = '#856404'; soldeBg = '#fff8e1'; soldeBorder = '#ffc107';
+                soldeIcon = '⚖️'; soldeText = `${n1} doit <strong>${Math.abs(finalNet).toFixed(2)} ${sym}</strong> à ${n2}`;
+            }
+
+            // Tableau mensuel dépliable
+            let rows = '';
+            let cumulP1Exp = 0, cumulP2Exp = 0, cumulP1Ctr = 0, cumulP2Ctr = 0, cumulTotalExp = 0;
+            sortedKeys.forEach(key => {
+                const d = allMonthsData[key];
+                cumulP1Exp += d.p1Exp; cumulP2Exp += d.p2Exp;
+                cumulP1Ctr += d.p1Contrib; cumulP2Ctr += d.p2Contrib;
                 cumulTotalExp += d.p1Exp + d.p2Exp;
 
                 const cumulP1Paid = cumulP1Exp + cumulP1Ctr;
-                const cumulP2Paid = cumulP2Exp + cumulP2Ctr;
-                const p1Due       = (cumulTotalExp * p1pct) / 100;
-                const cumulNet    = cumulP1Paid - p1Due;  // + = P2 doit à P1 ; - = P1 doit à P2
+                const cumulNet    = cumulP1Paid - (cumulTotalExp * p1pct / 100);
 
-                let debtCell = '';
-                if (Math.abs(cumulNet) < 0.01) {
-                    debtCell = `<span style="color:#28a745;font-weight:600;">✅ Équilibré</span>`;
-                } else if (cumulNet > 0) {
-                    debtCell = `<span style="color:#856404;font-weight:600;">${n2} doit ${cumulNet.toFixed(2)} ${sym}</span>`;
-                } else {
-                    debtCell = `<span style="color:#856404;font-weight:600;">${n1} doit ${Math.abs(cumulNet).toFixed(2)} ${sym}</span>`;
-                }
+                let debtTxt;
+                if (Math.abs(cumulNet) < 0.01) debtTxt = `<span style="color:#28a745;">✅ Équilibré</span>`;
+                else if (cumulNet > 0)          debtTxt = `<span style="color:#856404;">${n2} doit ${cumulNet.toFixed(2)} ${sym}</span>`;
+                else                            debtTxt = `<span style="color:#856404;">${n1} doit ${Math.abs(cumulNet).toFixed(2)} ${sym}</span>`;
 
-                rows += `
-                    <tr style="border-bottom:1px solid #f0f0f0;">
-                        <td style="padding:10px 8px;font-weight:600;white-space:nowrap;">${formatMonthLabel(key)}</td>
-                        <td style="padding:10px 8px;text-align:right;">${cumulP1Exp.toFixed(2)}${cumulP1Ctr > 0 ? `<br><small style="color:#28a745;">+${cumulP1Ctr.toFixed(2)} vers.</small>` : ''}</td>
-                        <td style="padding:10px 8px;text-align:right;">${cumulP2Exp.toFixed(2)}${cumulP2Ctr > 0 ? `<br><small style="color:#28a745;">+${cumulP2Ctr.toFixed(2)} vers.</small>` : ''}</td>
-                        <td style="padding:10px 8px;text-align:right;">${cumulTotalExp.toFixed(2)}</td>
-                        <td style="padding:10px 8px;text-align:center;">${debtCell}</td>
-                    </tr>`;
+                rows += `<tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:8px;font-weight:600;white-space:nowrap;font-size:0.9em;">${formatMonthLabel(key)}</td>
+                    <td style="padding:8px;text-align:right;font-size:0.9em;">${cumulP1Exp.toFixed(2)}${cumulP1Ctr > 0 ? `<br><small style="color:#28a745;font-size:0.85em;">+${cumulP1Ctr.toFixed(2)} vers.</small>` : ''}</td>
+                    <td style="padding:8px;text-align:right;font-size:0.9em;">${cumulP2Exp.toFixed(2)}${cumulP2Ctr > 0 ? `<br><small style="color:#28a745;font-size:0.85em;">+${cumulP2Ctr.toFixed(2)} vers.</small>` : ''}</td>
+                    <td style="padding:8px;text-align:right;font-size:0.9em;">${cumulTotalExp.toFixed(2)}</td>
+                    <td style="padding:8px;text-align:center;font-size:0.88em;font-weight:600;">${debtTxt}</td>
+                </tr>`;
             });
 
             return `
-                <div style="overflow-x:auto;">
-                    <table style="width:100%;border-collapse:collapse;font-size:0.85em;">
-                        <thead>
-                            <tr style="background:#f8f9fa;color:#555;">
-                                <th style="padding:10px 8px;text-align:left;border-bottom:2px solid #dee2e6;">Jusqu'à ce mois</th>
-                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n1}<br><small style="font-weight:400;">dép. cumulées (+vers.)</small></th>
-                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">${n2}<br><small style="font-weight:400;">dép. cumulées (+vers.)</small></th>
-                                <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #dee2e6;">Total dép.<br><small style="font-weight:400;">cumulées</small></th>
-                                <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #dee2e6;">Dette cumulée<br><small style="font-weight:400;">${p1pct}% / ${p2pct}%</small></th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>`;
+                <!-- Solde global -->
+                <div style="background:${soldeBg};border:2px solid ${soldeBorder};border-radius:12px;padding:20px 24px;margin-bottom:12px;display:flex;align-items:center;gap:16px;">
+                    <div style="font-size:2em;">${soldeIcon}</div>
+                    <div>
+                        <div style="font-size:0.8em;color:${soldeColor};opacity:0.75;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Solde global — toutes périodes</div>
+                        <div style="font-size:1.25em;font-weight:700;color:${soldeColor};">${soldeText}</div>
+                        <div style="font-size:0.78em;color:${soldeColor};opacity:0.7;margin-top:4px;">
+                            ${n1} a payé ${totalP1Paid.toFixed(2)} ${sym} (dont ${totalP1Ctr > 0 ? totalP1Ctr.toFixed(2)+' '+sym+' de versements' : 'aucun versement'}) ·
+                            ${n2} a payé ${totalP2Paid.toFixed(2)} ${sym} (dont ${totalP2Ctr > 0 ? totalP2Ctr.toFixed(2)+' '+sym+' de versements' : 'aucun versement'}) ·
+                            Total dépenses : ${totalExp.toFixed(2)} ${sym}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détail mensuel dépliable -->
+                <details style="margin-top:4px;">
+                    <summary style="cursor:pointer;font-size:0.85em;color:#764ba2;font-weight:600;padding:8px 4px;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:1.1em;">▶</span> Voir le détail mois par mois
+                    </summary>
+                    <div style="overflow-x:auto;margin-top:10px;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.85em;">
+                            <thead>
+                                <tr style="background:#f8f9fa;color:#555;">
+                                    <th style="padding:8px;text-align:left;border-bottom:2px solid #dee2e6;">Mois</th>
+                                    <th style="padding:8px;text-align:right;border-bottom:2px solid #dee2e6;">${n1} cumulé</th>
+                                    <th style="padding:8px;text-align:right;border-bottom:2px solid #dee2e6;">${n2} cumulé</th>
+                                    <th style="padding:8px;text-align:right;border-bottom:2px solid #dee2e6;">Total dép.</th>
+                                    <th style="padding:8px;text-align:center;border-bottom:2px solid #dee2e6;">Qui devait quoi<br><small style="font-weight:400;">${p1pct}% / ${p2pct}%</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </details>`;
         }
 
         function displayBalance(filtered, totalParent1, totalParent2, total, filteredContributions = []) {
@@ -8809,15 +8842,11 @@
                     ${periodMonthlyTable}
                 </div>
 
-                <!-- Section 2 : Récapitulatif cumulatif global mois par mois -->
+                <!-- Section 2 : Solde global + détail dépliable -->
                 <div style="margin-bottom:24px;">
-                    <h3 style="color:#764ba2;margin-bottom:4px;font-size:1em;">📊 Cumul global mois par mois — toutes périodes</h3>
-                    <p style="font-size:0.82em;color:#999;margin-bottom:12px;">Solde cumulé depuis le début : indique qui doit quoi à chaque fin de mois, indépendamment du filtre de période.</p>
+                    <h3 style="color:#764ba2;margin-bottom:12px;font-size:1em;">📊 Solde global — toutes périodes confondues</h3>
                     ${cumulTable}
                 </div>
-
-                <!-- Verdict final -->
-                ${balanceMessage}
             `;
         }
 
