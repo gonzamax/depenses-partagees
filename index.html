@@ -8462,184 +8462,198 @@
         function displayBalance(filtered, totalParent1, totalParent2, total, filteredContributions = []) {
             const balanceCard = document.getElementById('balance-card');
 
-            console.log('displayBalance appelé avec:');
-            console.log('- filteredContributions:', filteredContributions);
-            console.log('- filteredContributions.length:', filteredContributions.length);
-
-            // Calculer les contributions filtrées par période
-            const parent1Contributions = filteredContributions
+            // ─────────────────────────────────────────────────────────────────
+            // BLOC 1 : Données de la période sélectionnée (affichage informatif)
+            // ─────────────────────────────────────────────────────────────────
+            const p1ContribPeriod = filteredContributions
                 .filter(c => c.parent === 'Parent 1' || c.parent === settings.parent1_name)
                 .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
 
-            const parent2Contributions = filteredContributions
+            const p2ContribPeriod = filteredContributions
                 .filter(c => c.parent === 'Parent 2' || c.parent === settings.parent2_name)
                 .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
 
-            console.log('- Parent1 contributions:', parent1Contributions);
-            console.log('- Parent2 contributions:', parent2Contributions);
+            const p1TotalPeriod = totalParent1 + p1ContribPeriod;
+            const p2TotalPeriod = totalParent2 + p2ContribPeriod;
 
-            // Calculer ce que chaque parent DEVRAIT payer selon la répartition configurée
-            const parent1ShouldPay = (total * settings.parent1_percentage) / 100;
-            const parent2ShouldPay = (total * settings.parent2_percentage) / 100;
+            // ─────────────────────────────────────────────────────────────────
+            // BLOC 2 : Calcul de la dette sur la TOTALITÉ des données (toutes périodes)
+            // La question "qui doit quoi" est cumulative : elle ne dépend pas
+            // de la période filtrée mais de l'historique complet.
+            // ─────────────────────────────────────────────────────────────────
+            const allExpenses = expenses; // variable globale
 
-            // Ce que chaque parent A EFFECTIVEMENT CONTRIBUÉ (dépenses payées + versements)
-            const parent1Total = totalParent1 + parent1Contributions;
-            const parent2Total = totalParent2 + parent2Contributions;
+            const allTotalExpenses = allExpenses.reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
 
-            // Calcul du déséquilibre
-            const parent1Difference = parent1Total - parent1ShouldPay;
-            const parent2Difference = parent2Total - parent2ShouldPay;
+            const allParent1Expenses = allExpenses
+                .filter(e => e.payeur === settings.parent1_name || e.payeur === 'Parent 1')
+                .reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
 
-            console.log('Calcul déséquilibre:');
-            console.log('- parent1Total:', parent1Total, '- parent1ShouldPay:', parent1ShouldPay, '= parent1Difference:', parent1Difference);
-            console.log('- parent2Total:', parent2Total, '- parent2ShouldPay:', parent2ShouldPay, '= parent2Difference:', parent2Difference);
+            const allParent2Expenses = allExpenses
+                .filter(e => e.payeur === settings.parent2_name || e.payeur === 'Parent 2')
+                .reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
 
-            // Déterminer le type de situation et le message à afficher
-            let debtor, creditor, amountOwed;
-            let messageType = 'normal'; // 'normal', 'balanced', 'both-creditors', 'error'
+            const allParent1Contributions = (contributions || [])
+                .filter(c => c.parent === 'Parent 1' || c.parent === settings.parent1_name)
+                .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
 
-            if (Math.abs(parent1Difference) < 1 && Math.abs(parent2Difference) < 1) {
-                // CAS 4 : Comptes équilibrés
-                amountOwed = 0;
-                messageType = 'balanced';
+            const allParent2Contributions = (contributions || [])
+                .filter(c => c.parent === 'Parent 2' || c.parent === settings.parent2_name)
+                .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
 
-            } else if (parent1Difference > 0 && parent2Difference < 0) {
-                // CAS 1A : Parent1 créditeur, Parent2 débiteur (NORMAL)
-                debtor = settings.parent2_name;
-                creditor = settings.parent1_name;
-                amountOwed = Math.abs(parent2Difference);
-                messageType = 'normal';
+            // Part théorique de chaque parent sur le total global
+            const parent1ShouldPayAll = (allTotalExpenses * settings.parent1_percentage) / 100;
+            const parent2ShouldPayAll = (allTotalExpenses * settings.parent2_percentage) / 100;
 
-            } else if (parent1Difference < 0 && parent2Difference > 0) {
-                // CAS 1B : Parent1 débiteur, Parent2 créditeur (NORMAL inversé)
-                debtor = settings.parent1_name;
-                creditor = settings.parent2_name;
-                amountOwed = Math.abs(parent1Difference);
-                messageType = 'normal';
+            // Contribution réelle globale (dépenses payées + versements)
+            const parent1PaidAll = allParent1Expenses + allParent1Contributions;
+            const parent2PaidAll = allParent2Expenses + allParent2Contributions;
 
-            } else if (parent1Difference > 0 && parent2Difference > 0) {
-                // CAS 2 : Les deux créditeurs - Pas de rééquilibrage
-                amountOwed = 0;
-                messageType = 'both-creditors';
+            // Solde net : positif = a trop payé (créditeur), négatif = a trop peu payé (débiteur)
+            const parent1NetAll = parent1PaidAll - parent1ShouldPayAll;
+            const parent2NetAll = parent2PaidAll - parent2ShouldPayAll;
 
-            } else {
-                // CAS 3 : Les deux débiteurs (ne devrait jamais arriver)
-                console.error('⚠️ Données incohérentes : les deux parents sont débiteurs');
-                amountOwed = 0;
-                messageType = 'error';
-            }
+            // La dette nette est symétrique : si P1 a +X alors P2 a −X (et vice versa)
+            // On utilise parent1NetAll comme référence unique
+            const netDebt = parent1NetAll; // positif = P2 doit à P1 ; négatif = P1 doit à P2
 
-            console.log('Résultat final:');
-            console.log('- messageType:', messageType);
-            console.log('- debtor:', debtor);
-            console.log('- creditor:', creditor);
-            console.log('- amountOwed:', amountOwed);
-
-            // Générer le message approprié selon le cas
+            // ─────────────────────────────────────────────────────────────────
+            // BLOC 3 : Détermination du message de dette
+            // ─────────────────────────────────────────────────────────────────
             let balanceMessage = '';
 
-            switch(messageType) {
-                case 'normal':
-                    balanceMessage = `
-                        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
-                            <div style="font-size: 1.1em; color: #856404;">
-                                <strong>⚖️ Rééquilibrage :</strong>
-                                ${debtor} doit <strong>${amountOwed.toFixed(2)} ${settings.currency_symbol}</strong> à ${creditor}
-                            </div>
+            if (Math.abs(netDebt) < 0.01) {
+                balanceMessage = `
+                    <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
+                        <div style="font-size: 1.1em; color: #155724;">
+                            <strong>✅ Les comptes sont équilibrés !</strong>
+                            <div style="font-size: 0.9em; margin-top: 6px; opacity: 0.85;">Aucun rééquilibrage nécessaire sur l'ensemble des dépenses.</div>
                         </div>
-                    `;
-                    break;
-
-                case 'balanced':
-                    balanceMessage = `
-                        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
-                            <div style="font-size: 1.1em; color: #155724;">
-                                <strong>✅ Les comptes sont équilibrés !</strong>
-                            </div>
+                    </div>
+                `;
+            } else if (netDebt > 0) {
+                // P1 a trop payé → P2 doit à P1
+                balanceMessage = `
+                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
+                        <div style="font-size: 1.15em; color: #856404; margin-bottom: 10px;">
+                            <strong>⚖️ Rééquilibrage global :</strong>
                         </div>
-                    `;
-                    break;
-
-                case 'both-creditors':
-                    balanceMessage = `
-                        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 20px; border-radius: 8px;">
-                            <div style="font-size: 1.1em; color: #155724; margin-bottom: 10px;">
-                                <strong>💰 Excédent de versements</strong>
-                            </div>
-                            <div style="font-size: 0.95em; color: #155724;">
-                                ${settings.parent1_name} : <strong>+${parent1Difference.toFixed(2)} ${settings.currency_symbol}</strong> en avance<br>
-                                ${settings.parent2_name} : <strong>+${parent2Difference.toFixed(2)} ${settings.currency_symbol}</strong> en avance
-                            </div>
-                            <div style="font-size: 0.85em; color: #155724; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(21,87,36,0.2); font-style: italic;">
-                                ℹ️ Le rééquilibrage se fera automatiquement avec les prochaines dépenses
-                            </div>
+                        <div style="font-size: 1.4em; font-weight: bold; color: #856404; margin-bottom: 8px;">
+                            ${settings.parent2_name} doit ${netDebt.toFixed(2)} ${settings.currency_symbol} à ${settings.parent1_name}
                         </div>
-                    `;
-                    break;
-
-                case 'error':
-                    balanceMessage = `
-                        <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 20px; border-radius: 8px;">
-                            <div style="font-size: 1.1em; color: #721c24; margin-bottom: 8px;">
-                                <strong>⚠️ Erreur de calcul</strong>
-                            </div>
-                            <div style="font-size: 0.9em; color: #721c24;">
-                                Les données sont incohérentes. Vérifiez les dépenses et versements.
-                            </div>
+                        <div style="font-size: 0.85em; color: #856404; opacity: 0.8;">
+                            Calculé sur l'ensemble des dépenses (toutes périodes confondues), selon la répartition ${settings.parent1_percentage}% / ${settings.parent2_percentage}%.
                         </div>
-                    `;
-                    break;
+                    </div>
+                `;
+            } else {
+                // P2 a trop payé → P1 doit à P2
+                balanceMessage = `
+                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; border-radius: 8px;">
+                        <div style="font-size: 1.15em; color: #856404; margin-bottom: 10px;">
+                            <strong>⚖️ Rééquilibrage global :</strong>
+                        </div>
+                        <div style="font-size: 1.4em; font-weight: bold; color: #856404; margin-bottom: 8px;">
+                            ${settings.parent1_name} doit ${Math.abs(netDebt).toFixed(2)} ${settings.currency_symbol} à ${settings.parent2_name}
+                        </div>
+                        <div style="font-size: 0.85em; color: #856404; opacity: 0.8;">
+                            Calculé sur l'ensemble des dépenses (toutes périodes confondues), selon la répartition ${settings.parent1_percentage}% / ${settings.parent2_percentage}%.
+                        </div>
+                    </div>
+                `;
             }
+
+            // ─────────────────────────────────────────────────────────────────
+            // BLOC 4 : Rendu HTML
+            // ─────────────────────────────────────────────────────────────────
+
+            // Libellé de période pour l'encart informatif
+            const periodEl = document.getElementById('stats-period');
+            const periodLabels = {
+                'all': 'Toutes les dépenses',
+                'month': 'Ce mois-ci',
+                'lastMonth': 'Mois dernier',
+                '3months': '3 derniers mois',
+                '6months': '6 derniers mois',
+                'year': 'Cette année',
+                'lastYear': 'Année dernière',
+                'custom': 'Période personnalisée'
+            };
+            const periodLabel = periodEl ? (periodLabels[periodEl.value] || periodEl.value) : '';
 
             balanceCard.innerHTML = `
                 <h2 style="color: #667eea; margin-bottom: 20px;">💰 Équilibre des comptes</h2>
 
+                <!-- Répartition configurée -->
                 <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="font-size: 0.95em; color: #0c5460;">
                         <strong>⚖️ Répartition configurée :</strong>
                         ${settings.parent1_name} : ${settings.parent1_percentage}% |
                         ${settings.parent2_name} : ${settings.parent2_percentage}%
-                        <div style="margin-top: 8px; font-size: 0.9em; opacity: 0.8;">
-                            Sur ${total.toFixed(2)} ${settings.currency_symbol} de dépenses totales
+                    </div>
+                </div>
+
+                <!-- Détail de la période sélectionnée (informatif) -->
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 0.85em; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+                        📅 Période affichée : ${periodLabel}
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px; border-radius: 12px;">
+                            <h4 style="margin-bottom: 8px; opacity: 0.9;">${settings.parent1_name}</h4>
+                            <div style="font-size: 0.85em; opacity: 0.8;">Dépenses payées (période)</div>
+                            <div style="font-size: 1.4em; font-weight: bold;">${totalParent1.toFixed(2)} ${settings.currency_symbol}</div>
+                            ${p1ContribPeriod > 0 ? `
+                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">
+                                Versements : +${p1ContribPeriod.toFixed(2)} ${settings.currency_symbol}
+                            </div>` : ''}
+                            <div style="font-size: 0.9em; font-weight: bold; margin-top: 4px;">
+                                Contribution totale période : ${p1TotalPeriod.toFixed(2)} ${settings.currency_symbol}
+                            </div>
+                            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.82em; opacity: 0.85;">
+                                Part théorique sur ce total : ${((total * settings.parent1_percentage) / 100).toFixed(2)} ${settings.currency_symbol} (${settings.parent1_percentage}%)
+                            </div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; padding: 18px; border-radius: 12px;">
+                            <h4 style="margin-bottom: 8px; opacity: 0.9;">${settings.parent2_name}</h4>
+                            <div style="font-size: 0.85em; opacity: 0.8;">Dépenses payées (période)</div>
+                            <div style="font-size: 1.4em; font-weight: bold;">${totalParent2.toFixed(2)} ${settings.currency_symbol}</div>
+                            ${p2ContribPeriod > 0 ? `
+                            <div style="font-size: 0.85em; opacity: 0.8; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">
+                                Versements : +${p2ContribPeriod.toFixed(2)} ${settings.currency_symbol}
+                            </div>` : ''}
+                            <div style="font-size: 0.9em; font-weight: bold; margin-top: 4px;">
+                                Contribution totale période : ${p2TotalPeriod.toFixed(2)} ${settings.currency_symbol}
+                            </div>
+                            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.82em; opacity: 0.85;">
+                                Part théorique sur ce total : ${((total * settings.parent2_percentage) / 100).toFixed(2)} ${settings.currency_symbol} (${settings.parent2_percentage}%)
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px;">
-                        <h4 style="margin-bottom: 10px; opacity: 0.9;">${settings.parent1_name}</h4>
-                        <div style="font-size: 0.9em; opacity: 0.8; margin-bottom: 5px;">Dépenses payées</div>
-                        <div style="font-size: 1.5em; font-weight: bold;">${totalParent1.toFixed(2)} ${settings.currency_symbol}</div>
-                        ${parent1Contributions > 0 ? `
-                        <div style="font-size: 0.9em; opacity: 0.8; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px;">
-                            Versements : +${parent1Contributions.toFixed(2)} ${settings.currency_symbol}
+                <!-- Récapitulatif global (toutes périodes) -->
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; font-size: 0.88em; color: #555;">
+                    <strong>📊 Récapitulatif global (toutes périodes) :</strong>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div>
+                            <div>${settings.parent1_name}</div>
+                            <div>Dépenses : <strong>${allParent1Expenses.toFixed(2)} ${settings.currency_symbol}</strong></div>
+                            ${allParent1Contributions > 0 ? `<div>Versements : <strong>+${allParent1Contributions.toFixed(2)} ${settings.currency_symbol}</strong></div>` : ''}
+                            <div>Total : <strong>${parent1PaidAll.toFixed(2)} ${settings.currency_symbol}</strong></div>
+                            <div style="color: #667eea;">Part théorique : ${parent1ShouldPayAll.toFixed(2)} ${settings.currency_symbol}</div>
                         </div>
-                        ` : ''}
-                        <div style="font-size: 0.9em; opacity: 0.8; margin-top: 5px; font-weight: bold;">
-                            Total : ${parent1Total.toFixed(2)} ${settings.currency_symbol}
-                        </div>
-                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
-                            <small>Devrait payer : ${parent1ShouldPay.toFixed(2)} ${settings.currency_symbol} (${settings.parent1_percentage}%)</small>
-                        </div>
-                    </div>
-                    <div style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; padding: 20px; border-radius: 12px;">
-                        <h4 style="margin-bottom: 10px; opacity: 0.9;">${settings.parent2_name}</h4>
-                        <div style="font-size: 0.9em; opacity: 0.8; margin-bottom: 5px;">Dépenses payées</div>
-                        <div style="font-size: 1.5em; font-weight: bold;">${totalParent2.toFixed(2)} ${settings.currency_symbol}</div>
-                        ${parent2Contributions > 0 ? `
-                        <div style="font-size: 0.9em; opacity: 0.8; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px;">
-                            Versements : +${parent2Contributions.toFixed(2)} ${settings.currency_symbol}
-                        </div>
-                        ` : ''}
-                        <div style="font-size: 0.9em; opacity: 0.8; margin-top: 5px; font-weight: bold;">
-                            Total : ${parent2Total.toFixed(2)} ${settings.currency_symbol}
-                        </div>
-                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">
-                            <small>Devrait payer : ${parent2ShouldPay.toFixed(2)} ${settings.currency_symbol} (${settings.parent2_percentage}%)</small>
+                        <div>
+                            <div>${settings.parent2_name}</div>
+                            <div>Dépenses : <strong>${allParent2Expenses.toFixed(2)} ${settings.currency_symbol}</strong></div>
+                            ${allParent2Contributions > 0 ? `<div>Versements : <strong>+${allParent2Contributions.toFixed(2)} ${settings.currency_symbol}</strong></div>` : ''}
+                            <div>Total : <strong>${parent2PaidAll.toFixed(2)} ${settings.currency_symbol}</strong></div>
+                            <div style="color: #764ba2;">Part théorique : ${parent2ShouldPayAll.toFixed(2)} ${settings.currency_symbol}</div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Verdict final -->
                 ${balanceMessage}
             `;
         }
