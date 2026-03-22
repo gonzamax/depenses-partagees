@@ -8696,7 +8696,85 @@
             // BLOC 5 : Rendu HTML complet
             // ─────────────────────────────────────────────────────────────────
             balanceCard.innerHTML = `
-                <h2 style="color:#667eea;margin-bottom:20px;">💰 Équilibre des comptes</h2>
+                <!-- Modal aide calcul -->
+                <div id="balance-help-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;align-items:center;justify-content:center;">
+                    <div style="background:white;border-radius:16px;padding:30px;max-width:540px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;">
+                        <button onclick="document.getElementById('balance-help-modal').style.display='none'"
+                            style="position:absolute;top:14px;right:18px;background:none;border:none;font-size:1.4em;cursor:pointer;color:#999;line-height:1;">✕</button>
+
+                        <h3 style="color:#667eea;margin:0 0 18px 0;font-size:1.15em;">📐 Comment est calculé l'équilibre ?</h3>
+
+                        <div style="display:grid;gap:14px;font-size:0.92em;color:#444;">
+
+                            <div style="background:#e7f3ff;border-left:4px solid #2196F3;padding:14px;border-radius:8px;">
+                                <strong style="color:#0c5460;">1️⃣ La répartition configurée</strong>
+                                <p style="margin:8px 0 0 0;color:#0c5460;">
+                                    Vous avez défini que <strong>${n1}</strong> prend en charge <strong>${pct1}%</strong> des dépenses
+                                    et <strong>${n2}</strong> prend <strong>${pct2}%</strong>.<br>
+                                    Cette clé s'applique sur le <em>total des dépenses réelles</em>.
+                                </p>
+                            </div>
+
+                            <div style="background:#f8f9fa;border-left:4px solid #667eea;padding:14px;border-radius:8px;">
+                                <strong style="color:#333;">2️⃣ Ce que chacun a réellement payé</strong>
+                                <p style="margin:8px 0 0 0;color:#555;">
+                                    On additionne pour chaque parent :<br>
+                                    <span style="display:inline-block;margin-top:6px;">
+                                        💳 <strong>Dépenses payées</strong> (enregistrées à son nom)<br>
+                                        ➕ <strong>Versements</strong> effectués (remboursements directs)
+                                    </span>
+                                </p>
+                            </div>
+
+                            <div style="background:#f8f9fa;border-left:4px solid #764ba2;padding:14px;border-radius:8px;">
+                                <strong style="color:#333;">3️⃣ Le calcul du solde</strong>
+                                <p style="margin:8px 0 4px 0;color:#555;">Pour chaque parent :</p>
+                                <code style="background:#ede9f6;padding:6px 10px;border-radius:6px;display:block;color:#4a0e8f;font-size:0.95em;">
+                                    Solde = Ce qu'il a payé − Sa part théorique
+                                </code>
+                                <p style="margin:8px 0 0 0;color:#555;font-size:0.9em;">
+                                    ✅ Solde positif → il a <em>trop payé</em> (l'autre lui doit de l'argent)<br>
+                                    ❌ Solde négatif → il a <em>pas assez payé</em> (il doit de l'argent)
+                                </p>
+                            </div>
+
+                            <div style="background:#fff3cd;border-left:4px solid #ffc107;padding:14px;border-radius:8px;">
+                                <strong style="color:#856404;">4️⃣ Tableau mensuel — deux vues</strong>
+                                <p style="margin:8px 0 0 0;color:#856404;font-size:0.9em;">
+                                    <strong>📅 Vue période :</strong> dette calculée mois par mois, uniquement sur les dépenses du filtre sélectionné. Utile pour analyser une période précise.<br><br>
+                                    <strong>📊 Vue cumulée :</strong> dette calculée sur <em>toutes</em> les dépenses depuis le début, mois après mois. C'est cette vue qui indique le vrai solde à rembourser aujourd'hui, quelle que soit la période affichée.
+                                </p>
+                            </div>
+
+                            <div style="background:#d4edda;border-left:4px solid #28a745;padding:14px;border-radius:8px;">
+                                <strong style="color:#155724;">💡 Exemple concret</strong>
+                                <p style="margin:8px 0 0 0;color:#155724;font-size:0.9em;">
+                                    Total dépenses : <strong>1 000 ${sym}</strong> — Répartition <strong>${pct1}% / ${pct2}%</strong><br>
+                                    ${n1} devrait payer : <strong>${pct1 * 10} ${sym}</strong><br>
+                                    ${n2} devrait payer : <strong>${pct2 * 10} ${sym}</strong><br><br>
+                                    Si ${n1} a payé <strong>700 ${sym}</strong> et ${n2} <strong>300 ${sym}</strong> :<br>
+                                    → Solde ${n1} = 700 − ${pct1 * 10} = <strong>${700 - pct1 * 10} ${sym}</strong>
+                                    ${700 - pct1 * 10 > 0 ? `→ <strong>${n2} doit ${700 - pct1 * 10} ${sym} à ${n1}</strong>` : 700 - pct1 * 10 < 0 ? `→ <strong>${n1} doit ${Math.abs(700 - pct1 * 10)} ${sym} à ${n2}</strong>` : '→ <strong>Comptes équilibrés</strong>'}
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <button onclick="document.getElementById('balance-help-modal').style.display='none'"
+                            style="margin-top:20px;width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:10px;font-size:1em;font-weight:600;cursor:pointer;">
+                            Ok ✓
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+                    <h2 style="color:#667eea;margin:0;flex:1;">💰 Équilibre des comptes</h2>
+                    <button onclick="document.getElementById('balance-help-modal').style.display='flex'"
+                        title="Comprendre le calcul"
+                        style="background:none;border:2px solid #667eea;color:#667eea;border-radius:50%;width:32px;height:32px;font-size:1em;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
+                        onmouseover="this.style.background='#667eea';this.style.color='white'"
+                        onmouseout="this.style.background='none';this.style.color='#667eea'">?</button>
+                </div>
 
                 <!-- Répartition configurée -->
                 <div style="background:#e7f3ff;border-left:4px solid #2196F3;padding:15px;border-radius:8px;margin-bottom:24px;">
