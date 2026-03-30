@@ -4903,7 +4903,40 @@
                 console.log(`📋 ${recurrents.length} dépense(s) récurrente(s) à exécuter`);
 
                 for (const recurrent of recurrents) {
-                    console.log(`➡️ Exécution: ${recurrent.description}`);
+                    console.log(`➡️ Vérification: ${recurrent.description}`);
+
+                    // ── Garde anti-doublon ────────────────────────────────────────
+                    // Avant d'insérer, vérifier qu'une dépense identique n'existe pas
+                    // déjà pour cette date (cas : rechargement de page le même jour,
+                    // ou deux appareils connectés simultanément).
+                    const { data: existing } = await supabase
+                        .from('expenses')
+                        .select('id')
+                        .eq('room_id', currentRoomId)
+                        .eq('date', recurrent.next_execution)
+                        .eq('description', recurrent.description + ' (Récurrente)')
+                        .eq('montant', recurrent.montant)
+                        .eq('payeur', recurrent.payeur)
+                        .limit(1);
+
+                    if (existing && existing.length > 0) {
+                        console.log(`⏭️ Doublon détecté pour ${recurrent.description} le ${recurrent.next_execution} — on avance juste next_execution`);
+
+                        // La dépense existe déjà, mais next_execution n'a peut-être pas
+                        // été avancé (crash entre insert et update). On le corrige.
+                        let nextExecution;
+                        if (recurrent.frequency === 'Hebdomadaire') {
+                            nextExecution = calculateNextWeeklyExecution(recurrent.day_of_week, new Date(recurrent.next_execution));
+                        } else {
+                            nextExecution = calculateNextExecution(recurrent.day_of_month, new Date(recurrent.next_execution));
+                        }
+                        await supabase
+                            .from('recurrent_expenses')
+                            .update({ last_execution: recurrent.next_execution, next_execution: nextExecution })
+                            .eq('id', recurrent.id);
+                        continue;
+                    }
+                    // ─────────────────────────────────────────────────────────────
 
                     // Créer la dépense avec le fichier attaché de la récurrente
                     const expense = {
