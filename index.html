@@ -3971,8 +3971,8 @@
                 showMainApp();
                 updateSyncStatus('online');
 
-                // Vérifier les dépenses récurrentes
-                await checkAndExecuteRecurrentExpenses();
+                // [désactivé - géré par DOMContentLoaded]
+                // [désactivé - géré par DOMContentLoaded]
 
                 showNotification('✅ Espace créé ! Partagez le code avec l\'autre parent.', 'success');
                 console.log('🎉 === FIN CRÉATION ROOM ===');
@@ -4038,8 +4038,8 @@
                 showMainApp();
                 updateSyncStatus('online');
 
-                // Vérifier les dépenses récurrentes
-                await checkAndExecuteRecurrentExpenses();
+                // [désactivé - géré par DOMContentLoaded]
+                // [désactivé - géré par DOMContentLoaded]
 
                 showNotification('Connecté à l\'espace partagé !', 'success');
             } catch (error) {
@@ -4877,68 +4877,76 @@
             }
         }
 
+        // Verrou en mémoire : empêche les appels concurrents (rechargements rapides,
+        // realtime triggers, setInterval) de s'exécuter simultanément.
+        let _recurrentCheckRunning = false;
+
         async function checkAndExecuteRecurrentExpenses() {
             if (!supabase || !currentRoomId) return;
+            if (_recurrentCheckRunning) {
+                console.log('⏳ Vérification récurrentes déjà en cours — ignoré');
+                return;
+            }
+            _recurrentCheckRunning = true;
 
-            console.log('🔄 Vérification des dépenses récurrentes à exécuter...');
+            console.log('🔄 Vérification des dépenses récurrentes...');
 
             try {
                 const today = new Date().toISOString().split('T')[0];
 
-                // Récupérer toutes les dépenses récurrentes actives
                 const { data: recurrents, error } = await supabase
                     .from('recurrent_expenses')
                     .select('*')
                     .eq('room_id', currentRoomId)
                     .eq('active', true)
-                    .lte('next_execution', today); // Celles dont la date d'exécution est passée
+                    .lte('next_execution', today);
 
                 if (error) throw error;
-
                 if (!recurrents || recurrents.length === 0) {
                     console.log('✅ Aucune dépense récurrente à exécuter');
                     return;
                 }
 
-                console.log(`📋 ${recurrents.length} dépense(s) récurrente(s) à exécuter`);
+                console.log(`📋 ${recurrents.length} récurrente(s) candidate(s)`);
+                let nbCreees = 0;
 
                 for (const recurrent of recurrents) {
-                    console.log(`➡️ Vérification: ${recurrent.description}`);
 
-                    // ── Garde anti-doublon ────────────────────────────────────────
-                    // Avant d'insérer, vérifier qu'une dépense identique n'existe pas
-                    // déjà pour cette date (cas : rechargement de page le même jour,
-                    // ou deux appareils connectés simultanément).
-                    const { data: existing } = await supabase
-                        .from('expenses')
-                        .select('id')
-                        .eq('room_id', currentRoomId)
-                        .eq('date', recurrent.next_execution)
-                        .eq('description', recurrent.description + ' (Récurrente)')
-                        .eq('montant', recurrent.montant)
-                        .eq('payeur', recurrent.payeur)
-                        .limit(1);
+                    // ── ÉTAPE 1 : Avancer next_execution de façon atomique ────────
+                    // On calcule la prochaine date AVANT d'insérer la dépense.
+                    // On tente de mettre à jour next_execution uniquement si sa valeur
+                    // en base correspond encore à ce qu'on a lu (optimistic lock).
+                    // Si un autre appareil a déjà avancé la date, le count sera 0
+                    // et on sait que la dépense a déjà été traitée → on skip.
+                    let nextExecution;
+                    if (recurrent.frequency === 'Hebdomadaire') {
+                        nextExecution = calculateNextWeeklyExecution(recurrent.day_of_week, new Date(recurrent.next_execution));
+                    } else {
+                        nextExecution = calculateNextExecution(recurrent.day_of_month, new Date(recurrent.next_execution));
+                    }
 
-                    if (existing && existing.length > 0) {
-                        console.log(`⏭️ Doublon détecté pour ${recurrent.description} le ${recurrent.next_execution} — on avance juste next_execution`);
+                    const { data: updated, error: updateError } = await supabase
+                        .from('recurrent_expenses')
+                        .update({
+                            last_execution: recurrent.next_execution,
+                            next_execution: nextExecution
+                        })
+                        .eq('id', recurrent.id)
+                        .eq('next_execution', recurrent.next_execution) // condition atomique
+                        .select('id');
 
-                        // La dépense existe déjà, mais next_execution n'a peut-être pas
-                        // été avancé (crash entre insert et update). On le corrige.
-                        let nextExecution;
-                        if (recurrent.frequency === 'Hebdomadaire') {
-                            nextExecution = calculateNextWeeklyExecution(recurrent.day_of_week, new Date(recurrent.next_execution));
-                        } else {
-                            nextExecution = calculateNextExecution(recurrent.day_of_month, new Date(recurrent.next_execution));
-                        }
-                        await supabase
-                            .from('recurrent_expenses')
-                            .update({ last_execution: recurrent.next_execution, next_execution: nextExecution })
-                            .eq('id', recurrent.id);
+                    if (updateError) {
+                        console.error('❌ Erreur update récurrente:', updateError);
                         continue;
                     }
-                    // ─────────────────────────────────────────────────────────────
 
-                    // Créer la dépense avec le fichier attaché de la récurrente
+                    if (!updated || updated.length === 0) {
+                        // Un autre appareil a déjà traité cette récurrente → skip
+                        console.log(`⏭️ ${recurrent.description} déjà traité par un autre client`);
+                        continue;
+                    }
+
+                    // ── ÉTAPE 2 : Insérer la dépense ─────────────────────────────
                     const expense = {
                         room_id: currentRoomId,
                         date: recurrent.next_execution,
@@ -4959,46 +4967,31 @@
                         .insert([expense]);
 
                     if (insertError) {
-                        console.error('❌ Erreur insertion dépense récurrente:', insertError);
+                        console.error('❌ Erreur insertion:', insertError);
+                        // Rollback : on remet next_execution à sa valeur d'origine
+                        await supabase
+                            .from('recurrent_expenses')
+                            .update({ last_execution: recurrent.last_execution || null, next_execution: recurrent.next_execution })
+                            .eq('id', recurrent.id);
                         continue;
                     }
 
-                    // Calculer la prochaine date d'exécution
-                    let nextExecution;
-                    if (recurrent.frequency === 'Hebdomadaire') {
-                        nextExecution = calculateNextWeeklyExecution(recurrent.day_of_week, new Date(recurrent.next_execution));
-                    } else {
-                        nextExecution = calculateNextExecution(recurrent.day_of_month, new Date(recurrent.next_execution));
-                    }
-
-                    // Mettre à jour la dépense récurrente
-                    const { error: updateError } = await supabase
-                        .from('recurrent_expenses')
-                        .update({
-                            last_execution: recurrent.next_execution,
-                            next_execution: nextExecution
-                        })
-                        .eq('id', recurrent.id);
-
-                    if (updateError) {
-                        console.error('❌ Erreur mise à jour récurrente:', updateError);
-                    } else {
-                        console.log(`✅ Dépense créée, prochaine exécution: ${nextExecution}`);
-                    }
+                    nbCreees++;
+                    console.log(`✅ ${recurrent.description} créée, prochaine : ${nextExecution}`);
                 }
 
-                // Recharger les données pour afficher les nouvelles dépenses
-                await loadFromSupabase();
-                displayExpenses();
-                displayStatistics();
-                displayRecurrentExpenses();
-
-                if (recurrents.length > 0) {
-                    showNotification(`${recurrents.length} dépense(s) récurrente(s) ajoutée(s) automatiquement`, 'success');
+                if (nbCreees > 0) {
+                    await loadFromSupabase();
+                    displayExpenses();
+                    displayStatistics();
+                    displayRecurrentExpenses();
+                    showNotification(`${nbCreees} dépense(s) récurrente(s) ajoutée(s) automatiquement`, 'success');
                 }
 
             } catch (error) {
                 console.error('❌ Erreur vérification dépenses récurrentes:', error);
+            } finally {
+                _recurrentCheckRunning = false;
             }
         }
 
@@ -10895,11 +10888,12 @@
                         // Vérifier les dépenses prévisionnelles à confirmer
                         await checkBudgetItemsToConfirm();
 
-                        // Vérifier toutes les heures si des dépenses récurrentes sont à exécuter
-                        setInterval(checkAndExecuteRecurrentExpenses, 60 * 60 * 1000);
-
-                        // Vérifier toutes les 6 heures les dépenses prévisionnelles à confirmer
-                        setInterval(checkBudgetItemsToConfirm, 6 * 60 * 60 * 1000);
+                        // Enregistrer les intervalles une seule fois (guard contre reconnexions)
+                        if (!window._intervalsRegistered) {
+                            window._intervalsRegistered = true;
+                            setInterval(checkAndExecuteRecurrentExpenses, 60 * 60 * 1000);
+                            setInterval(checkBudgetItemsToConfirm, 6 * 60 * 60 * 1000);
+                        }
                     } else {
                         // Room n'existe plus
                         localStorage.removeItem('currentRoomId');
