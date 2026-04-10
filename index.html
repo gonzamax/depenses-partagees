@@ -3599,6 +3599,16 @@
                     </button>
                 </div>
 
+                <div style="background: #f8d7da; padding: 20px; border-radius: 10px; border-left: 4px solid #dc3545; margin-bottom: 20px;">
+                    <h4 style="color: #721c24; margin-top: 0;">🧹 Supprimer les dépenses dupliquées</h4>
+                    <p style="font-size: 0.9em; color: #721c24; margin-bottom: 15px;">
+                        Supprime les doublons de dépenses récurrentes créés par des rechargements de page répétés. Deux dépenses sont considérées comme doublons si elles ont la même date, description, montant et payeur.
+                    </p>
+                    <button class="btn btn-danger" onclick="removeDuplicateExpenses()" style="width: 100%;">
+                        🧹 Nettoyer les doublons
+                    </button>
+                </div>
+
                 <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 4px solid #ffc107;">
                     <h4 style="color: #856404; margin-top: 0;">📤 Restaurer une sauvegarde</h4>
                     <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
@@ -6039,11 +6049,17 @@
             }
         }
 
+        // Formate une date "YYYY-MM-DD" en "JJ/MM/AAAA" sans décalage UTC
+        function formatDateLocal(dateStr) {
+            if (!dateStr) return '';
+            const [y, m, d] = dateStr.substring(0, 10).split('-');
+            return `${d}/${m}/${y}`;
+        }
+
         function generateTestEmailHTML(expenses, total, date) {
             const expensesHTML = expenses
-                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .sort((a, b) => a.date < b.date ? 1 : -1)
                 .map(expense => {
-                    const expenseDate = new Date(expense.date);
                     return `
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #667eea;">
                             <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 10px;">
@@ -6052,14 +6068,14 @@
                                         ${expense.description}
                                     </div>
                                     <div style="font-size: 14px; color: #666;">
-                                        📅 ${expenseDate.toLocaleDateString('fr-FR')} |
+                                        📅 ${formatDateLocal(expense.date)} |
                                         📂 ${expense.type} |
                                         👤 ${expense.payeur}
                                     </div>
                                     ${expense.notes ? `<div style="font-size: 13px; color: #999; margin-top: 5px; font-style: italic;">${expense.notes}</div>` : ''}
                                 </div>
                                 <div style="font-size: 20px; font-weight: bold; color: #667eea; white-space: nowrap;">
-                                    ${expense.montant.toFixed(2)} ${settings.currency_symbol}
+                                    ${parseFloat(expense.montant).toFixed(2)} ${settings.currency_symbol}
                                 </div>
                             </div>
                         </div>
@@ -6158,6 +6174,64 @@
             updateSplitLabels();
 
             console.log('✅ Settings chargés avec répartition:', parent1Percentage + '/' + (100 - parent1Percentage));
+        }
+
+        async function removeDuplicateExpenses() {
+            if (!supabase || !currentRoomId) return;
+
+            if (!confirm('Voulez-vous supprimer les dépenses dupliquées ? Cette action est irréversible.')) return;
+
+            try {
+                showNotification('⏳ Analyse des doublons en cours...', 'info');
+
+                // Charger toutes les dépenses
+                const { data: allExp, error } = await supabase
+                    .from('expenses')
+                    .select('*')
+                    .eq('room_id', currentRoomId)
+                    .order('created_at', { ascending: true }); // garder le plus ancien
+
+                if (error) throw error;
+
+                // Grouper par clé de déduplication
+                const seen = new Map();
+                const toDelete = [];
+
+                for (const exp of allExp) {
+                    const key = `${exp.date}||${exp.description}||${exp.montant}||${exp.payeur}`;
+                    if (seen.has(key)) {
+                        toDelete.push(exp.id); // supprimer les suivants, garder le premier
+                    } else {
+                        seen.set(key, exp.id);
+                    }
+                }
+
+                if (toDelete.length === 0) {
+                    showNotification('✅ Aucun doublon détecté', 'success');
+                    return;
+                }
+
+                // Supprimer les doublons par lots de 50
+                let deleted = 0;
+                for (let i = 0; i < toDelete.length; i += 50) {
+                    const batch = toDelete.slice(i, i + 50);
+                    const { error: delError } = await supabase
+                        .from('expenses')
+                        .delete()
+                        .in('id', batch);
+                    if (delError) throw delError;
+                    deleted += batch.length;
+                }
+
+                await loadFromSupabase();
+                displayExpenses();
+                displayStatistics();
+                showNotification(`✅ ${deleted} doublon(s) supprimé(s)`, 'success');
+
+            } catch (err) {
+                console.error('Erreur nettoyage doublons:', err);
+                showNotification('❌ Erreur lors du nettoyage : ' + err.message, 'error');
+            }
         }
 
         async function backupAllData() {
