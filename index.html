@@ -8818,61 +8818,21 @@
             // ─────────────────────────────────────────────────────────────────
             // BLOC 1 : Résumé de la période sélectionnée
             // ─────────────────────────────────────────────────────────────────
-            const p1ContribPeriod = filteredContributions
-                .filter(c => c.parent === 'Parent 1' || c.parent === n1)
-                .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
-            const p2ContribPeriod = filteredContributions
-                .filter(c => c.parent === 'Parent 2' || c.parent === n2)
-                .reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
 
             // Tableau mensuel de la période filtrée
-            const filteredMonths = groupByMonth(filtered, contributions || []);
+            // On passe les versements de la même période (pas tous les versements)
+            const filteredMonths = groupByMonth(filtered, filteredContributions || []);
             const periodMonthlyTable = buildMonthlyTable(filteredMonths, 'période');
 
             // ─────────────────────────────────────────────────────────────────
-            // BLOC 2 : Calcul global (toutes périodes) — dette réelle
+            // BLOC 2 : Calcul global (toutes périodes) — pour la vue cumulée
             // ─────────────────────────────────────────────────────────────────
             const allExpAll   = expenses;
             const allContAll  = contributions || [];
 
-            const allTotalExp = allExpAll.reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
-            const allP1Exp    = allExpAll.filter(e => e.payeur === n1 || e.payeur === 'Parent 1').reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
-            const allP2Exp    = allExpAll.filter(e => e.payeur === n2 || e.payeur === 'Parent 2').reduce((sum, e) => sum + parseFloat(e.montant || 0), 0);
-            const allP1Ctr    = allContAll.filter(c => c.parent === n1 || c.parent === 'Parent 1').reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
-            const allP2Ctr    = allContAll.filter(c => c.parent === n2 || c.parent === 'Parent 2').reduce((sum, c) => sum + parseFloat(c.montant || 0), 0);
-
-            const p1PaidAll   = allP1Exp + allP1Ctr;
-            const p2PaidAll   = allP2Exp + allP2Ctr;
-            const p1DueAll    = (allTotalExp * pct1) / 100;
-            const netDebt     = p1PaidAll - p1DueAll; // + = P2 doit à P1
-
-            // Tableau cumulatif global mois par mois
-            const allMonths = groupByMonth(allExpAll, allContAll);
+            // Tableau cumulatif global mois par mois (contient déjà le verdict global)
+            const allMonths  = groupByMonth(allExpAll, allContAll);
             const cumulTable = buildCumulativeTable(allMonths);
-
-            // ─────────────────────────────────────────────────────────────────
-            // BLOC 3 : Verdict final
-            // ─────────────────────────────────────────────────────────────────
-            let balanceMessage = '';
-            if (Math.abs(netDebt) < 0.01) {
-                balanceMessage = `<div style="background:#d4edda;border-left:4px solid #28a745;padding:20px;border-radius:8px;">
-                    <div style="font-size:1.1em;color:#155724;">
-                        <strong>✅ Les comptes sont équilibrés !</strong>
-                        <div style="font-size:0.9em;margin-top:6px;opacity:0.85;">Aucun rééquilibrage nécessaire sur l'ensemble des dépenses.</div>
-                    </div></div>`;
-            } else if (netDebt > 0) {
-                balanceMessage = `<div style="background:#fff3cd;border-left:4px solid #ffc107;padding:20px;border-radius:8px;">
-                    <div style="font-size:1.05em;color:#856404;margin-bottom:8px;"><strong>⚖️ Rééquilibrage global :</strong></div>
-                    <div style="font-size:1.5em;font-weight:bold;color:#856404;margin-bottom:8px;">${n2} doit ${netDebt.toFixed(2)} ${sym} à ${n1}</div>
-                    <div style="font-size:0.82em;color:#856404;opacity:0.8;">Calculé sur l'ensemble des dépenses, répartition ${pct1}% / ${pct2}%.</div>
-                </div>`;
-            } else {
-                balanceMessage = `<div style="background:#fff3cd;border-left:4px solid #ffc107;padding:20px;border-radius:8px;">
-                    <div style="font-size:1.05em;color:#856404;margin-bottom:8px;"><strong>⚖️ Rééquilibrage global :</strong></div>
-                    <div style="font-size:1.5em;font-weight:bold;color:#856404;margin-bottom:8px;">${n1} doit ${Math.abs(netDebt).toFixed(2)} ${sym} à ${n2}</div>
-                    <div style="font-size:0.82em;color:#856404;opacity:0.8;">Calculé sur l'ensemble des dépenses, répartition ${pct1}% / ${pct2}%.</div>
-                </div>`;
-            }
 
             // ─────────────────────────────────────────────────────────────────
             // BLOC 4 : Libellé de période
