@@ -8656,11 +8656,20 @@
 
             let cards = '';
             activeKeys.forEach(key => {
-                const d      = monthsData[key];
-                const p1Paid = d.p1Exp + d.p1Contrib;
-                const p2Paid = d.p2Exp + d.p2Contrib;
+                const d        = monthsData[key];
                 const totalExp = d.p1Exp + d.p2Exp;
-                const p1Net  = p1Paid - (totalExp * p1pct / 100);
+
+                // Ce que chaque parent a réellement sorti de sa poche :
+                //   dépenses payées + versements effectués vers l'autre
+                const p1TotalPaid = d.p1Exp + d.p1Contrib;
+                const p2TotalPaid = d.p2Exp + d.p2Contrib;
+
+                // Part théorique de chacun sur les dépenses du mois
+                const p1Due = totalExp * p1pct / 100;
+                const p2Due = totalExp * p2pct / 100;
+
+                // Solde : positif = a trop payé (l'autre lui doit), négatif = a trop peu payé
+                const p1Net = p1TotalPaid - p1Due; // + → P2 doit à P1 ; - → P1 doit à P2
 
                 let debtBg, debtColor, debtText;
                 if (Math.abs(p1Net) < 0.01) {
@@ -8679,9 +8688,13 @@
                     + '<div style="color:#667eea;font-weight:600;">' + n1 + '</div>'
                     + '<div style="color:#764ba2;font-weight:600;">' + n2 + '</div>'
                     + '<div style="color:#555;">Dépenses : <strong>' + d.p1Exp.toFixed(2) + ' ' + sym + '</strong>'
-                    + (d.p1Contrib > 0 ? '<br><span style="color:#28a745;font-size:0.9em;">Versement : +' + d.p1Contrib.toFixed(2) + ' ' + sym + '</span>' : '') + '</div>'
+                    + (d.p1Contrib > 0 ? '<br><span style="color:#28a745;font-size:0.9em;">Versement : +' + d.p1Contrib.toFixed(2) + ' ' + sym + '</span>' : '')
+                    + '<br><span style="color:#999;font-size:0.85em;">Part due (' + p1pct + '%) : ' + p1Due.toFixed(2) + ' ' + sym + '</span>'
+                    + '</div>'
                     + '<div style="color:#555;">Dépenses : <strong>' + d.p2Exp.toFixed(2) + ' ' + sym + '</strong>'
-                    + (d.p2Contrib > 0 ? '<br><span style="color:#28a745;font-size:0.9em;">Versement : +' + d.p2Contrib.toFixed(2) + ' ' + sym + '</span>' : '') + '</div>'
+                    + (d.p2Contrib > 0 ? '<br><span style="color:#28a745;font-size:0.9em;">Versement : +' + d.p2Contrib.toFixed(2) + ' ' + sym + '</span>' : '')
+                    + '<br><span style="color:#999;font-size:0.85em;">Part due (' + p2pct + '%) : ' + p2Due.toFixed(2) + ' ' + sym + '</span>'
+                    + '</div>'
                     + '</div>'
                     + '<div style="margin-top:10px;padding:8px 10px;border-radius:7px;background:' + debtBg + ';color:' + debtColor + ';font-size:0.88em;text-align:center;">'
                     + '⚖️ ' + debtText + ' <span style="font-size:0.82em;opacity:0.75;">· Total : ' + totalExp.toFixed(2) + ' ' + sym + '</span>'
