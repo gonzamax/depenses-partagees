@@ -5042,18 +5042,15 @@
             console.log('🔍 Vérification des dépenses prévisionnelles à confirmer...');
 
             const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const todayStr = todayISO();
 
             const itemsToConfirm = [];
 
             // Vérifier les dépenses ponctuelles dont la date est arrivée
             budgetItems.forEach(item => {
                 if (item.frequency === 'Ponctuelle' && !item.confirmed) {
-                    const itemDate = new Date(item.date);
-                    itemDate.setHours(0, 0, 0, 0);
-
-                    // Si la date est aujourd'hui ou dans le passé
-                    if (itemDate <= today) {
+                    // Comparaison de chaînes YYYY-MM-DD : fiable et sans UTC
+                    if (item.date.substring(0, 10) <= todayStr) {
                         itemsToConfirm.push(item);
                     }
                 }
@@ -5075,7 +5072,7 @@
 
             let itemsHTML = '';
             items.forEach(item => {
-                const date = new Date(item.date);
+                const date = parseDateLocal(item.date.substring(0, 10));
                 itemsHTML += `
                     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
@@ -5196,10 +5193,10 @@
             const item = budgetItems.find(i => i.id === id);
             if (!item) return;
 
-            const currentDate = new Date(item.date);
+            const currentDate = parseDateLocal(item.date.substring(0, 10));
             currentDate.setMonth(currentDate.getMonth() + 1);
 
-            item.date = currentDate.toISOString().split('T')[0];
+            item.date = dateToISO(currentDate);
             item.month = currentDate.getMonth() + 1;
             item.year = currentDate.getFullYear();
 
@@ -5512,7 +5509,7 @@
                             <label style="color: #2e7d32; margin-bottom: 5px;">ℹ️ Information</label>
                             <p style="margin: 0; color: #1b5e20; font-size: 0.9em;">
                                 ${rec.next_execution ?
-                                    `Prochaine exécution prévue : ${new Date(rec.next_execution).toLocaleDateString('fr-FR')}` :
+                                    `Prochaine exécution prévue : ${formatDateLocal(rec.next_execution)}` :
                                     'Prochaine exécution sera calculée automatiquement'
                                 }
                             </p>
@@ -5723,12 +5720,12 @@
             try {
                 // Obtenir les dépenses du mois en cours
                 const now = new Date();
+                const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                const lastDayOfMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
                 const monthExpenses = expenses.filter(e => {
-                    const expenseDate = new Date(e.date);
-                    return expenseDate >= firstDayOfMonth && expenseDate <= lastDayOfMonth;
+                    return e.date.substring(0, 7) === currentMonthStr;
                 });
 
                 if (monthExpenses.length === 0) {
@@ -6742,7 +6739,7 @@
 
                 if (notification.type === 'expense') {
                     const expense = notification.data;
-                    const date = new Date(expense.date);
+                    const date = parseDateLocal(expense.date.substring(0, 10));
                     detailsHTML = `
                         <div style="font-size: 0.9em; color: #666; margin-bottom: 3px;">
                             📅 ${date.toLocaleDateString('fr-FR')} |
@@ -6767,7 +6764,7 @@
                 } else if (notification.type === 'budget') {
                     const budget = notification.data;
                     const frequencyText = budget.frequency === 'Ponctuelle'
-                        ? `Le ${new Date(budget.date).toLocaleDateString('fr-FR')}`
+                        ? `Le ${formatDateLocal(budget.date)}`
                         : budget.frequency === 'Mensuel'
                         ? `Mensuel le ${budget.day}`
                         : `Hebdomadaire le ${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][budget.weekday]}`;
@@ -7732,29 +7729,28 @@
             // Filtre rapide période
             if (window.quickFilterPeriod) {
                 const now = new Date();
-                now.setHours(0, 0, 0, 0);
+                const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
                 if (window.quickFilterPeriod === 'today') {
-                    filtered = filtered.filter(e => {
-                        const expenseDate = new Date(e.date);
-                        expenseDate.setHours(0, 0, 0, 0);
-                        return expenseDate.getTime() === now.getTime();
-                    });
+                    const todayStr = dateToISO(todayLocal);
+                    filtered = filtered.filter(e => e.date.substring(0, 10) === todayStr);
+
                 } else if (window.quickFilterPeriod === 'week') {
-                    const weekStart = new Date(now);
-                    weekStart.setDate(now.getDate() - now.getDay() + 1); // Lundi
+                    // Semaine du lundi au dimanche, tout en local
+                    const weekStart = new Date(todayLocal);
+                    weekStart.setDate(todayLocal.getDate() - ((todayLocal.getDay() + 6) % 7)); // lundi
                     const weekEnd = new Date(weekStart);
-                    weekEnd.setDate(weekStart.getDate() + 6); // Dimanche
+                    weekEnd.setDate(weekStart.getDate() + 6); // dimanche
 
                     filtered = filtered.filter(e => {
-                        const expenseDate = new Date(e.date);
+                        const expenseDate = parseDateLocal(e.date.substring(0, 10));
                         return expenseDate >= weekStart && expenseDate <= weekEnd;
                     });
+
                 } else if (window.quickFilterPeriod === 'year') {
-                    const currentYear = now.getFullYear();
+                    const currentYear = todayLocal.getFullYear();
                     filtered = filtered.filter(e => {
-                        const expenseYear = new Date(e.date).getFullYear();
-                        return expenseYear === currentYear;
+                        return parseInt(e.date.substring(0, 4)) === currentYear;
                     });
                 }
             }
@@ -7849,7 +7845,7 @@
                     </div>
                     <div class="expense-details">
                         <div class="expense-detail">
-                            <strong>📅 Date:</strong> ${new Date(expense.date).toLocaleDateString('fr-FR')}
+                            <strong>📅 Date:</strong> ${formatDateLocal(expense.date)}
                         </div>
                         <div class="expense-detail">
                             <strong>🏷️ Catégorie:</strong> ${expense.categorie}
@@ -8207,8 +8203,8 @@
                 case 'custom':
                     // Les dates personnalisées sont stockées dans des variables globales
                     if (window.customStartDate && window.customEndDate) {
-                        startDate = new Date(window.customStartDate);
-                        endDate = new Date(window.customEndDate);
+                        startDate = parseDateLocal(window.customStartDate.substring(0, 10));
+                        endDate   = parseDateLocal(window.customEndDate.substring(0, 10));
                         endDate.setHours(23, 59, 59);
                     } else {
                         return expenses;
@@ -8221,11 +8217,11 @@
 
             if (endDate) {
                 return expenses.filter(e => {
-                    const date = new Date(e.date);
+                    const date = parseDateLocal(e.date.substring(0, 10));
                     return date >= startDate && date <= endDate;
                 });
             } else {
-                return expenses.filter(e => new Date(e.date) >= startDate);
+                return expenses.filter(e => parseDateLocal(e.date.substring(0, 10)) >= startDate);
             }
         }
 
@@ -8260,8 +8256,8 @@
                     break;
                 case 'custom':
                     if (window.customStartDate && window.customEndDate) {
-                        startDate = new Date(window.customStartDate);
-                        endDate = new Date(window.customEndDate);
+                        startDate = parseDateLocal(window.customStartDate.substring(0, 10));
+                        endDate   = parseDateLocal(window.customEndDate.substring(0, 10));
                         endDate.setHours(23, 59, 59);
                     } else {
                         return contribs;
@@ -8274,11 +8270,11 @@
 
             if (endDate) {
                 return contribs.filter(c => {
-                    const date = new Date(c.date);
+                    const date = parseDateLocal(c.date.substring(0, 10));
                     return date >= startDate && date <= endDate;
                 });
             } else {
-                return contribs.filter(c => new Date(c.date) >= startDate);
+                return contribs.filter(c => parseDateLocal(c.date.substring(0, 10)) >= startDate);
             }
         }
 
@@ -8361,9 +8357,7 @@
                     break;
                 case 'custom':
                     if (window.customStartDate && window.customEndDate) {
-                        const start = new Date(window.customStartDate);
-                        const end = new Date(window.customEndDate);
-                        text = `Du ${start.toLocaleDateString('fr-FR')} au ${end.toLocaleDateString('fr-FR')}`;
+                        text = `Du ${formatDateLocal(window.customStartDate.substring(0, 10))} au ${formatDateLocal(window.customEndDate.substring(0, 10))}`;
                     }
                     break;
                 case 'all':
@@ -9127,8 +9121,9 @@
             };
 
             if (frequency === 'Ponctuelle') {
-                const date = new Date(document.getElementById('budget-date').value);
-                budgetItem.date = document.getElementById('budget-date').value;
+                const dateStr = document.getElementById('budget-date').value;
+                const date = parseDateLocal(dateStr);
+                budgetItem.date = dateStr;
                 budgetItem.month = date.getMonth() + 1;
                 budgetItem.year = date.getFullYear();
             } else {
@@ -9167,20 +9162,23 @@
             const startDateStr = rec.start_date || rec.created_at;
             if (!startDateStr) {
                 // Si pas de date du tout, NE PAS compter dans le budget prévisionnel
-                // Ces anciennes récurrentes ne doivent apparaître que dans l'onglet Récurrentes
                 return false;
             }
 
-            const startDate = new Date(startDateStr);
+            // Bornes du mois en heure locale (pas UTC)
             const monthStart = new Date(year, month - 1, 1);
-            const monthEnd = new Date(year, month, 0);
+            const monthEnd   = new Date(year, month, 0); // dernier jour du mois
 
-            // Si la récurrente commence après ce mois
+            // Parser en LOCAL pour éviter le décalage UTC
+            // new Date("2026-06-01") = 31 mai 22h en UTC+2 → faux positif
+            const startDate = parseDateLocal(startDateStr.substring(0, 10));
+
+            // Si la récurrente commence après ce mois → pas active
             if (startDate > monthEnd) return false;
 
-            // Si elle a une date de fin et qu'elle est terminée avant ce mois
+            // Si elle a une date de fin et qu'elle est terminée avant ce mois → pas active
             if (rec.end_date) {
-                const endDate = new Date(rec.end_date);
+                const endDate = parseDateLocal(rec.end_date.substring(0, 10));
                 if (endDate < monthStart) return false;
             }
 
@@ -9217,13 +9215,13 @@
                     }
                 } else {
                     // Dépense récurrente du budget : vérifier si active pour ce mois
-                    const startDate = new Date(item.start_date);
+                    const startDate = parseDateLocal(item.start_date.substring(0, 10));
                     const monthDate = new Date(year, month - 1, 1);
 
                     if (startDate > monthDate) return;
 
                     if (item.end_date) {
-                        const endDate = new Date(item.end_date);
+                        const endDate = parseDateLocal(item.end_date.substring(0, 10));
                         const monthEnd = new Date(year, month, 0);
                         if (endDate < monthEnd) return;
                     }
@@ -9289,8 +9287,9 @@
 
                 // Récupérer les dépenses réelles du mois
                 const actualExpenses = expenses.filter(e => {
-                    const date = new Date(e.date);
-                    return date.getFullYear() === year && (date.getMonth() + 1) === month;
+                    const yy = parseInt(e.date.substring(0, 4));
+                    const mm = parseInt(e.date.substring(5, 7));
+                    return yy === year && mm === month;
                 });
                 const actualTotal = actualExpenses.reduce((sum, e) => sum + e.montant, 0);
 
@@ -9594,23 +9593,22 @@
         function displayMonthlyBudgetItems(month, year) {
             const monthlyItems = budgetItems.filter(item => {
                 if (item.frequency === 'Ponctuelle') {
-                    const itemDate = new Date(item.date);
-                    return itemDate.getFullYear() === year && (itemDate.getMonth() + 1) === month;
+                    const yy = parseInt((item.date || '').substring(0, 4));
+                    const mm = parseInt((item.date || '').substring(5, 7));
+                    return yy === year && mm === month;
                 } else if (item.frequency === 'Mensuel') {
-                    // Vérifier si active ce mois
-                    const startDate = new Date(item.start_date);
-                    const endDate = item.end_date ? new Date(item.end_date) : null;
+                    const startDate = parseDateLocal(item.start_date.substring(0, 10));
+                    const endDate   = item.end_date ? parseDateLocal(item.end_date.substring(0, 10)) : null;
                     const monthDate = new Date(year, month - 1, 1);
 
                     if (startDate > monthDate) return false;
                     if (endDate && endDate < monthDate) return false;
                     return true;
                 } else if (item.frequency === 'Hebdomadaire') {
-                    // Vérifier si active ce mois
-                    const startDate = new Date(item.start_date);
-                    const endDate = item.end_date ? new Date(item.end_date) : null;
+                    const startDate  = parseDateLocal(item.start_date.substring(0, 10));
+                    const endDate    = item.end_date ? parseDateLocal(item.end_date.substring(0, 10)) : null;
                     const monthStart = new Date(year, month - 1, 1);
-                    const monthEnd = new Date(year, month, 0);
+                    const monthEnd   = new Date(year, month, 0);
 
                     if (startDate > monthEnd) return false;
                     if (endDate && endDate < monthStart) return false;
@@ -9639,7 +9637,7 @@
 
                 let dateDisplay = '';
                 if (item.frequency === 'Ponctuelle') {
-                    const date = new Date(item.date);
+                    const date = parseDateLocal(item.date.substring(0, 10));
                     dateDisplay = `📅 Le ${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`;
                 } else if (item.frequency === 'Mensuel') {
                     dateDisplay = `📅 Le ${item.day} du mois`;
@@ -9669,7 +9667,7 @@
                                 </div>
                                 <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">${dateDisplay}</div>
                                 <div style="font-size: 0.85em; color: #666;">📂 ${item.type} | 🏷️ ${item.category} | 👤 ${item.payeur}</div>
-                                ${item.confirmed ? `<div style="font-size: 0.8em; color: #28a745; margin-top: 5px;">✅ Confirmée le ${new Date(item.confirmed_date).toLocaleDateString()}</div>` : ''}
+                                ${item.confirmed ? `<div style="font-size: 0.8em; color: #28a745; margin-top: 5px;">✅ Confirmée le ${formatDateLocal((item.confirmed_date || '').substring(0, 10))}</div>` : ''}
                             </div>
                             <div style="text-align: right; margin-left: 20px;">
                                 <div style="font-size: 1.4em; font-weight: bold; color: ${item.confirmed ? '#28a745' : '#667eea'}; margin-bottom: 5px;">${item.montant.toFixed(2)} ${settings.currency_symbol}</div>
@@ -9864,8 +9862,9 @@
                 };
 
                 if (frequency === 'Ponctuelle') {
-                    const date = new Date(modal.querySelector('#edit-budget-date').value);
-                    updatedItem.date = modal.querySelector('#edit-budget-date').value;
+                    const dateStr = modal.querySelector('#edit-budget-date').value;
+                    const date = parseDateLocal(dateStr);
+                    updatedItem.date = dateStr;
                     updatedItem.month = date.getMonth() + 1;
                     updatedItem.year = date.getFullYear();
                 } else {
@@ -9937,8 +9936,9 @@
             // Récupérer les dépenses prévisionnelles de ce mois
             const budgetItemsMonth = budgetItems.filter(item => {
                 if (item.recurrence_type === 'Ponctuelle') {
-                    const itemDate = new Date(item.date);
-                    return itemDate.getFullYear() === year && (itemDate.getMonth() + 1) === month;
+                    const yy = parseInt((item.date || '').substring(0, 4));
+                    const mm = parseInt((item.date || '').substring(5, 7));
+                    return yy === year && mm === month;
                 } else if (item.recurrence_type === 'Mensuel') {
                     return true;
                 } else if (item.recurrence_type === 'Hebdomadaire') {
@@ -9974,8 +9974,9 @@
 
             // Récupérer les dépenses réelles du mois
             const actualExpenses = expenses.filter(e => {
-                const date = new Date(e.date);
-                return date.getFullYear() === year && (date.getMonth() + 1) === month;
+                const yy = parseInt(e.date.substring(0, 4));
+                const mm = parseInt(e.date.substring(5, 7));
+                return yy === year && mm === month;
             }).map(expense => {
                 return {
                     type: 'réelle',
@@ -10179,7 +10180,7 @@
                                 <div style="padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #28a745;">
                                     <div style="font-weight: 600; color: #333; margin-bottom: 3px; font-size: 0.95em;">${pair.real.description}</div>
                                     <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">
-                                        ${new Date(pair.real.date).toLocaleDateString('fr-FR')} • ${pair.real.payeur}
+                                        ${formatDateLocal(pair.real.date)} • ${pair.real.payeur}
                                     </div>
                                     <div style="font-weight: bold; color: #28a745;">
                                         ${pair.real.montant.toFixed(2)} €
@@ -10234,7 +10235,7 @@
                                         <div style="flex: 1;">
                                             <div style="font-weight: 600; color: #333; margin-bottom: 3px;">${item.description}</div>
                                             <div style="font-size: 0.85em; color: #721c24;">
-                                                ${new Date(item.date).toLocaleDateString('fr-FR')} • ${item.payeur}
+                                                ${formatDateLocal(item.date)} • ${item.payeur}
                                             </div>
                                         </div>
                                         <div style="font-weight: bold; color: #721c24; white-space: nowrap; margin-left: 10px;">
@@ -10335,14 +10336,13 @@
                 let inYear = false;
 
                 if (item.frequency === 'Ponctuelle') {
-                    const itemDate = new Date(item.date);
-                    inYear = itemDate.getFullYear() === year;
+                    inYear = parseInt((item.date || '').substring(0, 4)) === year;
                 } else {
                     // Pour les récurrentes, vérifier si elles sont actives dans l'année
-                    const startDate = new Date(item.start_date);
-                    const endDate = item.end_date ? new Date(item.end_date) : new Date(year, 11, 31);
+                    const startDate = parseDateLocal(item.start_date.substring(0, 10));
+                    const endDate   = item.end_date ? parseDateLocal(item.end_date.substring(0, 10)) : new Date(year, 11, 31);
                     const yearStart = new Date(year, 0, 1);
-                    const yearEnd = new Date(year, 11, 31);
+                    const yearEnd   = new Date(year, 11, 31);
 
                     inYear = startDate <= yearEnd && endDate >= yearStart;
                 }
@@ -10361,10 +10361,13 @@
                 if (!rec.active) return;
 
                 // Vérifier si la récurrente est active dans l'année
-                const startDate = rec.start_date ? new Date(rec.start_date) : rec.created_at ? new Date(rec.created_at) : new Date();
-                const endDate = rec.end_date ? new Date(rec.end_date) : new Date(year, 11, 31);
+                const startDate = rec.start_date ? parseDateLocal(rec.start_date.substring(0, 10))
+                                : rec.created_at ? parseDateLocal(rec.created_at.substring(0, 10))
+                                : new Date(year, 0, 1);
+                const endDate = rec.end_date ? parseDateLocal(rec.end_date.substring(0, 10))
+                              : new Date(year, 11, 31);
                 const yearStart = new Date(year, 0, 1);
-                const yearEnd = new Date(year, 11, 31);
+                const yearEnd   = new Date(year, 11, 31);
 
                 const inYear = startDate <= yearEnd && endDate >= yearStart;
 
@@ -10407,17 +10410,15 @@
                 return;
             }
 
-            // Trier par date
+            // Trier par date (les chaînes YYYY-MM-DD se comparent correctement)
             filteredItems.sort((a, b) => {
                 if (a.frequency === 'Ponctuelle' && b.frequency === 'Ponctuelle') {
-                    return new Date(a.date) - new Date(b.date);
+                    return (a.date || '').localeCompare(b.date || '');
                 }
                 if (a.frequency === 'Ponctuelle') return -1;
                 if (b.frequency === 'Ponctuelle') return 1;
 
-                const dateA = new Date(a.start_date);
-                const dateB = new Date(b.start_date);
-                return dateA - dateB;
+                return (a.start_date || '').localeCompare(b.start_date || '');
             });
 
             let html = '<div style="display: grid; gap: 15px;">';
@@ -10427,18 +10428,18 @@
                 let badge = '';
 
                 if (item.frequency === 'Ponctuelle') {
-                    const date = new Date(item.date);
+                    const date = parseDateLocal(item.date.substring(0, 10));
                     dateDisplay = `📅 ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
                     badge = '<span style="background: #667eea; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75em; margin-left: 10px;">Ponctuelle</span>';
                 } else {
-                    const startDate = new Date(item.start_date);
+                    const startDate = parseDateLocal(item.start_date.substring(0, 10));
                     const dayInfo = item.frequency === 'Mensuel'
                         ? `le ${item.day} du mois`
                         : `le ${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][item.weekday]}`;
 
                     dateDisplay = `🔄 ${item.frequency} ${dayInfo} - Début: ${startDate.getDate()}/${startDate.getMonth()+1}/${startDate.getFullYear()}`;
                     if (item.end_date) {
-                        const endDate = new Date(item.end_date);
+                        const endDate = parseDateLocal(item.end_date.substring(0, 10));
                         dateDisplay += ` - Fin: ${endDate.getDate()}/${endDate.getMonth()+1}/${endDate.getFullYear()}`;
                     }
 
@@ -10622,11 +10623,11 @@
                         ` : ''}
                         ${rec.active ? `
                             <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
-                                Prochaine exécution: ${new Date(rec.next_execution).toLocaleDateString('fr-FR')}
+                                Prochaine exécution: ${formatDateLocal(rec.next_execution)}
                             </div>
                         ` : `
                             <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
-                                ⏸️ Désactivée ${rec.last_execution ? '- Dernière exécution: ' + new Date(rec.last_execution).toLocaleDateString('fr-FR') : ''}
+                                ⏸️ Désactivée ${rec.last_execution ? '- Dernière exécution: ' + formatDateLocal(rec.last_execution) : ''}
                             </div>
                         `}
                     </div>
@@ -11199,8 +11200,7 @@
             let html = '<div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);"><h3 style="color: #667eea; margin-bottom: 20px;">📋 Historique des versements</h3>';
 
             contributions.forEach(contrib => {
-                const date = new Date(contrib.date);
-                const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const dateStr = formatDateLocal(contrib.date.substring(0, 10));
                 const parentName = contrib.parent === 'Parent 1' ? (settings.parent1_name || 'Parent 1') : (settings.parent2_name || 'Parent 2');
 
                 html += `
