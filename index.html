@@ -8659,17 +8659,24 @@
                 const d        = monthsData[key];
                 const totalExp = d.p1Exp + d.p2Exp;
 
-                // Ce que chaque parent a réellement sorti de sa poche :
-                //   dépenses payées + versements effectués vers l'autre
-                const p1TotalPaid = d.p1Exp + d.p1Contrib;
-                const p2TotalPaid = d.p2Exp + d.p2Contrib;
-
                 // Part théorique de chacun sur les dépenses du mois
                 const p1Due = totalExp * p1pct / 100;
                 const p2Due = totalExp * p2pct / 100;
 
-                // Solde : positif = a trop payé (l'autre lui doit), négatif = a trop peu payé
-                const p1Net = p1TotalPaid - p1Due; // + → P2 doit à P1 ; - → P1 doit à P2
+                // Solde brut : combien chacun a trop ou pas assez payé EN DÉPENSES
+                //   (positif = a trop payé, négatif = a trop peu payé)
+                const p1RawNet = d.p1Exp - p1Due;  // Maxime : 2280 - 1652 = +628
+                const p2RawNet = d.p2Exp - p2Due;  // Cathy  : 80   - 708  = -628
+
+                // Les versements viennent réduire directement la dette.
+                // Un versement de P2 vers P1 réduit ce que P2 doit (ou augmente ce que P1 doit)
+                // Un versement de P1 vers P2 réduit ce que P1 doit (ou augmente ce que P2 doit)
+                // Solde net final du point de vue de P1 :
+                //   p1Net > 0 → P2 doit encore à P1 ; p1Net < 0 → P1 doit à P2
+                const p1Net = p1RawNet - d.p2Contrib + d.p1Contrib;
+                // Explication :
+                //   d.p2Contrib (versement de Cathy) réduit ce que Cathy doit → diminue p1Net
+                //   d.p1Contrib (versement de Maxime) réduit ce que Maxime doit → augmente p1Net
 
                 let debtBg, debtColor, debtText;
                 if (Math.abs(p1Net) < 0.01) {
@@ -8730,10 +8737,11 @@
                 totalP1Ctr += d.p1Contrib; totalP2Ctr += d.p2Contrib;
                 totalExp   += d.p1Exp + d.p2Exp;
             });
-            const totalP1Paid = totalP1Exp + totalP1Ctr;
-            const totalP2Paid = totalP2Exp + totalP2Ctr;
-            const p1Due       = (totalExp * p1pct) / 100;
-            const finalNet    = totalP1Paid - p1Due; // + = P2 doit à P1
+            const p1Due    = (totalExp * p1pct) / 100;
+            // Solde net : Maxime a payé (en dépenses) - sa part due,
+            // puis on soustrait les versements de Cathy (qui réduisent sa dette)
+            // et on ajoute les versements de Maxime (qui augmentent ce que Cathy doit)
+            const finalNet = (totalP1Exp - p1Due) - totalP2Ctr + totalP1Ctr;
 
             // Carte solde global
             let soldeColor, soldeBg, soldeBorder, soldeIcon, soldeText;
@@ -8757,8 +8765,7 @@
                 cumulP1Ctr += d.p1Contrib; cumulP2Ctr += d.p2Contrib;
                 cumulTotalExp += d.p1Exp + d.p2Exp;
 
-                const cumulP1Paid = cumulP1Exp + cumulP1Ctr;
-                const cumulNet    = cumulP1Paid - (cumulTotalExp * p1pct / 100);
+                const cumulNet = (cumulP1Exp - (cumulTotalExp * p1pct / 100)) - cumulP2Ctr + cumulP1Ctr;
 
                 let debtBg2, debtColor2, debtTxt;
                 if (Math.abs(cumulNet) < 0.01) {
@@ -8791,10 +8798,10 @@
                     <div style="font-size:0.75em;color:${soldeColor};opacity:0.75;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Solde global — toutes périodes</div>
                     <div style="font-size:1.2em;font-weight:700;color:${soldeColor};margin-bottom:10px;">${soldeIcon} ${soldeText}</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:0.82em;color:${soldeColor};opacity:0.85;">
-                        <div>${n1} payé : <strong>${totalP1Paid.toFixed(2)} ${sym}</strong>${totalP1Ctr > 0 ? '<br><span style="font-size:0.88em;">dont '+totalP1Ctr.toFixed(2)+' '+sym+' vers.</span>' : ''}</div>
-                        <div>${n2} payé : <strong>${totalP2Paid.toFixed(2)} ${sym}</strong>${totalP2Ctr > 0 ? '<br><span style="font-size:0.88em;">dont '+totalP2Ctr.toFixed(2)+' '+sym+' vers.</span>' : ''}</div>
+                        <div>${n1} dépenses : <strong>${totalP1Exp.toFixed(2)} ${sym}</strong>${totalP1Ctr > 0 ? '<br><span style="font-size:0.88em;">versements effectués : +' + totalP1Ctr.toFixed(2) + ' ' + sym + '</span>' : ''}</div>
+                        <div>${n2} dépenses : <strong>${totalP2Exp.toFixed(2)} ${sym}</strong>${totalP2Ctr > 0 ? '<br><span style="font-size:0.88em;">versements effectués : +' + totalP2Ctr.toFixed(2) + ' ' + sym + '</span>' : ''}</div>
                     </div>
-                    <div style="margin-top:6px;font-size:0.78em;color:${soldeColor};opacity:0.65;">Total dépenses : ${totalExp.toFixed(2)} ${sym}</div>
+                    <div style="margin-top:6px;font-size:0.78em;color:${soldeColor};opacity:0.65;">Total dépenses : ${totalExp.toFixed(2)} ${sym} · Part due ${n1} (${p1pct}%) : ${p1Due.toFixed(2)} ${sym}</div>
                 </div>
 
                 <!-- Détail mensuel dépliable — cartes mobile-first -->
