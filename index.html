@@ -4902,14 +4902,14 @@
             console.log('🔄 Vérification des dépenses récurrentes...');
 
             try {
-                const today = new Date().toISOString().split('T')[0];
+                const todayStr = todayISO();
 
                 const { data: recurrents, error } = await supabase
                     .from('recurrent_expenses')
                     .select('*')
                     .eq('room_id', currentRoomId)
                     .eq('active', true)
-                    .lte('next_execution', today);
+                    .lte('next_execution', todayStr);
 
                 if (error) throw error;
                 if (!recurrents || recurrents.length === 0) {
@@ -4922,72 +4922,103 @@
 
                 for (const recurrent of recurrents) {
 
-                    // ── ÉTAPE 1 : Avancer next_execution de façon atomique ────────
-                    // On calcule la prochaine date AVANT d'insérer la dépense.
-                    // On tente de mettre à jour next_execution uniquement si sa valeur
-                    // en base correspond encore à ce qu'on a lu (optimistic lock).
-                    // Si un autre appareil a déjà avancé la date, le count sera 0
-                    // et on sait que la dépense a déjà été traitée → on skip.
-                    let nextExecution;
-                    if (recurrent.frequency === 'Hebdomadaire') {
-                        nextExecution = calculateNextWeeklyExecution(recurrent.day_of_week, new Date(recurrent.next_execution));
-                    } else {
-                        nextExecution = calculateNextExecution(recurrent.day_of_month, new Date(recurrent.next_execution));
-                    }
+                    // ── BOUCLE : rattraper tous les mois/semaines manqués ─────────
+                    // Si l'app n'a pas été ouverte depuis plusieurs mois, next_execution
+                    // peut être très en retard. On boucle jusqu'à dépasser aujourd'hui,
+                    // en créant une dépense pour chaque occurrence manquée.
 
-                    const { data: updated, error: updateError } = await supabase
-                        .from('recurrent_expenses')
-                        .update({
-                            last_execution: recurrent.next_execution,
-                            next_execution: nextExecution
-                        })
-                        .eq('id', recurrent.id)
-                        .eq('next_execution', recurrent.next_execution) // condition atomique
-                        .select('id');
+                    let currentNextExecution = recurrent.next_execution;
 
-                    if (updateError) {
-                        console.error('❌ Erreur update récurrente:', updateError);
-                        continue;
-                    }
+                    while (currentNextExecution <= todayStr) {
 
-                    if (!updated || updated.length === 0) {
-                        // Un autre appareil a déjà traité cette récurrente → skip
-                        console.log(`⏭️ ${recurrent.description} déjà traité par un autre client`);
-                        continue;
-                    }
+                        // ── ÉTAPE 1 : Avancer next_execution de façon atomique ────
+                        // Verrou optimiste : on ne met à jour que si next_execution
+                        // en base est encore la valeur qu'on a lue.
+                        // Si un autre client a déjà avancé → updated sera vide → on sort.
+                        let nextExecution;
+                        if (recurrent.frequency === 'Hebdomadaire') {
+                            nextExecution = calculateNextWeeklyExecution(recurrent.day_of_week, currentNextExecution);
+                        } else {
+                            nextExecution = calculateNextExecution(recurrent.day_of_month, currentNextExecution);
+                        }
 
-                    // ── ÉTAPE 2 : Insérer la dépense ─────────────────────────────
-                    const expense = {
-                        room_id: currentRoomId,
-                        date: recurrent.next_execution,
-                        description: recurrent.description + ' (Récurrente)',
-                        montant: recurrent.montant,
-                        type: recurrent.type,
-                        categorie: recurrent.categorie,
-                        payeur: recurrent.payeur,
-                        notes: recurrent.notes ? recurrent.notes + ' [Automatique]' : 'Dépense récurrente automatique',
-                        attachment_name: recurrent.attachment_name,
-                        attachment_data: recurrent.attachment_data,
-                        attachment_type: recurrent.attachment_type,
-                        created_at: new Date().toISOString()
-                    };
-
-                    const { error: insertError } = await supabase
-                        .from('expenses')
-                        .insert([expense]);
-
-                    if (insertError) {
-                        console.error('❌ Erreur insertion:', insertError);
-                        // Rollback : on remet next_execution à sa valeur d'origine
-                        await supabase
+                        const { data: updated, error: updateError } = await supabase
                             .from('recurrent_expenses')
-                            .update({ last_execution: recurrent.last_execution || null, next_execution: recurrent.next_execution })
-                            .eq('id', recurrent.id);
-                        continue;
-                    }
+                            .update({
+                                last_execution: currentNextExecution,
+                                next_execution: nextExecution
+                            })
+                            .eq('id', recurrent.id)
+                            .eq('next_execution', currentNextExecution) // verrou optimiste
+                            .select('id');
 
-                    nbCreees++;
-                    console.log(`✅ ${recurrent.description} créée, prochaine : ${nextExecution}`);
+                        if (updateError) {
+                            console.error('❌ Erreur update récurrente:', updateError);
+                            break;
+                        }
+
+                        if (!updated || updated.length === 0) {
+                            // Un autre client a déjà traité cette occurrence → on arrête
+                            console.log(`⏭️ ${recurrent.description} (${currentNextExecution}) déjà traité par un autre client`);
+                            break;
+                        }
+
+                        // ── ÉTAPE 2 : Vérifier l'absence de doublon avant INSERT ──
+                        // Garde-fou : s'assurer qu'une dépense identique n'existe pas
+                        // déjà (ex : rollback partiel, crash réseau entre UPDATE et INSERT).
+                        const descriptionRecurrente = recurrent.description + ' (Récurrente)';
+                        const { data: existing } = await supabase
+                            .from('expenses')
+                            .select('id')
+                            .eq('room_id', currentRoomId)
+                            .eq('date', currentNextExecution)
+                            .eq('description', descriptionRecurrente)
+                            .eq('montant', recurrent.montant)
+                            .eq('payeur', recurrent.payeur)
+                            .limit(1);
+
+                        if (existing && existing.length > 0) {
+                            console.log(`⚠️ Dépense ${recurrent.description} du ${currentNextExecution} déjà présente — INSERT ignoré`);
+                            currentNextExecution = nextExecution;
+                            continue;
+                        }
+
+                        // ── ÉTAPE 3 : Insérer la dépense ─────────────────────────
+                        const expense = {
+                            room_id: currentRoomId,
+                            date: currentNextExecution,
+                            description: descriptionRecurrente,
+                            montant: recurrent.montant,
+                            type: recurrent.type,
+                            categorie: recurrent.categorie,
+                            payeur: recurrent.payeur,
+                            notes: recurrent.notes ? recurrent.notes + ' [Automatique]' : 'Dépense récurrente automatique',
+                            attachment_name: recurrent.attachment_name,
+                            attachment_data: recurrent.attachment_data,
+                            attachment_type: recurrent.attachment_type,
+                            created_at: new Date().toISOString()
+                        };
+
+                        const { error: insertError } = await supabase
+                            .from('expenses')
+                            .insert([expense]);
+
+                        if (insertError) {
+                            console.error('❌ Erreur insertion:', insertError);
+                            // Rollback : on remet next_execution à sa valeur d'origine
+                            await supabase
+                                .from('recurrent_expenses')
+                                .update({ last_execution: recurrent.last_execution || null, next_execution: currentNextExecution })
+                                .eq('id', recurrent.id);
+                            break;
+                        }
+
+                        nbCreees++;
+                        console.log(`✅ ${recurrent.description} créée pour le ${currentNextExecution}, prochaine : ${nextExecution}`);
+
+                        // Avancer pour la prochaine itération de la boucle
+                        currentNextExecution = nextExecution;
+                    }
                 }
 
                 if (nbCreees > 0) {
@@ -5202,51 +5233,69 @@
             }
         }
 
+        // ── Helpers de date ────────────────────────────────────────────────────
+        // Parse une chaîne YYYY-MM-DD en date LOCALE (évite le décalage UTC
+        // qui ferait apparaître le 1er comme le 31 du mois précédent).
+        function parseDateLocal(str) {
+            const [y, m, d] = str.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        // Formatte un objet Date en YYYY-MM-DD (format ISO pour Supabase, heure locale).
+        function dateToISO(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // Retourne la date du jour en YYYY-MM-DD (heure locale, sans UTC shift).
+        function todayISO() {
+            return dateToISO(new Date());
+        }
+
         function calculateNextExecution(dayOfMonth, fromDate = null) {
-            const baseDate = fromDate ? new Date(fromDate) : new Date();
-            const next = new Date(baseDate);
-
-            // D'abord essayer le mois en cours
-            next.setDate(dayOfMonth);
-
-            // Si le jour n'existe pas dans ce mois (ex: 31 février), prendre le dernier jour du mois
-            if (next.getDate() !== dayOfMonth) {
-                next.setDate(0); // Dernier jour du mois
+            // fromDate peut être un objet Date ou une chaîne YYYY-MM-DD
+            let base;
+            if (!fromDate) {
+                const now = new Date();
+                base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (typeof fromDate === 'string') {
+                base = parseDateLocal(fromDate);
+            } else {
+                // objet Date : on repart en local pour éviter les décalages UTC
+                base = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
             }
 
-            // Si cette date est dans le passé, passer au mois suivant
-            if (next <= baseDate) {
-                next.setMonth(next.getMonth() + 1);
-                next.setDate(dayOfMonth);
+            // On part du même mois que base et on avance d'un mois (on saute
+            // intentionnellement le mois de base : next_execution représente le
+            // mois QUI VIENT D'ÊTRE traité, donc la prochaine est M+1).
+            const next = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+            // Positionner sur le bon jour (clamp en fin de mois si nécessaire)
+            const lastDayOfMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+            next.setDate(Math.min(dayOfMonth, lastDayOfMonth));
 
-                // Vérifier à nouveau si le jour existe
-                if (next.getDate() !== dayOfMonth) {
-                    next.setDate(0);
-                }
-            }
-
-            return next.toISOString().split('T')[0];
+            return dateToISO(next);
         }
 
         function calculateNextWeeklyExecution(dayOfWeek, fromDate = null) {
-            const baseDate = fromDate ? new Date(fromDate) : new Date();
-            const today = new Date(baseDate);
-            const currentDay = today.getDay();
-
-            // Calculer combien de jours jusqu'au jour de la semaine souhaité
-            let daysUntilNext = dayOfWeek - currentDay;
-
-            // Si c'est un jour passé cette semaine, passer à la semaine prochaine
-            // Si c'est aujourd'hui mais plus tard dans la journée, on pourrait le compter
-            // Pour simplifier, si c'est aujourd'hui ou avant, on passe à la semaine prochaine
-            if (daysUntilNext <= 0) {
-                daysUntilNext += 7;
+            let base;
+            if (!fromDate) {
+                const now = new Date();
+                base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (typeof fromDate === 'string') {
+                base = parseDateLocal(fromDate);
+            } else {
+                base = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
             }
 
-            const next = new Date(today);
-            next.setDate(today.getDate() + daysUntilNext);
+            // On avance toujours d'au moins 1 jour (on ne re-exécute pas le jour même)
+            let daysUntilNext = dayOfWeek - base.getDay();
+            if (daysUntilNext <= 0) daysUntilNext += 7;
 
-            return next.toISOString().split('T')[0];
+            const next = new Date(base);
+            next.setDate(base.getDate() + daysUntilNext);
+            return dateToISO(next);
         }
 
         async function addRecurrentExpense(event) {
@@ -6193,12 +6242,18 @@
 
                 if (error) throw error;
 
-                // Grouper par clé de déduplication
+                // Grouper par clé de déduplication.
+                // Pour les dépenses récurrentes (description se terminant par " (Récurrente)"),
+                // on inclut le montant ET le payeur — la description seule + date suffit
+                // car deux récurrentes différentes ne peuvent pas avoir la même description
+                // le même jour. Pour les dépenses manuelles, on utilise les mêmes critères.
                 const seen = new Map();
                 const toDelete = [];
 
                 for (const exp of allExp) {
-                    const key = `${exp.date}||${exp.description}||${exp.montant}||${exp.payeur}`;
+                    // Normaliser la description (trim + lowercase) pour éviter les faux négatifs
+                    const descNorm = (exp.description || '').trim().toLowerCase();
+                    const key = `${exp.date}||${descNorm}||${exp.montant}||${exp.payeur}`;
                     if (seen.has(key)) {
                         toDelete.push(exp.id); // supprimer les suivants, garder le premier
                     } else {
