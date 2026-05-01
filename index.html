@@ -8156,13 +8156,7 @@
             createPayersChart(filtered);
 
             // Filtrer les contributions par la même période
-            const filteredContributions = period === 'all' ? contributions : filterContributionsByPeriod(contributions, period);
-
-            console.log('DEBUG Équilibre:');
-            console.log('- Période:', period);
-            console.log('- Contributions totales:', contributions.length);
-            console.log('- Contributions filtrées:', filteredContributions.length);
-            console.log('- Contributions:', filteredContributions);
+            const filteredContributions = period === 'all' ? contributions.filter(c => c.date.substring(0, 7) <= todayISO().substring(0, 7)) : filterContributionsByPeriod(contributions, period);
 
             // Équilibre des comptes
             displayBalance(filtered, totalParent1, totalParent2, total, filteredContributions);
@@ -8173,46 +8167,50 @@
 
         function filterExpensesByPeriod(expenses, period) {
             const now = new Date();
+            // Plafond : jamais au-delà de la fin du mois courant
+            const maxDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
             let startDate, endDate;
 
             switch(period) {
                 case 'month':
                     startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                    endDate   = maxDate;
                     break;
                 case 'lastMonth':
                     startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                    endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+                    endDate   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
                     break;
                 case '3months':
                     startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-                    endDate = now;
+                    endDate   = maxDate;
                     break;
                 case '6months':
                     startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-                    endDate = now;
+                    endDate   = maxDate;
                     break;
                 case 'year':
                     startDate = new Date(now.getFullYear(), 0, 1);
-                    endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+                    endDate   = maxDate;
                     break;
                 case 'lastYear':
                     startDate = new Date(now.getFullYear() - 1, 0, 1);
-                    endDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+                    endDate   = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
                     break;
                 case 'custom':
-                    // Les dates personnalisées sont stockées dans des variables globales
                     if (window.customStartDate && window.customEndDate) {
                         startDate = parseDateLocal(window.customStartDate.substring(0, 10));
                         endDate   = parseDateLocal(window.customEndDate.substring(0, 10));
                         endDate.setHours(23, 59, 59);
+                        // Pour le custom, on respecte le choix de l'utilisateur mais on plafonne
+                        if (endDate > maxDate) endDate = maxDate;
                     } else {
                         return expenses;
                     }
                     break;
                 case 'all':
                 default:
-                    return expenses;
+                    // "Toutes" : on plafonne quand même au mois courant
+                    return expenses.filter(e => e.date.substring(0, 7) <= todayISO().substring(0, 7));
             }
 
             if (endDate) {
@@ -8227,45 +8225,47 @@
 
         function filterContributionsByPeriod(contribs, period) {
             const now = new Date();
+            const maxDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
             let startDate, endDate;
 
             switch(period) {
                 case 'month':
                     startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                    endDate   = maxDate;
                     break;
                 case 'lastMonth':
                     startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                    endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+                    endDate   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
                     break;
                 case '3months':
                     startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-                    endDate = now;
+                    endDate   = maxDate;
                     break;
                 case '6months':
                     startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-                    endDate = now;
+                    endDate   = maxDate;
                     break;
                 case 'year':
                     startDate = new Date(now.getFullYear(), 0, 1);
-                    endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+                    endDate   = maxDate;
                     break;
                 case 'lastYear':
                     startDate = new Date(now.getFullYear() - 1, 0, 1);
-                    endDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
+                    endDate   = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59);
                     break;
                 case 'custom':
                     if (window.customStartDate && window.customEndDate) {
                         startDate = parseDateLocal(window.customStartDate.substring(0, 10));
                         endDate   = parseDateLocal(window.customEndDate.substring(0, 10));
                         endDate.setHours(23, 59, 59);
+                        if (endDate > maxDate) endDate = maxDate;
                     } else {
                         return contribs;
                     }
                     break;
                 case 'all':
                 default:
-                    return contribs;
+                    return contribs.filter(c => c.date.substring(0, 7) <= todayISO().substring(0, 7));
             }
 
             if (endDate) {
@@ -8494,11 +8494,16 @@
                 chartMonthly.destroy();
             }
 
-            // Regrouper par mois
+            // Mois courant au format YYYY-MM — on n'affiche pas les mois futurs
+            const currentMonth = todayISO().substring(0, 7);
+
+            // Regrouper par mois, en excluant les mois futurs
             const byMonth = {};
             allExpenses.forEach(e => {
                 const month = e.date.substring(0, 7); // YYYY-MM
-                byMonth[month] = (byMonth[month] || 0) + e.montant;
+                if (month <= currentMonth) {           // ← exclure les mois futurs
+                    byMonth[month] = (byMonth[month] || 0) + e.montant;
+                }
             });
 
             // Trier par date
@@ -8611,9 +8616,11 @@
         // ─── Utilitaire : regroupe dépenses et versements par mois ──────────────
         function groupByMonth(expList, contribList) {
             const months = {};
+            const currentMonth = todayISO().substring(0, 7); // YYYY-MM — plafond
 
             expList.forEach(e => {
-                const key = e.date ? e.date.substring(0, 7) : 'inconnu'; // "YYYY-MM"
+                const key = e.date ? e.date.substring(0, 7) : 'inconnu';
+                if (key > currentMonth) return; // exclure les mois futurs
                 if (!months[key]) months[key] = { p1Exp: 0, p2Exp: 0, p1Contrib: 0, p2Contrib: 0 };
                 if (e.payeur === settings.parent1_name || e.payeur === 'Parent 1') months[key].p1Exp += parseFloat(e.montant || 0);
                 else months[key].p2Exp += parseFloat(e.montant || 0);
@@ -8621,6 +8628,7 @@
 
             (contribList || []).forEach(c => {
                 const key = c.date ? c.date.substring(0, 7) : 'inconnu';
+                if (key > currentMonth) return; // exclure les mois futurs
                 if (!months[key]) months[key] = { p1Exp: 0, p2Exp: 0, p1Contrib: 0, p2Contrib: 0 };
                 if (c.parent === settings.parent1_name || c.parent === 'Parent 1') months[key].p1Contrib += parseFloat(c.montant || 0);
                 else months[key].p2Contrib += parseFloat(c.montant || 0);
